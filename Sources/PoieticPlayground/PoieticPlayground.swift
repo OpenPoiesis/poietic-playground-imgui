@@ -4,6 +4,7 @@
 @main
 struct PoieticPlayground {
     static func main() {
-        print("Hello, world!")
+        let app = Application()
+        app.run()
     }
 }

@@ -1,0 +1,6 @@
+module Csdl3 [system] {
+    header "include/sdl3.h"
+    link "sdl3"
+    export *
+}
+
