@@ -27,6 +27,10 @@ let package = Package(
                 .product(name: "Diagramming", package: "poietic-diagram"),
                 "Csdl3",
                 "CIimgui",
+                "Cstb",
+            ],
+            resources: [
+              .copy("Resources/icons/"),
             ],
             swiftSettings: [.unsafeFlags([
                 "-cxx-interoperability-mode=default",
@@ -45,10 +49,12 @@ let package = Package(
             dependencies: [
                 "Csdl3"
             ],
-            cxxSettings: [
-            ],
-            linkerSettings: [
-            ]
+            cxxSettings: [ ],
+            linkerSettings: [ ]
+        ),
+        .target(
+            name: "Cstb",
+            cxxSettings: [ ],
         )
     ]
 )

@@ -1,0 +1,5 @@
+module Cstb {
+    header "include/stb_image.h"
+    export *
+}
+
