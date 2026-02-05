@@ -5,6 +5,7 @@
 //  Created by Stefan Urbanek on 29/01/2026.
 //
 import CIimgui
+import Diagramming
 
 extension ImGui {
 //    static func PushID(_ idString: String) {
@@ -14,7 +15,16 @@ extension ImGui {
 //    }
 }
 
+extension Vector2D {
+    init(_ vec: ImVec2) {
+        self = Vector2D(Double(vec.x), Double(vec.y))
+    }
+}
+
 extension ImVec2 {
+    init(_ vec: Vector2D) {
+        self = ImVec2(Float(vec.x), Float(vec.y))
+    }
     static func +(lhs: ImVec2, rhs: ImVec2) -> ImVec2 {
         return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y)
     }

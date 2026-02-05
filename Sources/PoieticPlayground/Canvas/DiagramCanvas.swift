@@ -63,51 +63,37 @@ class DiagramCanvas: View {
     var canvasPos = ImVec2(0.0, 0.0)          // Screen position of canvas
     var canvasSize = ImVec2(0.0, 0.0)         // Screen size of canvas
 
-    private var isDragging = false            // Are we currently panning?
-    private var dragStartPos = ImVec2(0.0, 0.0) // Where did drag start?
-
-    private var lines: [(ImVec2, ImVec2)] = [] // List of completed lines
-    private var isDrawingLine = false         // Are we currently drawing a line?
-    private var lineStart = ImVec2(0.0, 0.0)  // Start point of current line
-    private var lineEnd = ImVec2(0.0, 0.0)    // Current mouse position for preview
-    
     /// Canvas view offset in world coordinates.
     ///
     /// - SeeAlso: ``viewScale``
-    var viewOffset = ImVec2(0.0, 0.0)
+    var viewOffset: Vector2D = .zero
 
     /// Canvas view scale.
     ///
     /// - SeeAlso: ``viewOffset``
     ///
-    var viewScale: Float = 1.0
+    var zoomLevel: Double = 1.0
     
     /// Grid spacing in world coordinates.
-    var gridSize: Float = 50.0
+    var gridSize: Double = 50.0
     var showGrid = true                       // Whether to show the grid
     var gridColor = ImVec4(0.3, 0.3, 0.3, 0.2) // Grid line color
 
     /// Convert screen coordinates to world coordinates
     func screenToWorld(_ screenPos: ImVec2) -> ImVec2 {
-        return ImVec2(
-            (screenPos.x - canvasPos.x) / viewScale + viewOffset.x,
-            (screenPos.y - canvasPos.y) / viewScale + viewOffset.y
-        )
+        let worldPos = Vector2D(screenPos - canvasPos) / Double(zoomLevel) + viewOffset
+        return ImVec2(worldPos)
     }
    
     func screenToWorld(_ screenPos: ImVec2) -> Vector2D {
-        return Vector2D(
-            x: Double(screenPos.x - canvasPos.x) / Double(viewScale) + Double(viewOffset.x),
-            y: Double(screenPos.y - canvasPos.y) / Double(viewScale) + Double(viewOffset.y)
-        )
+        let worldPos = Vector2D(screenPos - canvasPos) / Double(zoomLevel) + viewOffset
+        return worldPos
     }
 
     /// Convert world coordinates to screen coordinates
-    func worldToScreen(_ worldPos: ImVec2) -> ImVec2 {
-        return ImVec2(
-            (worldPos.x - viewOffset.x) * viewScale + canvasPos.x,
-            (worldPos.y - viewOffset.y) * viewScale + canvasPos.y
-        )
+    func worldToScreen(_ worldPos: Vector2D) -> ImVec2 {
+        let screenPos = (worldPos - viewOffset) * Double(zoomLevel)
+        return ImVec2(screenPos) + canvasPos
     }
 
     func update(_ timeDelta: Double) {
@@ -136,124 +122,21 @@ class DiagramCanvas: View {
 
         drawGrid()
         drawStatusInfo("H: \(handled)")
-        renderContent()
+        drawContent()
 
         ImGui.EndChild()
         ImGui.End()
     }
 
 
-    // MARK: - Drawing
-    private func drawGrid() {
-        guard showGrid,
-              let drawList = ImGui.GetWindowDrawList()
-        else { return }
-        
-        // Calculate visible area in world coordinates
-        let worldTopLeft: ImVec2 = screenToWorld(canvasPos)
-        let worldBottomRight: ImVec2 = screenToWorld(ImVec2(canvasPos.x + canvasSize.x,
-                                                   canvasPos.y + canvasSize.y))
-        
-        // Draw vertical grid lines
-        let startX = floor(worldTopLeft.x / gridSize) * gridSize
-        let endX = ceil(worldBottomRight.x / gridSize) * gridSize
-        
-        for x in stride(from: startX, through: endX, by: gridSize) {
-            let screenX = (x - viewOffset.x) * viewScale + canvasPos.x
-            let p1 = ImVec2(screenX, canvasPos.y)
-            let p2 = ImVec2(screenX, canvasPos.y + canvasSize.y)
-            
-            drawList.pointee.AddLine(p1, p2,
-                ImGui.ColorConvertFloat4ToU32(gridColor), 1.0)
-        }
-        
-        // Draw horizontal grid lines
-        let startY = floor(worldTopLeft.y / gridSize) * gridSize
-        let endY = ceil(worldBottomRight.y / gridSize) * gridSize
-        
-        for y in stride(from: startY, through: endY, by: gridSize) {
-            let screenY = (y - viewOffset.y) * viewScale + canvasPos.y
-            let p1 = ImVec2(canvasPos.x, screenY)
-            let p2 = ImVec2(canvasPos.x + canvasSize.x, screenY)
-            
-            drawList.pointee.AddLine(p1, p2,
-                ImGui.ColorConvertFloat4ToU32(gridColor), 1.0)
-        }
-    }
-
-    private func renderContent() {
-        guard let drawList = ImGui.GetWindowDrawList() else { return }
-        let lineColor = ImGui.ColorConvertFloat4ToU32(ImVec4(1.0, 0.5, 0.2, 1.0))
-        
-        // Draw completed lines
-        for (start, end) in lines {
-            let screenStart = worldToScreen(start)
-            let screenEnd = worldToScreen(end)
-            drawList.pointee.AddLine(screenStart, screenEnd, lineColor, 2.0)
-        }
-        
-        // Draw current line being created
-        if isDrawingLine {
-            let previewColor = ImGui.ColorConvertFloat4ToU32(ImVec4(0.2, 0.8, 1.0, 0.7))
-            let screenStart = worldToScreen(lineStart)
-            let screenEnd = worldToScreen(lineEnd)
-            drawList.pointee.AddLine(screenStart, screenEnd, previewColor, 2.0)
-            
-            // Draw start and end points
-            drawList.pointee.AddCircleFilled(screenStart, 4.0, previewColor, 0)
-            drawList.pointee.AddCircleFilled(screenEnd, 4.0, previewColor, 0)
-        }
-    }
-
-    private func drawStatusInfo(_ text: String) {
-        // Draw view information in corner
-        var infoText = "Zoom: \(viewScale * 100) | Pan: (\(viewOffset.x), \(viewOffset.y) | Lines: \(lines.count) | Win F/H: \(ImGui.IsWindowFocused())/\(ImGui.IsWindowHovered())"
-        infoText += " \(text)"
-        let padding: Float = 10.0
-        let textSize = ImGui.CalcTextSize(infoText, nil, true, 0)
-        
-        let drawList = ImGui.GetWindowDrawList()
-        let bgColor = ImGui.ColorConvertFloat4ToU32(ImVec4(0.0, 0.0, 0.0, 0.5))
-        let textColor = ImGui.ColorConvertFloat4ToU32(ImVec4(1.0, 1.0, 1.0, 1.0))
-        
-        let bgPos1 = ImVec2(canvasPos.x + canvasSize.x - textSize.x - padding * 2,
-                           canvasPos.y + canvasSize.y - textSize.y - padding * 2)
-        let bgPos2 = ImVec2(canvasPos.x + canvasSize.x,
-                           canvasPos.y + canvasSize.y)
-        
-        drawList?.pointee.AddRectFilled(bgPos1, bgPos2, bgColor, 5.0, 0)
-        drawList?.pointee.AddText(ImVec2(bgPos1.x + padding, bgPos1.y + padding),
-                                 textColor, infoText, nil)
-    }
-
-
     // MARK: - Canvas Control Methods
     func resetView() {
-        viewOffset = ImVec2(0.0, 0.0)
-        viewScale = 1.0
+        viewOffset = .zero
+        zoomLevel = 1.0
     }
     
-    func setView(offset: ImVec2, scale: Float) {
+    func setView(offset: Vector2D, zoom: Double) {
         viewOffset = offset
-        viewScale = max(0.01, min(100.0, scale))
-    }
-    
-    func centerOn(point: ImVec2) {
-        viewOffset = ImVec2(
-            point.x - canvasSize.x / (2 * viewScale),
-            point.y - canvasSize.y / (2 * viewScale)
-        )
-    }
-    
-    func clearLines() {
-        lines.removeAll()
-    }
-    
-    func addLine(from start: ImVec2, to end: ImVec2) {
-        lines.append((start, end))
-    }
-    
-    func getViewInfo() -> (offset: ImVec2, scale: Float) {
-        return (viewOffset, viewScale)
+        zoomLevel = max(0.01, min(100.0, zoom))
     }
 }
