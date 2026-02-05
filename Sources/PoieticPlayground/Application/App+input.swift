@@ -55,10 +55,18 @@ extension Application {
         guard let shortcut = globalShortcut() else { return }
         
         switch shortcut {
-        case "selection_tool": toolBar.changeTool("selection")
-        case "placement_tool": toolBar.changeTool("placement")
-        case "connect_tool": toolBar.changeTool("connect")
-        case "pan_tool": toolBar.changeTool("pan")
+        case "selection_tool": toolBar.setTool("selection")
+        case "placement_tool": toolBar.setTool("placement")
+        case "connect_tool": toolBar.setTool("connect")
+        case "pan_tool":
+            if let previousTool = toolBar.previousTool,
+               toolBar.currentTool is PanTool
+            {
+                toolBar.setTool(previousTool)
+            }
+            else {
+                toolBar.setTool("pan")
+            }
         default:
             print("Unhandled global shortcut: ", shortcut)
         }

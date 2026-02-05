@@ -11,6 +11,7 @@ let ApplicationTools = ["selection", "placement", "connect", "pan"]
 
 class ToolBar: Panel {
     unowned var app: Application! = nil
+    var previousTool: CanvasTool? = nil
     var currentTool: CanvasTool? = nil
     var tools: [CanvasTool] { app?.canvasTools ?? [] }
     
@@ -19,13 +20,28 @@ class ToolBar: Panel {
     }
     
     @discardableResult
-    func changeTool(_ name: String) -> Bool {
+    func setTool(_ name: String) -> Bool {
         let tool = tools.first { $0.name == name }
         guard let tool else { return false }
-
-        self.currentTool = tool
-        print("Tool changed: \(name)")
+        self.setTool(tool)
         return true
+    }
+    
+    func setTool(_ tool: CanvasTool) {
+        if let currentTool {
+            currentTool.deactivate()
+        }
+        
+        previousTool = currentTool
+        currentTool = tool
+                
+        tool.activate()
+
+        print("Tool: \(tool.name)")
+    }
+    
+    func changeToPreviousToo() {
+        
     }
     
     func update(_ timeDelta: Double) {

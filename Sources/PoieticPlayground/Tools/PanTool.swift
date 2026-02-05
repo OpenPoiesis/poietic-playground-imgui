@@ -71,6 +71,5 @@ class PanTool: CanvasTool {
         cursor = ImGuiMouseCursor_Arrow
         state = .idle
     }
-
 }
 
