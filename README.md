@@ -1,10 +1,10 @@
 # Poietic Playground
 
+**IMPORTANT:** This is just an unstable and experimental prototype.
+
 An educational tool, a virtual laboratory for modelling and simulation of
 dynamical systems using the [Stock and Flow](https://en.wikipedia.org/wiki/Stock_and_flow)
 methodology.
-
-**IMPORTANT: ** This is just an unstable and experimental prototype.
 
 Part of the [Open Poiesis](https://www.poietic.org) project.
 
@@ -44,7 +44,8 @@ To build and run the application: `swift run`.
 
 ## Credits
 
-This package uses the following libraries:
+This package includes code from the following libraries:
 
-- [SDL](https://libsdl.org)
 - [ImGui](https://github.com/ocornut/imgui)
+- [stb](https://github.com/nothings/stb)
+- [SDL3](https://libsdl.org)
