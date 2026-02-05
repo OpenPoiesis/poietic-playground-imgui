@@ -9,13 +9,27 @@ import CIimgui
 
 let ApplicationTools = ["selection", "placement", "connect", "pan"]
 
-class ToolBar {
+class ToolBar: Panel {
     unowned var app: Application! = nil
     var currentTool: CanvasTool? = nil
     var tools: [CanvasTool] { app?.canvasTools ?? [] }
     
     init() {
         self.currentTool = nil
+    }
+    
+    @discardableResult
+    func changeTool(_ name: String) -> Bool {
+        let tool = tools.first { $0.name == name }
+        guard let tool else { return false }
+
+        self.currentTool = tool
+        print("Tool changed: \(name)")
+        return true
+    }
+    
+    func update(_ timeDelta: Double) {
+        // Nothing for now
     }
     
     func draw() {

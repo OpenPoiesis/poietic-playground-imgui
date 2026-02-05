@@ -53,7 +53,7 @@ struct InputState {
     var wasMouseInViewport: Bool = false
 }
 
-class DiagramCanvas {
+class DiagramCanvas: View {
     
     var debugMessage: String = ""
     
@@ -110,12 +110,16 @@ class DiagramCanvas {
         )
     }
 
-    func render() {
+    func update(_ timeDelta: Double) {
+        // Nothing for now
+    }
+    
+    func draw() {
         ImGui.Begin("Canvas Window")
 
-//         Disable padding
+        // Disable padding
         ImGui.PushStyleVar(ImGuiStyleVar(ImGuiStyleVar_WindowPadding.rawValue), ImVec2(0, 0))
-        // Set a background color
+        // Set a background colour
         ImGui.PushStyleColor(ImGuiCol(ImGuiCol_ChildBg.rawValue), ImColor(Int32(50), 50, 80, 255).intValue)
         ImGui.BeginChild("canvas",
                          ImVec2(0.0, 0.0),

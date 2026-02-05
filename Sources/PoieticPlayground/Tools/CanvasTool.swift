@@ -63,17 +63,20 @@ class CanvasTool {
 
 class SelectionTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
-    override var name: String { "select"}
+    override var name: String { "selection"}
+    override var iconName: String { "select"}
 }
 
 class PlacementTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
-    override var name: String { "place"}
+    override var name: String { "placement"}
+    override var iconName: String { "place"}
 }
 
 class ConnectTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
     override var name: String { "connect"}
+    override var iconName: String { "connect"}
 }
 
 class PanTool: CanvasTool {

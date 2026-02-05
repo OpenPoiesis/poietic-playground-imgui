@@ -40,6 +40,7 @@ extension Application {
                 if ImGui.MenuItem("New", "Cmd+N") {
                 }
                 if ImGui.MenuItem("Open", "Cmd+O") {
+                    self.alert(title: "Info", message: "Not yet")
                 }
                 
                 ImGui.Separator()
