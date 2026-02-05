@@ -12,39 +12,30 @@ import Foundation
 
 class ResourceLoader {
     let root: URL
-    let app: Application
+    var app: Application!
     
-    init(_ rootPath: String, application: Application) {
+    init(_ rootPath: String, application: Application? = nil) {
         self.root = URL(fileURLWithPath: rootPath)
         self.app = application
     }
-    func load(_ filename: String) {
-        var fullPath = self.root.path + "/" + filename
-        let manager = FileManager()
-        print("CWD: \(manager.currentDirectoryPath)")
-        let url = URL(fileURLWithPath: fullPath)
-        let data = try? Data(contentsOf: url)
-        print("Data: \(data, default: "(no data))")")
 
-        var width: Int32 = 0
-        var height: Int32 = 0
-        var channels: Int32 = 0
-        guard let imageData = stbi_load(fullPath, &width, &height, &channels, 4) else {
-            print("Failed to load image: \(fullPath)")
-            return
-        }
-        print("Image data: \(imageData)")
-
-    }
     func resourceURL(_ resourcePath: String) -> URL {
         return root.appending(path: resourcePath)
     }
-    
-    func loadTexture(_ path: String) -> Texture? {
+    func resourceFilePath(_ resourcePath: String) -> URL {
+        return root.appending(path: resourcePath)
+    }
+
+    func loadData(_ path: String) -> Data? {
         let url = resourceURL(path)
         guard let data = try? Data(contentsOf: url) else {
             return nil
         }
+        return data
+    }
+    
+    func loadTexture(_ path: String) -> Texture? {
+        guard let data = loadData(path) else { return nil }
         return loadTexture(data)
     }
     

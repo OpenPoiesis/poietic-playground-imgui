@@ -7,11 +7,10 @@
 
 extension Application {
     func loadResources() {
-        let loader = ResourceLoader(Self.DefaultResourcesPath, application: self)
-        textures["select"] = loader.loadTexture("icons/black/select.png")
-        textures["place"] = loader.loadTexture("icons/black/place.png")
-        textures["connect"] = loader.loadTexture("icons/black/connect.png")
-        textures["pan"] = loader.loadTexture("icons/black/hand.png")
+        textures["select"] = resourceLoader.loadTexture("icons/black/select.png")
+        textures["place"] = resourceLoader.loadTexture("icons/black/place.png")
+        textures["connect"] = resourceLoader.loadTexture("icons/black/connect.png")
+        textures["pan"] = resourceLoader.loadTexture("icons/black/hand.png")
         print("Loaded textures:")
         for key in textures.keys.sorted() {
             let texture = textures[key]!

@@ -14,6 +14,7 @@ let clearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
 class Application {
     static let DefaultResourcesPath = "Sources/PoieticPlayground/Resources/"
+    static let NewDesignTemplatePath = "designs/new_canvas.json"
     static let MainWindowName = "Poietic Playground"
     static let DefaultWindowWidth = 1280
     static let DefaultWindowHeight = 800
@@ -26,8 +27,11 @@ class Application {
     var mainWindow: OpaquePointer!
    
     // -- Resources --
+    var resourceLoader: ResourceLoader
     var textures: [String:Texture] = [:]
 
+    var commandQueue: [any Command] = []
+   
     // -- Document --
     var canvas: DiagramCanvas
     
@@ -44,6 +48,8 @@ class Application {
     // ## World
     var design: Design
     var world: World
+    var designChanged: Bool = false
+    
     
     init() {
         // Document
@@ -66,6 +72,9 @@ class Application {
             tool.bind(world: world, canvas: canvas)
         }
         self.toolBar.currentTool = canvasTools[0]
+        self.resourceLoader = ResourceLoader(Self.DefaultResourcesPath, application: nil)
+        resourceLoader.app = self
+        setupSchedules()
     }
     
     func run() {
@@ -75,6 +84,11 @@ class Application {
         
         self.toolBar.app = self
         self.canvas.app = self
+        
+        // New template design
+        let url = resourceLoader.resourceURL(Self.NewDesignTemplatePath)
+        let command = OpenDesignCommand(url: url)
+        self.queueCommand(command)
         
         mainLoop()
         cleanUp()
@@ -127,6 +141,8 @@ class Application {
             ImGui_ImplSDL3_NewFrame()
             ImGui.NewFrame()
 
+            runQueuedCommands()
+            
             let newTime = ImGui.GetTime()
             let timeDelta = newTime - lastTime
             lastTime = newTime
@@ -147,11 +163,22 @@ class Application {
     }
    
     func update(_ timeDelta: Double) {
+        if designChanged {
+            updateDesign()
+        }
+        
         inspector.update(timeDelta)
         toolBar.update(timeDelta)
         canvas.update(timeDelta)
         alertPanel.update(timeDelta)
     }
+    
+    func updateDesign() {
+        run(schedule: FrameChangeSchedule.self)
+        designChanged = false
+        // TODO: simulate()
+    }
+
     func draw() {
         mainMenu()
 
@@ -219,5 +246,36 @@ class Application {
         SDL_DestroyGPUDevice(gpuDevice)
         SDL_DestroyWindow(mainWindow)
         SDL_Quit()
+    }
+    
+    func queueCommand(_ command: any Command) {
+        self.commandQueue.append(command)
+    }
+    
+    func runQueuedCommands() {
+        let commands = commandQueue
+        commandQueue.removeAll()
+
+        for command in commands {
+            runCommand(command)
+        }
+    }
+    
+    func runCommand(_ command: any Command) {
+        do {
+            self.log("Running command '\(command.name)'")
+            try command.run(app: self)
+        }
+        catch {
+            self.logError("Command '\(command.name)' failed: \(error.message)")
+            self.alert(title: "Error", message: error.message)
+        }
+    }
+    
+    func log(_ message: String) {
+        print("INFO: ", message)
+    }
+    func logError(_ message: String) {
+        print("ERROR: ", message)
     }
 }
