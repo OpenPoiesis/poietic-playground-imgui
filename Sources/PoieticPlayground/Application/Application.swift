@@ -9,15 +9,19 @@ import PoieticCore
 import PoieticFlows
 import CIimgui
 import Csdl3
+import Diagramming
 
 let clearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
 class Application {
     static let DefaultResourcesPath = "Sources/PoieticPlayground/Resources/"
-    static let NewDesignTemplatePath = "designs/new_canvas.json"
+//    static let NewDesignTemplatePath = "designs/new_canvas.json"
+    static let NewDesignTemplatePath = "designs/design-capital.poietic"
+    static let DefaultStockFlowPictogramsPath = "stock_flow_pictograms.json"
     static let MainWindowName = "Poietic Playground"
     static let DefaultWindowWidth = 1280
     static let DefaultWindowHeight = 800
+    static let PictogramAdjustmentScale = 0.5
 
     var showMetrics = false
     var showInspector = false
@@ -45,11 +49,11 @@ class Application {
 
     // ## GUI
     //
-    // ## World
-    var design: Design
-    var world: World
+    // ## The Document – Design and World
+    var design: Design!
+    var world: World!
     var designChanged: Bool = false
-    
+    var notation: Notation
     
     init() {
         // Document
@@ -59,7 +63,8 @@ class Application {
         // User Interface
         self.inspector = InspectorPanel()
         self.toolBar = ToolBar()
-        self.canvas = DiagramCanvas()
+        self.canvas = DiagramCanvas(world: world)
+        self.notation = Notation.DefaultNotation
         
         self.canvasTools = [
             SelectionTool(),
@@ -68,14 +73,36 @@ class Application {
             PanTool(),
         ]
 
-        for tool in canvasTools {
-            tool.bind(world: world, canvas: canvas)
-        }
         self.toolBar.currentTool = canvasTools[0]
         self.resourceLoader = ResourceLoader(Self.DefaultResourcesPath, application: nil)
         resourceLoader.app = self
-        setupSchedules()
+
+        setupWorld()
     }
+
+    /// Set world singletons when the world changes.
+    func setupWorld() {
+        setupSchedules()
+        world.setSingleton(notation)
+    }
+
+    /// Set a new design document and propagate the change through the application.
+    ///
+    func setDesign(_ design: Design) {
+        self.log("Setting new design. Frame: \(design.currentFrameID)")
+        guard design !== self.design else { return }
+        self.design = design
+        self.world = World(design: design)
+        self.canvas.world = world
+        
+        for tool in canvasTools {
+            tool.bind(world: world, canvas: canvas)
+        }
+
+        setupWorld()
+        self.designChanged = true
+    }
+    
     
     func run() {
         guard initializeSDL() else { fatalError("Unable to init SDL") }
@@ -84,11 +111,14 @@ class Application {
         
         self.toolBar.app = self
         self.canvas.app = self
+
+        // Prepare world before design
+        let notationURL = resourceLoader.resourceURL(Self.DefaultStockFlowPictogramsPath)
+        self.loadNotation(url: notationURL)
         
         // New template design
-        let url = resourceLoader.resourceURL(Self.NewDesignTemplatePath)
-        let command = OpenDesignCommand(url: url)
-        self.queueCommand(command)
+        let templateURL = resourceLoader.resourceURL(Self.NewDesignTemplatePath)
+        self.queueCommand(OpenDesignCommand(url: templateURL))
         
         mainLoop()
         cleanUp()
@@ -174,6 +204,12 @@ class Application {
     }
     
     func updateDesign() {
+        let currentFrameLabel: String = design.currentFrameID.map { String(describing: $0) } ?? "(no frame)"
+        log("Update design. Current frame: \(currentFrameLabel)")
+        
+        if let frame = design.currentFrame {
+            world.setFrame(frame)
+        }
         run(schedule: FrameChangeSchedule.self)
         designChanged = false
         // TODO: simulate()

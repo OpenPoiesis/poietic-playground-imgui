@@ -6,10 +6,123 @@
 //
 import CIimgui
 import Diagramming
+import PoieticCore
 
 extension DiagramCanvas {
     func drawContent() {
-        // TODO: To be done, from World
+        drawBlocks()
+        drawConnectors()
+    }
+    
+    func drawBlocks() {
+        for (id, component) in world.query(DiagramBlock.self) {
+            drawBlock(runtimeID: id, block: component)
+        }
+    }
+    
+    func drawBlock(runtimeID: RuntimeID, block: DiagramBlock) {
+        if let pictogram = block.pictogram {
+            let transform = AffineTransform(translation: block.position)
+            let path = pictogram.path.transform(transform)
+            strokePath(path)
+        }
+        if let label = block.label {
+            
+        }
+        
+    }
+    
+    func drawConnectors() {
+        for (id, component) in world.query(DiagramConnectorGeometry.self) {
+            drawConnector(runtimeID: id, geometry: component)
+        }
+    }
+    func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry) {
+        // DEBUG wire
+        strokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0))
+
+        // Open curves
+        if let path = geometry.linePath {
+            strokePath(path)
+        }
+        if let path = geometry.headArrowhead {
+            strokePath(path)
+        }
+        if let path = geometry.tailArrowhead {
+            strokePath(path)
+        }
+        // Filled curves
+        if let path = geometry.fillPath {
+            fillPath(path)
+        }
+    }
+    func strokePath(_ path: BezierPath, color: Color = .white, lineWidth: Float = 1.0) {
+        guard let drawList = ImGui.GetWindowDrawList() else {
+            return
+        }
+
+        let strokeColor: ImU32 = color.imIntValue
+
+        var hadStroke: Bool = false
+        var wasClosed: Bool = false
+        
+        for element in path.elements {
+            switch element {
+            case .moveTo(let point):
+                let screenPoint = worldToScreen(point)
+                if hadStroke {
+                    drawList.pointee.PathStroke(strokeColor, 0, lineWidth)
+                }
+                drawList.pointee.PathClear()
+                drawList.pointee.PathLineTo(screenPoint)
+                wasClosed = false
+                hadStroke = false
+
+            case .lineTo(let point):
+                let screenPoint = worldToScreen(point)
+                drawList.pointee.PathLineTo(screenPoint)
+                wasClosed = false
+                hadStroke = true
+
+            case .curveTo(let end, let control1, let control2):
+                let scrEnd = worldToScreen(end)
+                let scrControl1 = worldToScreen(control1)
+                let scrControl2 = worldToScreen(control2)
+                drawList.pointee.PathBezierCubicCurveTo(scrControl1, scrControl2, scrEnd)
+                wasClosed = false
+                hadStroke = true
+
+            case .quadCurveTo(let control, let end):
+                let scrEnd = worldToScreen(end)
+                let scrControl = worldToScreen(control)
+                drawList.pointee.PathBezierQuadraticCurveTo(scrControl, scrEnd)
+                hadStroke = true
+                wasClosed = false
+
+            case .closePath:
+                drawList.pointee.PathStroke(strokeColor, 0, lineWidth)
+                wasClosed = true
+                hadStroke = false
+            }
+        }
+        if hadStroke && !wasClosed {
+            drawList.pointee.PathStroke(strokeColor, 0, lineWidth)
+        }
+    }
+    
+    func fillPath(_ path: BezierPath, color: Color = .white) {
+        guard let drawList = ImGui.GetWindowDrawList() else {
+            return
+        }
+
+        let fillColor: ImU32 = color.imIntValue
+        let debugColor: ImU32 = Color(red: 1.0, green: 0.0, blue: 0.0).imIntValue
+        for segment in path.subpaths() {
+            let points = segment.tessellate()
+            let screenPoints = points.map { worldToScreen($0) }
+            drawList.pointee.AddConcavePolyFilled(screenPoints, Int32(screenPoints.count), fillColor)
+            drawList.pointee.AddPolyline(screenPoints, Int32(screenPoints.count), debugColor, 0, 1)
+        }
     }
 
     func drawGrid() {
@@ -51,7 +164,11 @@ extension DiagramCanvas {
 
     func drawStatusInfo(_ text: String) {
         // Draw view information in corner
-        var infoText = "Zoom: \(zoomLevel * 100) | Pan: (\(viewOffset.x), \(viewOffset.y) | Win F/H: \(ImGui.IsWindowFocused())/\(ImGui.IsWindowHovered())"
+        let blockCount = world.query(DiagramBlock.self).count
+        let connectorCount = world.query(DiagramConnectorGeometry.self).count
+        var infoText = "Blocks: \(blockCount) "
+                        + "Conns: \(connectorCount) "
+                        + "| Zoom: \(zoomLevel * 100) Offset: (\(viewOffset.x)x\(viewOffset.y)"
         infoText += " \(text)"
         let padding: Float = 10.0
         let textSize = ImGui.CalcTextSize(infoText, nil, true, 0)

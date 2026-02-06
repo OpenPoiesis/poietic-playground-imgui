@@ -7,6 +7,7 @@
 
 import CIimgui
 import Diagramming
+import PoieticCore
 
 /*
  Frame 1: Mouse button pressed at (100, 100)
@@ -54,6 +55,7 @@ struct InputState {
 }
 
 class DiagramCanvas: View {
+    var world: World
     
     var debugMessage: String = ""
     
@@ -79,6 +81,10 @@ class DiagramCanvas: View {
     var showGrid = true                       // Whether to show the grid
     var gridColor = ImVec4(0.3, 0.3, 0.3, 0.2) // Grid line color
 
+    init(world: World) {
+        self.world = world
+    }
+    
     /// Convert screen coordinates to world coordinates
     func screenToWorld(_ screenPos: ImVec2) -> ImVec2 {
         let worldPos = Vector2D(screenPos - canvasPos) / Double(zoomLevel) + viewOffset

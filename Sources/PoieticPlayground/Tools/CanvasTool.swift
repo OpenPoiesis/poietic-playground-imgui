@@ -33,30 +33,20 @@ class CanvasTool {
 
     /// Function called when tool was set active.
     func activate() { /* Implementation in subclasses */ }
+
     /// Function called when tool was released and set inactive.
     func deactivate() { /* Implementation in subclasses */ }
-    /// Function called for frame update.
+
+    /// Function called on frame update when the tool is active.
     func update() { /* Implementation in subclasses */ }
+
     /// Function called when tool operation was cancelled.
     func cancel() { /* Implementation in subclasses */ }
 
-//    func renderOverlay()
-// func getCursorType()
+    // func renderOverlay()
+    // func getCursorType()
    
     func handleEvent(_ event: ToolEvent) {
-        print("Tool event: \(event)")
-    }
-    // TODO: Implement in subclasses. Just debug stub
-    func downBegan(_ event: ToolEvent) {
-        print("Tool event: \(event)")
-    }
-    func inputMoved(_ event: ToolEvent) {
-        print("Tool event: \(event)")
-    }
-    func inputEnded(_ event: ToolEvent) {
-        print("Tool event: \(event)")
-    }
-    func inputBegan(_ event: ToolEvent) {
-        print("Tool event: \(event)")
+//        print("Tool event: \(event)")
     }
 }

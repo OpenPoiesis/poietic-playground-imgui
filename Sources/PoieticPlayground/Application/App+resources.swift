@@ -7,14 +7,11 @@
 
 extension Application {
     func loadResources() {
+        self.log("Loading textures...")
         textures["select"] = resourceLoader.loadTexture("icons/black/select.png")
         textures["place"] = resourceLoader.loadTexture("icons/black/place.png")
         textures["connect"] = resourceLoader.loadTexture("icons/black/connect.png")
         textures["pan"] = resourceLoader.loadTexture("icons/black/hand.png")
-        print("Loaded textures:")
-        for key in textures.keys.sorted() {
-            let texture = textures[key]!
-            print("    ", key, ":", texture.width, "x", texture.height," ", texture.textureID)
-        }
+        self.log("\(textures.count) textures loaded")
     }
 }

@@ -17,8 +17,7 @@ struct OpenDesignCommand: Command {
         let store = DesignStore(url: url)
         do {
             let design = try store.load(metamodel: StockFlowMetamodel)
-            app.design = design
-            app.designChanged = true
+            app.setDesign(design)
         }
         catch {
             throw CommandError(message: error.description)
