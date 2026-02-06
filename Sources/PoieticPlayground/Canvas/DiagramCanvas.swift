@@ -56,6 +56,7 @@ struct InputState {
 
 class DiagramCanvas: View {
     var world: World
+    var style: CanvasStyle
     
     var debugMessage: String = ""
     
@@ -83,6 +84,7 @@ class DiagramCanvas: View {
 
     init(world: World) {
         self.world = world
+        self.style = CanvasStyle()
     }
     
     /// Convert screen coordinates to world coordinates

@@ -41,9 +41,12 @@ extension ImVec2 {
         return (vec * vec).sum()
     }
 
-    //    static func *(lhs: ImVec2, rhs: Float) -> ImVec2 {
-//        return ImVec2(lhs.x * rhs, lhs.y * rhs)
-//    }
+    static func *(lhs: ImVec2, rhs: Float) -> ImVec2 {
+        return ImVec2(lhs.x * rhs, lhs.y * rhs)
+    }
+    static func /(lhs: ImVec2, rhs: Float) -> ImVec2 {
+        return ImVec2(lhs.x / rhs, lhs.y / rhs)
+    }
 }
 
 extension ImVec2: @retroactive CustomStringConvertible {

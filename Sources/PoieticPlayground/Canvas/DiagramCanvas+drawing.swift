@@ -9,6 +9,10 @@ import Diagramming
 import PoieticCore
 
 extension DiagramCanvas {
+    static let PrimaryLabelPadding: Float = 0.0
+    static let SecondaryLabelPadding: Float = 4.0
+    static let ColorSwatchSize: ImVec2 = ImVec2(10.0, 10.0)
+
     func drawContent() {
         drawBlocks()
         drawConnectors()
@@ -21,13 +25,47 @@ extension DiagramCanvas {
     }
     
     func drawBlock(runtimeID: RuntimeID, block: DiagramBlock) {
+        guard let drawList = ImGui.GetWindowDrawList() else { return }
+        let screenPos = worldToScreen(block.position)
+        var swatchCenter: ImVec2
+        
+        var labelCenter: ImVec2
+        
         if let pictogram = block.pictogram {
             let transform = AffineTransform(translation: block.position)
             let path = pictogram.path.transform(transform)
             strokePath(path)
+            let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + block.position)
+            labelCenter = ImVec2(screenPos.x, screenBBMin.y)
         }
+        else {
+            labelCenter = screenPos
+        }
+
+        swatchCenter = labelCenter
+        labelCenter.y += Self.PrimaryLabelPadding
+       
         if let label = block.label {
-            
+            let color = style.primaryLabelStyle.color.imIntValue
+            let size = ImGui.CalcTextSize(label)
+            let position = ImVec2(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
+            drawList.pointee.AddText(position, color, label, nil)
+            labelCenter.y += size.y + Self.SecondaryLabelPadding
+            swatchCenter = ImVec2(position.x - Self.ColorSwatchSize.x, position.y + size.y/2)
+        }
+
+        if let label = block.secondaryLabel {
+            let color = style.secondaryLabelStyle.color.imIntValue
+            let size = ImGui.CalcTextSize(label)
+            let position = ImVec2(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
+            drawList.pointee.AddText(position, color, label, nil)
+        }
+
+        if let colorName = block.accentColorName {
+            let color = style.adaptableColor(colorName, default: .white)
+            let pmin = swatchCenter - (Self.ColorSwatchSize / 2.0)
+            let pmax = pmin + Self.ColorSwatchSize
+            drawList.pointee.AddRectFilled(pmin, pmax, color.imIntValue)
         }
         
     }
@@ -53,7 +91,8 @@ extension DiagramCanvas {
         }
         // Filled curves
         if let path = geometry.fillPath {
-            fillPath(path)
+            // TODO: ImGui can not draw correctly concave polygons (they are expensive)
+            strokePath(path)
         }
     }
     func strokePath(_ path: BezierPath, color: Color = .white, lineWidth: Float = 1.0) {
@@ -116,12 +155,10 @@ extension DiagramCanvas {
         }
 
         let fillColor: ImU32 = color.imIntValue
-        let debugColor: ImU32 = Color(red: 1.0, green: 0.0, blue: 0.0).imIntValue
         for segment in path.subpaths() {
             let points = segment.tessellate()
             let screenPoints = points.map { worldToScreen($0) }
             drawList.pointee.AddConcavePolyFilled(screenPoints, Int32(screenPoints.count), fillColor)
-            drawList.pointee.AddPolyline(screenPoints, Int32(screenPoints.count), debugColor, 0, 1)
         }
     }
 
