@@ -167,20 +167,20 @@ class Application {
             case .none: break
             }
             
+            runQueuedCommands()
+            
             ImGui_ImplSDLGPU3_NewFrame()
             ImGui_ImplSDL3_NewFrame()
             ImGui.NewFrame()
 
-            runQueuedCommands()
-            
             let newTime = ImGui.GetTime()
             let timeDelta = newTime - lastTime
             lastTime = newTime
+
+            self.processInput()
             self.update(timeDelta)
-
-            self.processGlobalShortcuts()
-
             self.draw()
+            self.processUnhandledInput()
             
             applicationStateDebugWindow()
             ImGui.ShowDebugLogWindow()
@@ -191,14 +191,18 @@ class Application {
             self.backendRender()
         }
     }
+    
+    func processInput() {
+        self.processGlobalShortcuts()
+    }
    
     func update(_ timeDelta: Double) {
         if designChanged {
             updateDesign()
         }
         
-        inspector.update(timeDelta)
         toolBar.update(timeDelta)
+        inspector.update(timeDelta)
         canvas.update(timeDelta)
         alertPanel.update(timeDelta)
     }
@@ -222,6 +226,13 @@ class Application {
         toolBar.draw()
         canvas.draw()
         alertPanel.draw()
+    }
+    
+    func processUnhandledInput() {
+        let io = ImGui.GetIO().pointee
+        
+        canvas.processUnhandledInput(io)
+
     }
     
     func backendRender() {

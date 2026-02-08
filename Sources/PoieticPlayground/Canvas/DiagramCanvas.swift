@@ -60,6 +60,7 @@ class DiagramCanvas: View {
     
     var debugMessage: String = ""
     
+    var isMouseInViewport: Bool = false
     var inputState: InputState = InputState()
     
     unowned var app: Application?
@@ -122,14 +123,16 @@ class DiagramCanvas: View {
         ImGui.PopStyleColor()
         ImGui.PopStyleVar()
 
-        canvasPos = ImGui.GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
-        canvasSize = ImGui.GetContentRegionAvail();   // Resize canvas to what's available
-
-        let io = ImGui.GetIO().pointee
-        let handled = handleInput(io)
+        canvasPos = ImGui.GetCursorScreenPos()
+        canvasSize = ImGui.GetContentRegionAvail()
+        
+        // Used for processUnhandledInput(...)
+        isMouseInViewport = ImGui.IsWindowHovered(
+            ImGuiHoveredFlags_ChildWindows |
+            ImGuiHoveredFlags_AllowWhenBlockedByPopup
+        )
 
         drawGrid()
-        drawStatusInfo("H: \(handled)")
         drawContent()
 
         ImGui.EndChild()
@@ -146,5 +149,9 @@ class DiagramCanvas: View {
     func setView(offset: Vector2D, zoom: Double) {
         viewOffset = offset
         zoomLevel = max(0.01, min(100.0, zoom))
+    }
+    
+    func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
+        return nil
     }
 }

@@ -9,27 +9,19 @@ import Diagramming
 
 extension DiagramCanvas {
     // MARK: - Input Handling
-    func handleInput(_ io: ImGuiIO) -> Bool {
+    func processUnhandledInput(_ io: ImGuiIO) {
         guard let app else { fatalError("No app")}
-        guard let currentTool = app.currentTool else { return false }
+        guard let currentTool = app.currentTool else { return }
         
-        let events = translateImGuiToToolEvents(io)
+        let events = recognizeEvents(io)
         for event in events {
             currentTool.handleEvent(event)
         }
-        
-        return true
     }
 
-    func translateImGuiToToolEvents(_ io: ImGuiIO) -> [ToolEvent] {
+    func recognizeEvents(_ io: ImGuiIO) -> [ToolEvent] {
         var events: [ToolEvent] = []
         
-        // Check if mouse is in viewport
-        let isMouseInViewport = ImGui.IsWindowHovered(
-            ImGuiHoveredFlags_ChildWindows |
-            ImGuiHoveredFlags_AllowWhenBlockedByPopup
-        );
-
         // Current state
         let mousePos = io.MousePos
         let mouseDelta = io.MouseDelta
@@ -113,7 +105,7 @@ extension DiagramCanvas {
         //
         let escapePressed = ImGui.IsKeyPressed(ImGuiKey_Escape)
         
-        // # Input state machine and Gesture Recognition
+        // # Input State Machine and Gesture Recognition
         //
         switch inputState.pointerState {
         case .idle:
@@ -124,10 +116,10 @@ extension DiagramCanvas {
             
         case .pressed(let dragButton):
             let distance = dragButton.unpackItem(io.MouseDragMaxDistanceSqr)
-            // Button released - it's a click!
+
             if buttonsReleased.contains(dragButton.mask) {
+                // TODO: The click count handling does not seem to work
                 let clickCount = dragButton.unpackItem(io.MouseClickedCount)
-                // ImGui already determined click count for us!
                 let eventType: ToolEventType?
                 if clickCount == 1 {
                     eventType = .click
@@ -147,7 +139,7 @@ extension DiagramCanvas {
                 }
                 inputState.pointerState = .idle
             }
-                // Check if drag threshold exceeded (ImGui tracks this for us!)
+                // Check if drag threshold exceeded
             else if distance > io.MouseDragThreshold {
                 inputState.pointerState = .dragging(dragButton)
                 
