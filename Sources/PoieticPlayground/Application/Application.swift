@@ -43,7 +43,7 @@ class Application {
     var canvas: DiagramCanvas
     
     // -- Views and Controller-likes --
-    var inspector: any Panel
+    var inspector: InspectorPanel
     var alertPanel = AlertPanel()
 
     var canvasTools: [CanvasTool]
@@ -106,6 +106,8 @@ class Application {
         world.setSingleton(notation)
         let selection = Selection()
         world.setSingleton(selection)
+        
+        self.inspector.bind(world)
     }
 
     func updateWorldFrame() {
@@ -135,7 +137,6 @@ class Application {
         self.queueCommand(OpenDesignCommand(url: templateURL))
         
         setupEventSchedules()
-        log("Main loop.")
         mainLoop()
         cleanUp()
     }
@@ -194,7 +195,7 @@ class Application {
 
             self.processInput()
             self.runCommands()
-            self.runEventSchedules()
+            self.updateWorld()
             self.update(timeDelta)
             self.draw()
             self.processUnhandledInput()
@@ -213,6 +214,7 @@ class Application {
         self.processGlobalShortcuts()
     }
     
+    // FIXME: REMOVE – UNUSED
     func runEventSchedules() {
         // Run event schedules in their order, if scheduled
         for event in ApplicationEvent.allCases {
@@ -223,13 +225,23 @@ class Application {
             run(schedule: label)
             events.remove(event)
         }
-        
-        // FIXME: [IMPORTANT] Temporary hack to make it workd
+    }
+    
+    func updateWorld() {
         if let change: SelectionChange = world.singleton(),
            let selection: Selection = world.singleton()
         {
             selection.apply(change)
             world.removeSingleton(SelectionChange.self)
+            
+            if let frame = world.frame {
+                let overview = createSelectionOverview(selection, frame: frame)
+                world.setSingleton(overview)
+            }
+            else {
+                world.removeSingleton(SelectionOverview.self)
+            }
+            
         }
         
         if world.hasSingleton(InteractivePreviewTag.self){

@@ -89,7 +89,8 @@ extension Application {
             if ImGui.BeginMenu("View") {
                 if ImGui.MenuItem("Show Value Indicators", nil) {
                 }
-                if ImGui.MenuItem("Show Inspector", nil, &showInspector) {
+                if ImGui.MenuItem("Show Inspector", nil, &inspector.isVisible) {
+                    inspector.isVisible = !inspector.isVisible
                 }
                 if ImGui.MenuItem("Show Toolbar", nil) {
                 }
