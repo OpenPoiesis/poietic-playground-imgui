@@ -229,6 +229,12 @@ class Application {
             selection.apply(change)
             world.removeSingleton(SelectionChange.self)
         }
+        
+        if world.hasSingleton(InteractivePreviewTag.self){
+            self.run(schedule: InteractivePreviewSchedule.self)
+            world.removeSingleton(InteractivePreviewTag.self)
+        }
+
     }
   
     func update(_ timeDelta: Double) {

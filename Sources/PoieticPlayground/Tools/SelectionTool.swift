@@ -9,6 +9,8 @@ import CIimgui
 import PoieticCore
 import Diagramming
 
+struct InteractivePreviewTag: Component {}
+
 class SelectionTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
 
@@ -237,6 +239,8 @@ class SelectionTool: CanvasTool {
             guard world.hasComponent(DiagramConnector.self, for: entID) else { continue }
             
         }
+        
+        world.setSingleton(InteractivePreviewTag())
     }
     
     public func finalizeSelectionMove(_ selection: Selection, by designDelta: Vector2D) {
@@ -250,9 +254,11 @@ class SelectionTool: CanvasTool {
 //            }
 //            let object = trans.mutate(id)
 //            _moveObject(object, by: designDelta)
-            world.removeComponent(BlockPreview.self, for: id)
         }
-        
+        world.removeComponentForAll(BlockPreview.self)
+        world.removeComponentForAll(ConnectorPreview.self)
+        world.removeSingleton(InteractivePreviewTag.self)
+
 //        ctrl.accept(trans)
     }
 
