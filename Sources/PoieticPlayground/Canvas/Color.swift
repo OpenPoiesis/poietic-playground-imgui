@@ -30,12 +30,26 @@ struct Color {
     
     var alpha: Float { value.w }
     
+    init(_ vector: SIMD4<Float>) {
+        self.value = vector
+    }
+    
     init(red: Float, green: Float, blue: Float, alpha: Float = 1.0) {
         self.value = SIMD4(red, green, blue, alpha)
     }
     
     init(gray: Float, alpha: Float = 1.0) {
         self.value = SIMD4(gray, gray, gray, alpha)
+    }
+    
+    func darkened(_ factor: Float) -> Color {
+        let clamped = max(1.0, min(0.0, factor))
+        return Color(value * clamped)
+    }
+    
+    func withTransparency(_ alpha: Float) -> Color {
+        let newValue = SIMD4(value.x, value.y, value.z, alpha)
+        return Color(newValue)
     }
     
     static let black = Color(gray: 0.0)

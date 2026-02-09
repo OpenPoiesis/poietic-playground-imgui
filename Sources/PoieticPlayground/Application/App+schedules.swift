@@ -15,7 +15,6 @@ import Diagramming
 
 /// Result player step update.
 //enum ReplayStepSchedule: ScheduleLabel { }
-enum UpdateVisualsSchedule: ScheduleLabel { }
 
 /// Systems run during interactive editing such as selection movement or handle dragging.
 ///
@@ -23,33 +22,24 @@ enum InteractivePreviewSchedule: ScheduleLabel { }
 
 // Action-specific schedules
 enum ParameterResolutionSchedule: ScheduleLabel { }
-enum DiagramExportSchedule: ScheduleLabel { }
 
 extension Application {
     
-    func setupSchedules() {
+    static func setupSchedules(_ world: World) {
         world.addSchedule(Schedule(
             label: FrameChangeSchedule.self,
             systems:
                 PoieticFlows.SimulationPlanningSystems
                 + PoieticFlows.SimulationPresentationSystems
                 + [
+//                    FrameChangeSystem,
                     // From Diagramming
                     BlockCreationSystem.self,
                     TraitConnectorCreationSystem.self,
                     ConnectorGeometrySystem.self,
                 ]
         ))
-        world.addSchedule(Schedule(
-            label: UpdateVisualsSchedule.self,
-            systems: [
-                    // From Diagramming
-                    BlockCreationSystem.self,
-                    TraitConnectorCreationSystem.self,
-                    ConnectorGeometrySystem.self,
-                ]
-        ))
-
+        
         world.addSchedule(Schedule(
             label: InteractivePreviewSchedule.self,
             systems: [
@@ -60,15 +50,8 @@ extension Application {
 
         world.addSchedule(Schedule(
             label: SimulationSchedule.self,
-            systems: PoieticFlows.SimulationRunningSystems
-        ))
-
-        world.addSchedule(Schedule(
-            label: DiagramExportSchedule.self,
             systems: [
-                BlockCreationSystem.self,
-                TraitConnectorCreationSystem.self,
-                ConnectorGeometrySystem.self
+                StockFlowSimulationSystem.self,
             ]
         ))
 
@@ -83,7 +66,22 @@ extension Application {
             ]
         ))
     }
+
+    func setupEventSchedules() {
+        eventSchedules[.worldChanged] = nil
+        eventSchedules[.designFrameChanged] = FrameChangeSchedule.self
+        eventSchedules[.selectionChanged] = nil
+        eventSchedules[.playerStarted] = nil
+        eventSchedules[.playerStep] = nil
+        eventSchedules[.playerStopped] = nil
+        eventSchedules[.simulationStarted] = nil
+        eventSchedules[.simulationFinished] = nil
+        eventSchedules[.simulationFailed] = nil
+        eventSchedules[.previewChanged] = InteractivePreviewSchedule.self
+
+    }
     
+
     /// Convenience runner of a schedule that handles errors and displays an error panel through
     /// the application.
     ///

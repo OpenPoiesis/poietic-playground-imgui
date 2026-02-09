@@ -43,8 +43,8 @@ class CanvasStyle {
     var connectorFillColors: [String:Color] = [:]
 
     // Other visuals
-    var selectionOutlineColor: Color = Color.white
-    var selectionFillColor: Color = Color.white
+    var selectionOutlineColor: Color = Color.screenYellow.darkened(0.5).withTransparency(0.5)
+    var selectionFillColor: Color = Color.screenYellow.darkened(0.2).withTransparency(0.2)
     var handleColor: Color = DefaultConnectorColor
 
     init() {

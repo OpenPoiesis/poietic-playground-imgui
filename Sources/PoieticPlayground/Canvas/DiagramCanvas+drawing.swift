@@ -19,12 +19,15 @@ extension DiagramCanvas {
     }
     
     func drawBlocks() {
-        for (id, component) in world.query(DiagramBlock.self) {
-            drawBlock(runtimeID: id, block: component)
+        let selection: Selection? = world.singleton()
+        for (runtimeID, component) in world.query(DiagramBlock.self) {
+            guard let objectID = world.entityToObject(runtimeID) else { continue }
+            let isSelected = selection?.contains(objectID) ?? false
+            drawBlock(runtimeID: runtimeID, isSelected: isSelected, block: component)
         }
     }
     
-    func drawBlock(runtimeID: RuntimeID, block: DiagramBlock) {
+    func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         let screenPos = worldToScreen(block.position)
         var swatchCenter: ImVec2
@@ -37,6 +40,12 @@ extension DiagramCanvas {
             strokePath(path)
             let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + block.position)
             labelCenter = ImVec2(screenPos.x, screenBBMin.y)
+            
+            if isSelected {
+                let translated = pictogram.mask.transform(AffineTransform(translation: block.position))
+                fillPath(translated, color: style.selectionFillColor)
+                strokePath(translated, color: style.selectionOutlineColor)
+            }
         }
         else {
             labelCenter = screenPos

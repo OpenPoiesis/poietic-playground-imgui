@@ -55,6 +55,8 @@ struct InputState {
 }
 
 class DiagramCanvas: View {
+    static let DefaultHitRadius: Double = 5.0
+
     var world: World
     var style: CanvasStyle
     
@@ -152,6 +154,16 @@ class DiagramCanvas: View {
     }
     
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
+        // TODO: This is expensive
+        let worldPosition: Vector2D = screenToWorld(screenPosition)
+        let touchShape = CollisionShape(position: worldPosition, shape: .circle(Self.DefaultHitRadius))
+        for (runtimeID, block) in world.query(DiagramBlock.self) {
+            let blockShape = block.collisionShape.translated(block.position)
+            if blockShape.collide(with: touchShape) {
+                let target = CanvasHitTarget(runtimeID: runtimeID, type: .object)
+                return target
+            }
+        }
         return nil
     }
 }

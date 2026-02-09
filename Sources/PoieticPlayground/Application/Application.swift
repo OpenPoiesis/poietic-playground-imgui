@@ -34,8 +34,11 @@ class Application {
     var resourceLoader: ResourceLoader
     var textures: [String:Texture] = [:]
 
+    // -- Events and Commands
+    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
+    var events: Set<ApplicationEvent> = Set()
     var commandQueue: [any Command] = []
-   
+
     // -- Document --
     var canvas: DiagramCanvas
     
@@ -52,7 +55,6 @@ class Application {
     // ## The Document – Design and World
     var design: Design!
     var world: World!
-    var designChanged: Bool = false
     var notation: Notation
     
     init() {
@@ -77,13 +79,7 @@ class Application {
         self.resourceLoader = ResourceLoader(Self.DefaultResourcesPath, application: nil)
         resourceLoader.app = self
 
-        setupWorld()
-    }
-
-    /// Set world singletons when the world changes.
-    func setupWorld() {
-        setupSchedules()
-        world.setSingleton(notation)
+        setupWorld(world)
     }
 
     /// Set a new design document and propagate the change through the application.
@@ -92,17 +88,34 @@ class Application {
         self.log("Setting new design. Frame: \(design.currentFrameID)")
         guard design !== self.design else { return }
         self.design = design
-        self.world = World(design: design)
-        self.canvas.world = world
+        let newWorld = World(design: design)
+        self.canvas.world = newWorld
         
         for tool in canvasTools {
-            tool.bind(world: world, canvas: canvas)
+            tool.bind(world: newWorld, canvas: canvas)
         }
 
-        setupWorld()
-        self.designChanged = true
+        setupWorld(newWorld)
+        self.world = newWorld
+        setWorldFrame()
     }
     
+    /// Set world singletons when the world changes.
+    func setupWorld(_ world: World) {
+        Self.setupSchedules(world)
+        world.setSingleton(notation)
+        let selection = Selection()
+        world.setSingleton(selection)
+    }
+
+    func setWorldFrame() {
+        guard let frame = design.currentFrame else {
+            logError("No current design frame")
+            return
+        }
+        world.setFrame(frame)
+        self.run(schedule: FrameChangeSchedule.self)
+    }
     
     func run() {
         guard initializeSDL() else { fatalError("Unable to init SDL") }
@@ -120,6 +133,8 @@ class Application {
         let templateURL = resourceLoader.resourceURL(Self.NewDesignTemplatePath)
         self.queueCommand(OpenDesignCommand(url: templateURL))
         
+        setupEventSchedules()
+        log("Main loop.")
         mainLoop()
         cleanUp()
     }
@@ -167,8 +182,6 @@ class Application {
             case .none: break
             }
             
-            runQueuedCommands()
-            
             ImGui_ImplSDLGPU3_NewFrame()
             ImGui_ImplSDL3_NewFrame()
             ImGui.NewFrame()
@@ -178,6 +191,8 @@ class Application {
             lastTime = newTime
 
             self.processInput()
+            self.runCommands()
+            self.runEventSchedules()
             self.update(timeDelta)
             self.draw()
             self.processUnhandledInput()
@@ -195,30 +210,34 @@ class Application {
     func processInput() {
         self.processGlobalShortcuts()
     }
-   
-    func update(_ timeDelta: Double) {
-        if designChanged {
-            updateDesign()
+    
+    func runEventSchedules() {
+        // Run event schedules in their order, if scheduled
+        for event in ApplicationEvent.allCases {
+            guard events.contains(event),
+                  let label = eventSchedules[event]
+            else { continue }
+            log("Running \(label) for event \(event)")
+            run(schedule: label)
+            events.remove(event)
         }
         
+        // FIXME: [IMPORTANT] Temporary hack to make it workd
+        if let change: SelectionChange = world.singleton(),
+           let selection: Selection = world.singleton()
+        {
+            selection.apply(change)
+            world.removeSingleton(SelectionChange.self)
+        }
+    }
+  
+    func update(_ timeDelta: Double) {
         toolBar.update(timeDelta)
         inspector.update(timeDelta)
         canvas.update(timeDelta)
         alertPanel.update(timeDelta)
     }
     
-    func updateDesign() {
-        let currentFrameLabel: String = design.currentFrameID.map { String(describing: $0) } ?? "(no frame)"
-        log("Update design. Current frame: \(currentFrameLabel)")
-        
-        if let frame = design.currentFrame {
-            world.setFrame(frame)
-        }
-        run(schedule: FrameChangeSchedule.self)
-        designChanged = false
-        // TODO: simulate()
-    }
-
     func draw() {
         mainMenu()
 
@@ -232,7 +251,6 @@ class Application {
         let io = ImGui.GetIO().pointee
         
         canvas.processUnhandledInput(io)
-
     }
     
     func backendRender() {
@@ -299,7 +317,7 @@ class Application {
         self.commandQueue.append(command)
     }
     
-    func runQueuedCommands() {
+    func runCommands() {
         let commands = commandQueue
         commandQueue.removeAll()
 
