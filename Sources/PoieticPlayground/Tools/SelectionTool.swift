@@ -48,7 +48,8 @@ class SelectionTool: CanvasTool {
     }
     func pointerDown(_ event: ToolEvent) {
         guard let canvas, let world else { return }
-
+        dragStartScreenPos = event.screenPos
+        
         // TODO: Close inline popup
         
         guard let target = canvas.hitTarget(screenPosition: event.screenPos) else {
@@ -107,7 +108,6 @@ class SelectionTool: CanvasTool {
     }
     func dragStart(_ event: ToolEvent) {
 //        TODO: popupManager?.closeInlinePopup()
-        dragStartScreenPos = event.screenPos
 
         switch state {
         case .idle: break

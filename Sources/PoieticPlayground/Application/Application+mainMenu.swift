@@ -66,9 +66,11 @@ extension Application {
             
             // Edit menu
             if ImGui.BeginMenu("Edit") {
-                if ImGui.MenuItem("Undo", "Cmd+Z", false, true) {
+                if ImGui.MenuItem("Undo", "Cmd+Z", false, canUndo()) {
+                    self.queueCommand(UndoCommand())
                 }
-                if ImGui.MenuItem("Redo", "Cmd+Y", false, true) {
+                if ImGui.MenuItem("Redo", "Cmd+Y", false, canRedo()) {
+                    self.queueCommand(RedoCommand())
                 }
                 
                 ImGui.Separator()
@@ -116,4 +118,8 @@ extension Application {
             ImGui.EndMainMenuBar()
         }
     }
+    
+    func canUndo() -> Bool { design.canUndo }
+    func canRedo() -> Bool { design.canRedo }
+
 }
