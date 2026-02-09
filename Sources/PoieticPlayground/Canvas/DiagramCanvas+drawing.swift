@@ -29,20 +29,28 @@ extension DiagramCanvas {
     
     func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
-        let screenPos = worldToScreen(block.position)
+        let blockPosition: Vector2D
+        if let preview: BlockPreview = world.component(for: runtimeID) {
+            blockPosition = preview.position
+        }
+        else {
+            blockPosition = block.position
+        }
+        
+        let screenPos = worldToScreen(blockPosition)
         var swatchCenter: ImVec2
         
         var labelCenter: ImVec2
         
         if let pictogram = block.pictogram {
-            let transform = AffineTransform(translation: block.position)
+            let transform = AffineTransform(translation: blockPosition)
             let path = pictogram.path.transform(transform)
             strokePath(path)
-            let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + block.position)
+            let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + blockPosition)
             labelCenter = ImVec2(screenPos.x, screenBBMin.y)
             
             if isSelected {
-                let translated = pictogram.mask.transform(AffineTransform(translation: block.position))
+                let translated = pictogram.mask.transform(AffineTransform(translation: blockPosition))
                 fillPath(translated, color: style.selectionFillColor)
                 strokePath(translated, color: style.selectionOutlineColor)
             }
