@@ -67,6 +67,8 @@ extension Application {
             else {
                 toolBar.setTool("pan")
             }
+        case "undo": break
+        case "redo": break
         default:
             print("Unhandled global shortcut: ", shortcut)
         }

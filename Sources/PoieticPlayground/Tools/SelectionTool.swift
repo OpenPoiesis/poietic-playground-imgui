@@ -34,7 +34,7 @@ class SelectionTool: CanvasTool {
         case childHit
     }
     var state: State = .idle
-    var previousScreenPos: ImVec2 = ImVec2()
+    var dragStartScreenPos: ImVec2 = ImVec2()
     
     override func handleEvent(_ event: ToolEvent) {
         switch event.type {
@@ -59,7 +59,6 @@ class SelectionTool: CanvasTool {
 
         let selectionChange: SelectionChange?
         let selection: Selection? = world.singleton()
-        previousScreenPos = event.screenPos
 
         switch target.type {
         case .object:
@@ -108,7 +107,8 @@ class SelectionTool: CanvasTool {
     }
     func dragStart(_ event: ToolEvent) {
 //        TODO: popupManager?.closeInlinePopup()
-        
+        dragStartScreenPos = event.screenPos
+
         switch state {
         case .idle: break
         case .objectSelect: break
@@ -148,8 +148,8 @@ class SelectionTool: CanvasTool {
         else { return }
 
 //        Input.setDefaultCursorShape(.arrow)
-        
-        let worldDelta = Vector2D(event.delta) / canvas.zoomLevel
+        let screenDelta = event.screenPos - self.dragStartScreenPos
+        let worldDelta = Vector2D(screenDelta) / canvas.zoomLevel
 
         switch state {
         case .objectMove:
@@ -243,23 +243,38 @@ class SelectionTool: CanvasTool {
         world.setSingleton(InteractivePreviewTag())
     }
     
-    public func finalizeSelectionMove(_ selection: Selection, by designDelta: Vector2D) {
-        guard let world else { return }
-//        let trans = ctrl.newTransaction()
-        
+    func finalizeSelectionMove(_ selection: Selection, by designDelta: Vector2D) {
+        guard let world,
+              let currentFrame = world.frame
+        else { return }
+        let design = world.design
+        let trans = design.createFrame(deriving: currentFrame)
+
         for id in selection {
-//            guard trans.contains(id) else {
-//                GD.pushWarning("Selection has unknown ID:", id)
-//                continue
-//            }
-//            let object = trans.mutate(id)
-//            _moveObject(object, by: designDelta)
+            guard trans.contains(id) else { continue }
+            let object = trans.mutate(id)
+            moveObject(object, by: designDelta)
         }
         world.removeComponentForAll(BlockPreview.self)
         world.removeComponentForAll(ConnectorPreview.self)
         world.removeSingleton(InteractivePreviewTag.self)
 
-//        ctrl.accept(trans)
+        world.setSingleton(trans)
+    }
+    
+    func moveObject(_ object: TransientObject, by designDelta: Vector2D) {
+        print("MOVE OBJ \(object) D:\(designDelta)")
+        if object.type.hasTrait(.DiagramBlock) {
+            object.position = (object.position ?? .zero) + designDelta
+        }
+        else if object.type.hasTrait(.DiagramConnector) {
+            guard let midpoints: [Point] = object["midpoints"],
+                  !midpoints.isEmpty
+            else { return }
+            
+            let movedMidpoints = midpoints.map { $0 + designDelta }
+            object["midpoints"] = PoieticCore.Variant(movedMidpoints)
+        }
     }
 
 }

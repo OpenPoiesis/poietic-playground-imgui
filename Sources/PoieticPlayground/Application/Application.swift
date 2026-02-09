@@ -97,7 +97,7 @@ class Application {
 
         setupWorld(newWorld)
         self.world = newWorld
-        setWorldFrame()
+        updateWorldFrame()
     }
     
     /// Set world singletons when the world changes.
@@ -108,11 +108,12 @@ class Application {
         world.setSingleton(selection)
     }
 
-    func setWorldFrame() {
+    func updateWorldFrame() {
         guard let frame = design.currentFrame else {
             logError("No current design frame")
             return
         }
+        // TODO: Add new-frame related clean-up here.
         world.setFrame(frame)
         self.run(schedule: FrameChangeSchedule.self)
     }
@@ -151,6 +152,7 @@ class Application {
     func pollBackendEvent() -> BackendEvent {
         var event: SDL_Event = SDL_Event()
         
+        // TODO: See SDL_PeepEvents(...)
         while SDL_PollEvent(&event) {
             switch event.type {
             case SDL_EVENT_QUIT.rawValue:
@@ -231,12 +233,37 @@ class Application {
         }
         
         if world.hasSingleton(InteractivePreviewTag.self){
-            self.run(schedule: InteractivePreviewSchedule.self)
             world.removeSingleton(InteractivePreviewTag.self)
+            self.run(schedule: InteractivePreviewSchedule.self)
         }
-
+        
+        if let trans: TransientFrame = world.singleton(){
+            world.removeSingleton(TransientFrame.self)
+            self.accept(trans)
+            self.run(schedule: InteractivePreviewSchedule.self)
+        }
     }
-  
+
+    func accept(_ trans: TransientFrame) {
+        guard trans.hasChanges else {
+            design.discard(trans)
+            return
+        }
+        
+        do {
+            try design.accept(trans, appendHistory: true)
+            self.log("Transaction accepted. Current frame: \(trans.id), frame count: \(design.frames.count)")
+        }
+        catch {
+            // This is not user's fault and never should be.
+            // The application failed to make sure structural integrity is assured
+            self.alert(title: "Frame validation error", message: String(describing: error))
+            return
+        }
+        updateWorldFrame()
+        // TODO: Remove temporary components here (such as previews)
+    }
+   
     func update(_ timeDelta: Double) {
         toolBar.update(timeDelta)
         inspector.update(timeDelta)
