@@ -12,17 +12,15 @@ import Foundation
 struct UndoCommand: Command {
     var name: String { "undo" }
     
-    func run(app: Application) throws (CommandError) {
-        guard app.design.undo() else { return }
-        app.updateWorldFrame()
+    func run(_ context: CommandContext) throws (CommandError) {
+        context.design.undo() // The frame change will be detected and handled through Session
     }
 }
 
 struct RedoCommand: Command {
     var name: String { "redo" }
     
-    func run(app: Application) throws (CommandError) {
-        guard app.design.redo() else { return }
-        app.updateWorldFrame()
+    func run(_ context: CommandContext) throws (CommandError) {
+        context.design.redo() // The frame change will be detected and handled through Session 
     }
 }

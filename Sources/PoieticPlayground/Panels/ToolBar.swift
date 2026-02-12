@@ -10,13 +10,16 @@ import CIimgui
 let ApplicationTools = ["selection", "placement", "connect", "pan"]
 
 class ToolBar: Panel {
-    unowned var app: Application! = nil
+    internal weak var app: Application? = nil
     var previousTool: CanvasTool? = nil
     var currentTool: CanvasTool? = nil
     var tools: [CanvasTool] { app?.canvasTools ?? [] }
     
     init() {
         self.currentTool = nil
+    }
+    func bind(_ application: Application) {
+        self.app = application
     }
     
     @discardableResult

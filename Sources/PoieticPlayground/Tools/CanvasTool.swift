@@ -19,15 +19,19 @@ import PoieticCore
 /// - Internal tool state management.
 ///
 class CanvasTool {
-    unowned var world: World?
-    unowned var canvas: DiagramCanvas?
+    weak var canvas: DiagramCanvas?
+    weak var session: Session?
+    internal var world: World {
+        guard let session else { fatalError("CanvasTool used before binding")}
+        return session.world
+    }
     
     var name: String { "default"}
     var iconName: String { self.name }
     
     /// Called before tool activation.
-    final func bind(world: World, canvas: DiagramCanvas) {
-        self.world = world
+    final func bind(canvas: DiagramCanvas, session: Session) {
+        self.session = session
         self.canvas = canvas
     }
 

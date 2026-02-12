@@ -30,3 +30,7 @@ enum ApplicationEvent: CaseIterable {
         // -> Interactive preview
     
 }
+
+struct EventQueue {
+    
+}

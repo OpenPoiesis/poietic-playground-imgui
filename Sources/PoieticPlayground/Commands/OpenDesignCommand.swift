@@ -13,18 +13,15 @@ struct OpenDesignCommand: Command {
     var name: String { "open-design" }
     let url: URL
     
-    func run(app: Application) throws (CommandError) {
+    func run(_ context: CommandContext) throws (CommandError) {
+        // TODO: Add and call Application.openDesign(url:)
         let store = DesignStore(url: url)
         do {
             let design = try store.load(metamodel: StockFlowMetamodel)
-            app.setDesign(design)
+            context.app.newSession(design)
         }
         catch {
             throw CommandError(message: error.description)
         }
-//        selectionManager.clear()
-//        designReset.emit()
-//        run(schedule: FrameChangeSchedule.self)
-//        simulate()
     }
 }

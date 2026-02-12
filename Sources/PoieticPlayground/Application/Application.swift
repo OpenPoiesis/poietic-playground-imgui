@@ -53,20 +53,19 @@ class Application {
     // ## GUI
     //
     // ## The Document – Design and World
-    var design: Design!
-    var world: World!
+    var session: Session?
     var notation: Notation
     
     init() {
+        self.notation = Notation.DefaultNotation
+        
         // Document
-        self.design = Design(metamodel: StockFlowMetamodel)
-        self.world = World(design: design)
+        self.session = nil
 
         // User Interface
         self.inspector = InspectorPanel()
         self.toolBar = ToolBar()
-        self.canvas = DiagramCanvas(world: world)
-        self.notation = Notation.DefaultNotation
+        self.canvas = DiagramCanvas()
         
         self.canvasTools = [
             SelectionTool(),
@@ -78,26 +77,33 @@ class Application {
         self.toolBar.currentTool = canvasTools[0]
         self.resourceLoader = ResourceLoader(Self.DefaultResourcesPath, application: nil)
         resourceLoader.app = self
-
-        setupWorld(world)
     }
 
+    func newEmptySession() {
+        let design = Design(metamodel: StockFlowMetamodel)
+        newSession(design)
+    }
+    
     /// Set a new design document and propagate the change through the application.
     ///
-    func setDesign(_ design: Design) {
-        self.log("Setting new design. Frame: \(design.currentFrameID)")
-        guard design !== self.design else { return }
-        self.design = design
-        let newWorld = World(design: design)
-        self.canvas.world = newWorld
+    func newSession(_ design: Design) {
+        self.log("New session.")
+        let world = World(design: design)
+        setupWorld(world)
+        let newSession = Session(design: design, world: world)
+        self.session = newSession
+        bindToSession(newSession)
+
+        updateWorldFrame()
+    }
+    
+    func bindToSession(_ session: Session) {
+        canvas.bind(session)
         
         for tool in canvasTools {
-            tool.bind(world: newWorld, canvas: canvas)
+            tool.bind(canvas: canvas, session: session)
         }
-
-        setupWorld(newWorld)
-        self.world = newWorld
-        updateWorldFrame()
+        inspector.bind(session)
     }
     
     /// Set world singletons when the world changes.
@@ -106,18 +112,17 @@ class Application {
         world.setSingleton(notation)
         let selection = Selection()
         world.setSingleton(selection)
-        
-        self.inspector.bind(world)
     }
 
     func updateWorldFrame() {
-        guard let frame = design.currentFrame else {
+        guard let session else { return }
+        guard let frame = session.design.currentFrame else {
             logError("No current design frame")
             return
         }
         // TODO: Add new-frame related clean-up here.
-        world.setFrame(frame)
-        self.run(schedule: FrameChangeSchedule.self)
+        session.world.setFrame(frame)
+        self.run(schedule: FrameChangeSchedule.self, session: session)
     }
     
     func run() {
@@ -125,8 +130,7 @@ class Application {
         guard initializeImGui() else { fatalError("Unable to init ImGui") }
         loadResources()
         
-        self.toolBar.app = self
-        self.canvas.app = self
+        self.toolBar.bind(self)
 
         // Prepare world before design
         let notationURL = resourceLoader.resourceURL(Self.DefaultStockFlowPictogramsPath)
@@ -189,21 +193,23 @@ class Application {
             ImGui_ImplSDL3_NewFrame()
             ImGui.NewFrame()
 
+            self.processInput()
+
             let newTime = ImGui.GetTime()
             let timeDelta = newTime - lastTime
             lastTime = newTime
 
-            self.processInput()
-            self.runCommands()
-            self.updateWorld()
+
             self.update(timeDelta)
             self.draw()
             self.processUnhandledInput()
             
+            // BEGIN Debug
             applicationStateDebugWindow()
             ImGui.ShowDebugLogWindow()
             ImGui.ShowIDStackToolWindow()
             ImGui.ShowDemoWindow()
+            // END Debug
 
             ImGui.Render()
             self.backendRender()
@@ -214,57 +220,74 @@ class Application {
         self.processGlobalShortcuts()
     }
     
-    // FIXME: REMOVE – UNUSED
-    func runEventSchedules() {
-        // Run event schedules in their order, if scheduled
-        for event in ApplicationEvent.allCases {
-            guard events.contains(event),
-                  let label = eventSchedules[event]
-            else { continue }
-            log("Running \(label) for event \(event)")
-            run(schedule: label)
-            events.remove(event)
+    func update(_ timeDelta: Double) {
+        guard let session else {
+            logError("No session!")
+            return
         }
-    }
-    
-    func updateWorld() {
-        if let change: SelectionChange = world.singleton(),
-           let selection: Selection = world.singleton()
-        {
-            selection.apply(change)
-            world.removeSingleton(SelectionChange.self)
-            
-            if let frame = world.frame {
-                let overview = createSelectionOverview(selection, frame: frame)
-                world.setSingleton(overview)
-            }
-            else {
-                world.removeSingleton(SelectionOverview.self)
-            }
+        canvas.update(timeDelta)
+        inspector.update(timeDelta)
+        toolBar.update(timeDelta)
+        alertPanel.update(timeDelta)
+
+        // Run commands
+        while !session.commandQueue.isEmpty {
+            let command = commandQueue.removeFirst()
+            self.runCommand(command, session: session)
+        }
+
+        if let trans = session.transaction {
+            accept(trans)
             
         }
         
-        if world.hasSingleton(InteractivePreviewTag.self){
-            world.removeSingleton(InteractivePreviewTag.self)
-            self.run(schedule: InteractivePreviewSchedule.self)
+        updateWorld(session)
+        
+        // scheduled
+    }
+    
+    func updateWorld(_ session: Session) {
+        let world = session.world
+        
+        if let maybeNewFrame = session.design.currentFrame,
+           maybeNewFrame !== world.frame
+        {
+            world.setFrame(maybeNewFrame)
+            self.run(schedule: FrameChangeSchedule.self, session: session)
         }
         
         if let trans: TransientFrame = world.singleton(){
             world.removeSingleton(TransientFrame.self)
             self.accept(trans)
-            self.run(schedule: InteractivePreviewSchedule.self)
+        }
+
+        if let change = session.selectionChange {
+            session.selection.apply(change)
+            world.setSingleton(session.selection)
+            
+            if let frame = world.frame {
+                session.selectionOverview.update(session.selection, frame: frame)
+            }
+            else {
+                session.selectionOverview.clear()
+            }
+            
+        }
+        if session.requiresInteractivePreview {
+            self.run(schedule: InteractivePreviewSchedule.self, session: session)
+            session.requiresInteractivePreview = false
         }
     }
 
     func accept(_ trans: TransientFrame) {
         guard trans.hasChanges else {
-            design.discard(trans)
+            trans.design.discard(trans)
             return
         }
         
         do {
-            try design.accept(trans, appendHistory: true)
-            self.log("Transaction accepted. Current frame: \(trans.id), frame count: \(design.frames.count)")
+            try trans.design.accept(trans, appendHistory: true)
+            self.log("Transaction accepted. Current frame: \(trans.id), frame count: \(trans.design.frames.count)")
         }
         catch {
             // This is not user's fault and never should be.
@@ -276,16 +299,8 @@ class Application {
         // TODO: Remove temporary components here (such as previews)
     }
    
-    func update(_ timeDelta: Double) {
-        toolBar.update(timeDelta)
-        inspector.update(timeDelta)
-        canvas.update(timeDelta)
-        alertPanel.update(timeDelta)
-    }
-    
     func draw() {
         mainMenu()
-
         inspector.draw()
         toolBar.draw()
         canvas.draw()
@@ -362,19 +377,11 @@ class Application {
         self.commandQueue.append(command)
     }
     
-    func runCommands() {
-        let commands = commandQueue
-        commandQueue.removeAll()
-
-        for command in commands {
-            runCommand(command)
-        }
-    }
-    
-    func runCommand(_ command: any Command) {
+    func runCommand(_ command: any Command, session: Session) {
+        let context = CommandContext(app: self, session: session)
         do {
             self.log("Running command '\(command.name)'")
-            try command.run(app: self)
+            try command.run(context)
         }
         catch {
             self.logError("Command '\(command.name)' failed: \(error.message)")

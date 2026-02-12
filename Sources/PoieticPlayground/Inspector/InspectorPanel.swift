@@ -8,88 +8,124 @@
 import PoieticCore
 import CIimgui
 
-class SelectionOverview: Component {
+class SelectionOverview {
     /// Number of objects from the selection actually contained in the current frame/world.
-    var containedCount: Int = 0
+    var containedCount: Int
     /// Collection of distinct types of selected objects.
-    var distinctTypes: [ObjectType] = []
+    var distinctTypes: [ObjectType]
     /// Collection of traits that are shared by all of the selected objects.
-    var sharedTraits: [Trait] = []
+    var sharedTraits: [Trait]
     /// Collection of distinct names of selected objects.
-    var distinctNames: [String] = []
-    var distinctValues: [String:[Variant]] = [:]
+    var distinctNames: [String]
+    var distinctValues: [String:[Variant]]
+
     init() {
-        
-    }
-}
-
-func createSelectionOverview(_ selection: Selection, frame: DesignFrame) -> SelectionOverview {
-    let overview = SelectionOverview()
-    overview.containedCount = frame.contained(selection).count
-    overview.distinctTypes = frame.distinctTypes(selection)
-    overview.sharedTraits = frame.sharedTraits(selection)
-    let names = frame.distinctAttribute("name", ids: selection).compactMap { try? $0.stringValue() }
-    overview.distinctNames = names
-    return overview
-}
-
-class InspectorSection: ApplicationObject {
-    func update(_ timeDelta: Double) {
-        // Nothing yet
+        self.containedCount = 0
+        self.distinctTypes = []
+        self.sharedTraits = []
+        self.distinctNames = []
+        self.distinctValues = [:]
     }
     
-    func draw(selection: Selection, overview: SelectionOverview) {
-        // Nothing yet
+    func clear() {
+        self.containedCount = 0
+        self.distinctTypes = []
+        self.sharedTraits = []
+        self.distinctNames = []
+        self.distinctValues = [:]
+    }
+
+    func update(_ selection: Selection, frame: DesignFrame) {
+        self.containedCount = frame.contained(selection).count
+        self.distinctTypes = frame.distinctTypes(selection)
+        self.sharedTraits = frame.sharedTraits(selection)
+        self.distinctNames = frame.distinctAttribute("name", ids: selection).compactMap { try? $0.stringValue() }
+        self.distinctValues = [:]
+    }
+}
+
+
+protocol InspectorSection: ApplicationObject {
+    var trait: Trait { get }
+    var category: InspectorPanel.Category { get }
+    var title: String { get }
+    
+    func update(_ session: Session)
+    func draw(_ session: Session)
+    
+}
+
+extension InspectorSection {
+    func shouldDisplay(overview: SelectionOverview) -> Bool {
+        true
     }
 }
 
 class InspectorPanel: Panel {
-    var world: World?
+    enum Category {
+        case overview
+        case properties
+    }
     
+    weak var session: Session?
+    internal var world: World {
+        guard let session else { fatalError("InspectorPanel used before binding")}
+        return session.world
+    }
+    var selection: Selection {
+        guard let session else { fatalError("InspectorPanel used before binding")}
+        return session.selection
+    }
+    var overview: SelectionOverview {
+        guard let session else { fatalError("InspectorPanel used before binding")}
+        return session.selectionOverview
+    }
+
     var isVisible: Bool = true
     var sections: [InspectorSection] = []
+
+    init() {
+        sections.append(NameInspectorSection())
+    }
     
-    func bind(_ world: World) {
-        self.world = world
+    func bind(_ session: Session) {
+        self.session = session
     }
 
     func update(_ timeDelta: Double) {
-        // Nothing yet
+        guard let session else { return }
+        for section in sections {
+            section.update(session)
+        }
     }
     
     func draw() {
-        guard isVisible,
-              let world
-        else { return }
-        
-        let selection: Selection? = world.singleton()
-        let overview: SelectionOverview = world.singleton() ?? SelectionOverview()
-        
+        guard isVisible, let session else { return }
+
         ImGui.Begin("Inspector")
         
-        drawTitle(overview: overview)
+        drawTitle(session)
 
         let tabBarFlags = ImGuiTabBarFlags_None
+        
         if (ImGui.BeginTabBar("MyTabBar", Int32(tabBarFlags.rawValue))) {
             if (ImGui.BeginTabItem("Overview")) {
-                drawOverviewTab(overview)
+                drawOverviewTab(session)
                 ImGui.EndTabItem()
             }
             if (ImGui.BeginTabItem("Properties")) {
-                drawPropertiesTab(overview)
+                drawPropertiesTab(session)
                 ImGui.EndTabItem()
             }
             ImGui.EndTabBar()
         }
         
-        for section in sections {
-//            section.draw()
-        }
         // Nothing yet
         ImGui.End()
     }
     
-    func drawTitle(overview: SelectionOverview) {
+    func drawTitle(_ session: Session) {
+        let overview = session.selectionOverview
         let style = ImGui.GetStyle().pointee
         let titleFontSize = style.FontSizeBase * 1.5
         let title: String
@@ -121,17 +157,22 @@ class InspectorPanel: Panel {
             title = String(overview.containedCount) + " of " + typeName
         }
 
-        ImGui.PushFont(nil, titleFontSize);
+        ImGui.PushFont(nil, titleFontSize)
         ImGui.TextUnformatted(title)
         ImGui.PopFont()
+
         ImGui.TextUnformatted(typeName)
     }
     
-    func drawOverviewTab(_ overview: SelectionOverview) {
-        ImGui.TextUnformatted("(overview goes here)")
+    func drawOverviewTab(_ session: Session) {
+        for section in sections where section.category == .overview {
+            section.draw(session)
+        }
     }
-    func drawPropertiesTab(_ overview: SelectionOverview) {
-        ImGui.TextUnformatted("(properties go here)")
+    func drawPropertiesTab(_ session: Session) {
+        for section in sections where section.category == .properties {
+            section.draw(session)
+        }
     }
 
 }

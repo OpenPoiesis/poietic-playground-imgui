@@ -120,7 +120,7 @@ extension Application {
         }
     }
     
-    func canUndo() -> Bool { design.canUndo }
-    func canRedo() -> Bool { design.canRedo }
+    func canUndo() -> Bool { session?.design.canUndo ?? false }
+    func canRedo() -> Bool { session?.design.canRedo ?? false }
 
 }

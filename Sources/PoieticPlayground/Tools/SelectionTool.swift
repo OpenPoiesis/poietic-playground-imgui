@@ -9,8 +9,6 @@ import CIimgui
 import PoieticCore
 import Diagramming
 
-struct InteractivePreviewTag: Component {}
-
 class SelectionTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
 

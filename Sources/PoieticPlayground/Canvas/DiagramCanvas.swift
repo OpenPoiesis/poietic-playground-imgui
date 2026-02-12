@@ -57,7 +57,11 @@ struct InputState {
 class DiagramCanvas: View {
     static let DefaultHitRadius: Double = 5.0
 
-    var world: World
+    weak var session: Session?
+    internal var world: World {
+        guard let session else { fatalError("DiagramCanvas used before binding")}
+        return session.world
+    }
     var style: CanvasStyle
     
     var debugMessage: String = ""
@@ -65,13 +69,12 @@ class DiagramCanvas: View {
     var isMouseInViewport: Bool = false
     var inputState: InputState = InputState()
     
-    unowned var app: Application?
     var canvasPos = ImVec2(0.0, 0.0)          // Screen position of canvas
     var canvasSize = ImVec2(0.0, 0.0)         // Screen size of canvas
 
     /// Canvas view offset in world coordinates.
     ///
-    /// - SeeAlso: ``viewScale``
+    /// - SeeAlso: ``viewScale``I a
     var viewOffset: Vector2D = .zero
 
     /// Canvas view scale.
@@ -85,9 +88,13 @@ class DiagramCanvas: View {
     var showGrid = true                       // Whether to show the grid
     var gridColor = ImVec4(0.3, 0.3, 0.3, 0.2) // Grid line color
 
-    init(world: World) {
-        self.world = world
+    init(session: Session? = nil) {
+        self.session = session
         self.style = CanvasStyle()
+    }
+    
+    func bind(_ session: Session) {
+        self.session = session
     }
     
     /// Convert screen coordinates to world coordinates

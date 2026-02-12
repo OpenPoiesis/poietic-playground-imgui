@@ -7,12 +7,26 @@
 import CIimgui
 import Diagramming
 
+struct TextInputCallbackData {
+    
+}
+
+
+
 extension ImGui {
-//    static func PushID(_ idString: String) {
-//        idString.withCString { cString in
-//            ImGui.PushID(cString)
-//        }
-//    }
+    //    static func PushID(_ idString: String) {
+    //        idString.withCString { cString in
+    //            ImGui.PushID(cString)
+    //        }
+    //    }
+    
+    func InputText(label: String, text: inout String) {
+        var buffer = text.utf8CString
+        var bufferSize = buffer.count
+        buffer.withUnsafeMutableBufferPointer { pointer in
+            ImGui.InputText(label, pointer.baseAddress!, bufferSize)
+        }
+    }
 }
 
 extension Vector2D {
@@ -112,5 +126,16 @@ extension ImGuiHoveredFlags {
 extension ImGuiHoveredFlags_ {
     static func |(lhs: ImGuiHoveredFlags_, rhs: ImGuiHoveredFlags_) -> ImGuiHoveredFlags {
         ImGuiHoveredFlags(Int32(bitPattern: lhs.rawValue) | Int32(bitPattern: rhs.rawValue))
+    }
+}
+
+extension ImGuiInputTextFlags {
+    static func |(lhs: ImGuiInputTextFlags, rhs: ImGuiInputTextFlags_) -> ImGuiInputTextFlags {
+        ImGuiInputTextFlags(lhs | Int32(bitPattern: rhs.rawValue))
+    }
+}
+extension ImGuiInputTextFlags_ {
+    static func |(lhs: ImGuiInputTextFlags_, rhs: ImGuiInputTextFlags_) -> ImGuiInputTextFlags {
+        ImGuiInputTextFlags(Int32(bitPattern: lhs.rawValue) | Int32(bitPattern: rhs.rawValue))
     }
 }

@@ -91,11 +91,11 @@ extension Application {
     /// - Returns: `true` on successful run, `false` on error.
     ///
     @discardableResult
-    func run(schedule: ScheduleLabel.Type) -> Bool {
+    func run(schedule: ScheduleLabel.Type, session: Session) -> Bool {
         let label = String(describing: schedule)
         log("Running schedule: \(label)")
         do {
-            try self.world.run(schedule: schedule)
+            try session.world.run(schedule: schedule)
         }
         catch {
             self.alert(title: "Internal System Error", message: String(describing: error))

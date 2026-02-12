@@ -94,7 +94,7 @@ extension DiagramCanvas {
     }
     func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry) {
         // DEBUG wire
-        strokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0))
+//        strokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0))
 
         // Open curves
         if let path = geometry.linePath {
