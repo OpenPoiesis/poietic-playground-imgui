@@ -14,6 +14,7 @@ extension DiagramCanvas {
     static let ColorSwatchSize: ImVec2 = ImVec2(10.0, 10.0)
 
     func drawContent() {
+        guard world != nil else { return }
         drawBlocks()
         drawConnectors()
     }

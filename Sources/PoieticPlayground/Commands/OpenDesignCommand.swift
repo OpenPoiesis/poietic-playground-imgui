@@ -14,11 +14,8 @@ struct OpenDesignCommand: Command {
     let url: URL
     
     func run(_ context: CommandContext) throws (CommandError) {
-        // TODO: Add and call Application.openDesign(url:)
-        let store = DesignStore(url: url)
         do {
-            let design = try store.load(metamodel: StockFlowMetamodel)
-            context.app.newSession(design)
+            try context.app.openDesign(url: url)
         }
         catch {
             throw CommandError(message: error.description)

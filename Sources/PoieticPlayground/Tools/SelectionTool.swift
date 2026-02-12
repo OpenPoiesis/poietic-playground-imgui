@@ -45,7 +45,9 @@ class SelectionTool: CanvasTool {
         }
     }
     func pointerDown(_ event: ToolEvent) {
-        guard let canvas, let world else { return }
+        guard let canvas,
+              let session
+        else { return }
         dragStartScreenPos = event.screenPos
         
         // TODO: Close inline popup
@@ -56,8 +58,7 @@ class SelectionTool: CanvasTool {
             return
         }
 
-        let selectionChange: SelectionChange?
-        let selection: Selection? = world.singleton()
+        let selection = session.selection
 
         switch target.type {
         case .object:
@@ -67,20 +68,18 @@ class SelectionTool: CanvasTool {
             
 //            TODO: canvas.removeHandles()
             if event.modifiers.contains(.shift) {
-                selectionChange = .toggle(objectID)
+                session.changeSelection(.toggle(objectID))
             }
             else {
-                if let selection, selection.contains(objectID) {
+                if selection.contains(objectID) {
                     // TODO: Implement context menu, at screenPosition
                     print("TODO: open popup for \(selection.ids) not implemented")
-                    selectionChange = nil
                 }
                 else {
-                    selectionChange = .replaceAllWithOne(objectID)
+                    session.changeSelection(.replaceAllWithOne(objectID))
                 }
             }
-            if let selection,
-               let objectID = selection.selectionOfOne(),
+            if let objectID = selection.selectionOfOne(),
                let entityID = world.objectToEntity(objectID)
             {
                 // TODO: createHandles(canvas: canvas, for: entityID)
@@ -89,18 +88,13 @@ class SelectionTool: CanvasTool {
         case .handle:
 //            hitTarget = target
             state = .handleHit
-            selectionChange = .removeAll
+            session.changeSelection(.removeAll)
         case .primaryLabel,
                 .secondaryLabel,
                 .errorIndicator:
 //            canvas.removeHandles()
 //            hitTarget = target
             state = .childHit
-            selectionChange = nil
-        }
-        if let selectionChange {
-            print("SELECTION: \(selectionChange)")
-            world.setSingleton(selectionChange)
         }
 
     }
@@ -140,8 +134,8 @@ class SelectionTool: CanvasTool {
     }
     func dragEnd(_ event: ToolEvent) {
         guard let canvas,
-              let world,
-              let frame = world.frame,
+              let session,
+              let frame = session.world.frame,
               let selection: Selection = world.singleton()
         else { return }
 
@@ -193,10 +187,10 @@ class SelectionTool: CanvasTool {
     
     func previewSelectionMove(screenDelta: ImVec2) {
         guard let canvas,
-              let world,
-              let frame = world.frame,
-              let selection: Selection = world.singleton()
+              let session,
+              let frame = session.world.frame
         else { return }
+        let selection = session.selection
 
         var dependentEdges: Set<PoieticCore.ObjectID> = Set()
         let worldDelta = Vector2D(screenDelta) / canvas.zoomLevel
@@ -237,16 +231,14 @@ class SelectionTool: CanvasTool {
             guard world.hasComponent(DiagramConnector.self, for: entID) else { continue }
             
         }
-        
-        world.setSingleton(InteractivePreviewTag())
+        session.requiresInteractivePreviewUpdate = true
     }
     
     func finalizeSelectionMove(_ selection: Selection, by designDelta: Vector2D) {
-        guard let world,
-              let currentFrame = world.frame
+        guard let session
         else { return }
-        let design = world.design
-        let trans = design.createFrame(deriving: currentFrame)
+
+        let trans = session.createOrReuseTransaction()
 
         for id in selection {
             guard trans.contains(id) else { continue }
@@ -255,9 +247,7 @@ class SelectionTool: CanvasTool {
         }
         world.removeComponentForAll(BlockPreview.self)
         world.removeComponentForAll(ConnectorPreview.self)
-        world.removeSingleton(InteractivePreviewTag.self)
-
-        world.setSingleton(trans)
+        session.requiresInteractivePreviewUpdate = false
     }
     
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {

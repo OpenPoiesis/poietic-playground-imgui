@@ -56,9 +56,8 @@ protocol InspectorSection: ApplicationObject {
 }
 
 extension InspectorSection {
-    func shouldDisplay(overview: SelectionOverview) -> Bool {
-        true
-    }
+    func shouldDisplay(overview: SelectionOverview) -> Bool { true }
+    func update(_ timeDelta: Double) { /* Do nothing */ }
 }
 
 class InspectorPanel: Panel {

@@ -40,6 +40,11 @@ extension Application {
                 ]
         ))
         
+//        world.addSchedule(Schedule(
+//            label: SelectionChangeSchedule.self,
+//            systems: [
+//            ]
+//        ))
         world.addSchedule(Schedule(
             label: InteractivePreviewSchedule.self,
             systems: [
@@ -68,16 +73,16 @@ extension Application {
     }
 
     func setupEventSchedules() {
-        eventSchedules[.worldChanged] = nil
-        eventSchedules[.designFrameChanged] = FrameChangeSchedule.self
-        eventSchedules[.selectionChanged] = nil
-        eventSchedules[.playerStarted] = nil
-        eventSchedules[.playerStep] = nil
-        eventSchedules[.playerStopped] = nil
-        eventSchedules[.simulationStarted] = nil
-        eventSchedules[.simulationFinished] = nil
-        eventSchedules[.simulationFailed] = nil
-        eventSchedules[.previewChanged] = InteractivePreviewSchedule.self
+//        eventSchedules[.worldChanged] = nil
+//        eventSchedules[.designFrameChanged] = FrameChangeSchedule.self
+//        eventSchedules[.selectionChanged] = nil
+//        eventSchedules[.playerStarted] = nil
+//        eventSchedules[.playerStep] = nil
+//        eventSchedules[.playerStopped] = nil
+//        eventSchedules[.simulationStarted] = nil
+//        eventSchedules[.simulationFinished] = nil
+//        eventSchedules[.simulationFailed] = nil
+//        eventSchedules[.previewChanged] = InteractivePreviewSchedule.self
 
     }
     

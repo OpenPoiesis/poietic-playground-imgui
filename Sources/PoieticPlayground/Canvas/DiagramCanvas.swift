@@ -33,27 +33,6 @@ import PoieticCore
    → PointerUp event
    → State machine: DRAGGING → IDLE
  */
-struct InputState {
-    enum PointerState: Equatable {
-        /// Pointer or mouse is up – idle.
-        case idle
-        /// Pointer or mouse is pressed, not yet moved.
-        ///
-        /// The associated value is the first button that triggered the state.
-        case pressed(MouseButton)
-        /// Pointer or mouse has been moved.
-        ///
-        /// The associated value is the first button that triggered the state.
-        case dragging(MouseButton)
-    }
-
-    var pointerState: PointerState = .idle
-
-    var mousePos: ImVec2? = nil
-    var previousModifiers: KeyModifiers = .none
-    var wasMouseInViewport: Bool = false
-}
-
 class DiagramCanvas: View {
     static let DefaultHitRadius: Double = 5.0
 

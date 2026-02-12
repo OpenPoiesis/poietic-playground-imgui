@@ -35,8 +35,8 @@ class Application {
     var textures: [String:Texture] = [:]
 
     // -- Events and Commands
-    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
-    var events: Set<ApplicationEvent> = Set()
+//    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
+//    var events: Set<ApplicationEvent> = Set()
     var commandQueue: [any Command] = []
 
     // -- Document --
@@ -138,6 +138,13 @@ class Application {
         
         // New template design
         let templateURL = resourceLoader.resourceURL(Self.NewDesignTemplatePath)
+        do {
+            try self.openDesign(url: templateURL)
+        }
+        catch {
+            self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
+            self.newEmptySession()
+        }
         self.queueCommand(OpenDesignCommand(url: templateURL))
         
         setupEventSchedules()
@@ -205,7 +212,7 @@ class Application {
             self.processUnhandledInput()
             
             // BEGIN Debug
-            applicationStateDebugWindow()
+            applicationSessionDebugWindow()
             ImGui.ShowDebugLogWindow()
             ImGui.ShowIDStackToolWindow()
             ImGui.ShowDemoWindow()
@@ -238,7 +245,7 @@ class Application {
 
         if let trans = session.transaction {
             accept(trans)
-            
+            session.transaction = nil
         }
         
         updateWorld(session)
@@ -256,13 +263,7 @@ class Application {
             self.run(schedule: FrameChangeSchedule.self, session: session)
         }
         
-        if let trans: TransientFrame = world.singleton(){
-            world.removeSingleton(TransientFrame.self)
-            self.accept(trans)
-        }
-
-        if let change = session.selectionChange {
-            session.selection.apply(change)
+        if session.selectionChanged {
             world.setSingleton(session.selection)
             
             if let frame = world.frame {
@@ -271,11 +272,13 @@ class Application {
             else {
                 session.selectionOverview.clear()
             }
-            
+            // TODO: Run selection changed schedule
+            // TODO: Optimise inspectors for the change
         }
-        if session.requiresInteractivePreview {
+
+        if session.requiresInteractivePreviewUpdate {
             self.run(schedule: InteractivePreviewSchedule.self, session: session)
-            session.requiresInteractivePreview = false
+            session.requiresInteractivePreviewUpdate = false
         }
     }
 
@@ -310,7 +313,12 @@ class Application {
     func processUnhandledInput() {
         let io = ImGui.GetIO().pointee
         
-        canvas.processUnhandledInput(io)
+        if let currentTool {
+            let events = canvas.recognizeEvents(io)
+            for event in events {
+                currentTool.handleEvent(event)
+            }
+        }
     }
     
     func backendRender() {
@@ -354,11 +362,16 @@ class Application {
         self.alertPanel.isVisible = true
     }
    
-    func applicationStateDebugWindow() {
-        ImGui.Begin("Application State")
+    func applicationSessionDebugWindow() {
+        ImGui.Begin("Application Session")
         ImGui.TextUnformatted("Current tool: \(toolBar.currentTool?.name, default: "no tool")")
+        if let session {
+            ImGui.TextUnformatted("Current frame: \(String(describing: session.design.currentFrameID), default: "no current frame")")
+            ImGui.TextUnformatted("Has Transaction: \(session.transaction != nil)")
+            ImGui.TextUnformatted("Selection count: \(session.selection.count)")
+            ImGui.TextUnformatted("Interactive preview update: \(session.requiresInteractivePreviewUpdate)")
+        }
         ImGui.End()
-
     }
     
     func cleanUp() {

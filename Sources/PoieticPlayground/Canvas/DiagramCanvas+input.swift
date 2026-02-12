@@ -7,21 +7,42 @@
 import CIimgui
 import Diagramming
 
-extension DiagramCanvas {
-    // MARK: - Input Handling
-    func processUnhandledInput(_ io: ImGuiIO) {
-        guard let app else { fatalError("No app")}
-        guard let currentTool = app.currentTool else { return }
-        
-        let events = recognizeEvents(io)
-        for event in events {
-            currentTool.handleEvent(event)
-        }
+struct InputState {
+    enum PointerState: Equatable {
+        /// Pointer or mouse is up – idle.
+        case idle
+        /// Pointer or mouse is pressed, not yet moved.
+        ///
+        /// The associated value is the first button that triggered the state.
+        case pressed(MouseButton)
+        /// Pointer or mouse has been moved.
+        ///
+        /// The associated value is the first button that triggered the state.
+        case dragging(MouseButton)
     }
 
+    var pointerState: PointerState = .idle
+
+    var mousePos: ImVec2? = nil
+    var previousModifiers: KeyModifiers = .none
+    var wasMouseInViewport: Bool = false
+}
+
+// TODO: Create CanvasInputRecognizer:
+
+//class CanvasInputRecognizer {
+//    let state: InputState = InputState()
+//    func recognizeEvents(_ io: ImGuiIO, isMouseInViewport: Bool) -> [ToolEvent] {
+//        return []
+//    }
+//}
+
+// TODO: Consider moving this outside of canvas. We need inputState and isMouseInViewport
+extension DiagramCanvas {
+    // MARK: - Input Handling
     func recognizeEvents(_ io: ImGuiIO) -> [ToolEvent] {
         var events: [ToolEvent] = []
-        
+       
         // Current state
         let mousePos = io.MousePos
         let mouseDelta = io.MouseDelta
