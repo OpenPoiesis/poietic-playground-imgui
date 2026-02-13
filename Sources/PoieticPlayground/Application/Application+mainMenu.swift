@@ -67,10 +67,10 @@ extension Application {
             // Edit menu
             if ImGui.BeginMenu("Edit") {
                 if ImGui.MenuItem("Undo", "Cmd+Z", false, canUndo()) {
-                    self.queueCommand(UndoCommand())
+                    session?.queueCommand(UndoCommand())
                 }
                 if ImGui.MenuItem("Redo", "Cmd+Y", false, canRedo()) {
-                    self.queueCommand(RedoCommand())
+                    session?.queueCommand(RedoCommand())
                 }
                 
                 ImGui.Separator()

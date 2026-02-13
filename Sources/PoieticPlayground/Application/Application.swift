@@ -37,7 +37,6 @@ class Application {
     // -- Events and Commands
 //    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
 //    var events: Set<ApplicationEvent> = Set()
-    var commandQueue: [any Command] = []
 
     // -- Document --
     var canvas: DiagramCanvas
@@ -110,8 +109,6 @@ class Application {
     func setupWorld(_ world: World) {
         Self.setupSchedules(world)
         world.setSingleton(notation)
-        let selection = Selection()
-        world.setSingleton(selection)
     }
 
     func updateWorldFrame() {
@@ -145,8 +142,7 @@ class Application {
             self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
             self.newEmptySession()
         }
-        self.queueCommand(OpenDesignCommand(url: templateURL))
-        
+
         setupEventSchedules()
         mainLoop()
         cleanUp()
@@ -239,17 +235,15 @@ class Application {
 
         // Run commands
         while !session.commandQueue.isEmpty {
-            let command = commandQueue.removeFirst()
+            let command = session.commandQueue.removeFirst()
             self.runCommand(command, session: session)
         }
 
-        if let trans = session.transaction {
+        if let trans = session.consumeTransaction() {
             accept(trans)
-            session.transaction = nil
         }
         
         updateWorld(session)
-        
         // scheduled
     }
     
@@ -264,7 +258,7 @@ class Application {
         }
         
         if session.selectionChanged {
-            world.setSingleton(session.selection)
+            session.selectionChanged = false
             
             if let frame = world.frame {
                 session.selectionOverview.update(session.selection, frame: frame)
@@ -283,6 +277,7 @@ class Application {
     }
 
     func accept(_ trans: TransientFrame) {
+        self.log("Accept? Has changes: \(trans.hasChanges)")
         guard trans.hasChanges else {
             trans.design.discard(trans)
             return
@@ -295,7 +290,7 @@ class Application {
         catch {
             // This is not user's fault and never should be.
             // The application failed to make sure structural integrity is assured
-            self.alert(title: "Frame validation error", message: String(describing: error))
+            self.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
             return
         }
         updateWorldFrame()
@@ -366,8 +361,12 @@ class Application {
         ImGui.Begin("Application Session")
         ImGui.TextUnformatted("Current tool: \(toolBar.currentTool?.name, default: "no tool")")
         if let session {
-            ImGui.TextUnformatted("Current frame: \(String(describing: session.design.currentFrameID), default: "no current frame")")
-            ImGui.TextUnformatted("Has Transaction: \(session.transaction != nil)")
+            let frame = session.world.frame
+            let wFrameLabel: String = frame.map { String(describing: $0) } ?? "(no frame)"
+            let cFrameLabel: String = session.design.currentFrame.map { String(describing: $0) } ?? "(no frame)"
+            ImGui.TextUnformatted("Design frame: \(cFrameLabel)")
+            ImGui.TextUnformatted("World frame: \(wFrameLabel)")
+            ImGui.TextUnformatted("Has Transaction: \(session.hasTransaction)")
             ImGui.TextUnformatted("Selection count: \(session.selection.count)")
             ImGui.TextUnformatted("Interactive preview update: \(session.requiresInteractivePreviewUpdate)")
         }
@@ -384,10 +383,6 @@ class Application {
         SDL_DestroyGPUDevice(gpuDevice)
         SDL_DestroyWindow(mainWindow)
         SDL_Quit()
-    }
-    
-    func queueCommand(_ command: any Command) {
-        self.commandQueue.append(command)
     }
     
     func runCommand(_ command: any Command, session: Session) {

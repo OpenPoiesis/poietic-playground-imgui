@@ -53,7 +53,7 @@ class SelectionTool: CanvasTool {
         // TODO: Close inline popup
         
         guard let target = canvas.hitTarget(screenPosition: event.screenPos) else {
-            world.setSingleton(SelectionChange.removeAll)
+            session.changeSelection(.removeAll)
             state = .objectSelect
             return
         }
@@ -135,8 +135,7 @@ class SelectionTool: CanvasTool {
     func dragEnd(_ event: ToolEvent) {
         guard let canvas,
               let session,
-              let frame = session.world.frame,
-              let selection: Selection = world.singleton()
+              let frame = session.world.frame
         else { return }
 
 //        Input.setDefaultCursorShape(.arrow)
@@ -145,7 +144,7 @@ class SelectionTool: CanvasTool {
 
         switch state {
         case .objectMove:
-            finalizeSelectionMove(selection, by: worldDelta)
+            finalizeSelectionMove(session.selection, by: worldDelta)
             break
         case .handleMove:
 //            self.finishDraggingHandle(globalPosition: globalPosition)

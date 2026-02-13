@@ -119,7 +119,6 @@ class InspectorPanel: Panel {
             ImGui.EndTabBar()
         }
         
-        // Nothing yet
         ImGui.End()
     }
     

@@ -67,8 +67,8 @@ extension Application {
             else {
                 toolBar.setTool("pan")
             }
-        case "undo": self.queueCommand(UndoCommand())
-        case "redo": self.queueCommand(RedoCommand())
+        case "undo": session?.queueCommand(UndoCommand())
+        case "redo": session?.queueCommand(RedoCommand())
         default:
             print("Unhandled global shortcut: ", shortcut)
         }
