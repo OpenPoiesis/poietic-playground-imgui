@@ -30,6 +30,8 @@ class Application {
     var gpuDevice: OpaquePointer!
     var mainWindow: OpaquePointer!
    
+    var quitRequested: Bool = false
+    
     // -- Resources --
     var resourceLoader: ResourceLoader
     var textures: [String:Texture] = [:]
@@ -129,7 +131,7 @@ class Application {
         guard initializeSDL() else { fatalError("Unable to init SDL") }
         guard initializeImGui() else { fatalError("Unable to init ImGui") }
         loadResources()
-        
+       
         self.toolBar.bind(self)
 
         // Prepare world before design
@@ -188,7 +190,7 @@ class Application {
     
     func mainLoop() {
         var lastTime = ImGui.GetTime()
-        loop: while true {
+        loop: while !quitRequested {
             switch pollBackendEvent() {
             case .quit: break loop
             case .skip: continue
@@ -223,7 +225,9 @@ class Application {
     }
     
     func processInput() {
-        self.processGlobalShortcuts()
+        if let actionName = globalShortcutAction() {
+            self.handleAction(actionName)
+        }
     }
     
     func update(_ timeDelta: Double) {
@@ -383,7 +387,16 @@ class Application {
         }
         catch {
             self.logError("Command '\(command.name)' failed: \(error.message)")
-            self.alert(title: "Error", message: error.message)
+            if let underlyingError = error.underlyingError {
+                self.logError("Underlying error: \(String(describing: underlyingError))")
+            }
+            let title: String
+            switch error.severity {
+            case .error: title = "Fatal Error"
+            case .fatal: title = "Error"
+            }
+            
+            self.alert(title: title, message: error.message)
         }
     }
     

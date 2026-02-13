@@ -18,7 +18,7 @@ struct OpenDesignCommand: Command {
             try context.app.openDesign(url: url)
         }
         catch {
-            throw CommandError(message: error.description)
+            throw CommandError(error.description, underlyingError: error)
         }
     }
 }

@@ -8,9 +8,20 @@
 import PoieticCore
 
 struct CommandError: Error {
+    enum Severity {
+        case error
+        case fatal // User should contact developers
+    }
     let message: String
+    let severity: Severity
+    let underlyingError: (any Error)?
     // let canRetry: Bool
-    // let severity: Severity
+    
+    init(_ message: String, severity: Severity = .error, underlyingError: (any Error)? = nil) {
+        self.message = message
+        self.severity = severity
+        self.underlyingError = underlyingError
+    }
 }
 
 struct CommandContext {
@@ -33,6 +44,8 @@ struct CommandContext {
 /// if contains changes, is committed in the application frame update after the command queue is
 /// run.
 ///
+/// - Note: Commands operating on "current frame" should use the world frame, as that is the frame
+///         that user sees.
 /// - Remark: In the future, the scriptability of the application can be build around `Command`.
 ///
 protocol Command {

@@ -38,6 +38,7 @@ class Session {
         self.design = design
         self.world = world
         self.transaction = nil
+        
         self.selection = Selection()
         self.selectionOverview = SelectionOverview()
         self.commandQueue = []
@@ -66,6 +67,11 @@ class Session {
     ///
     /// Transaction is non-cancellable. Canvas Tools must create a transaction only when their operation
     /// is concluded successfully.
+    ///
+    /// - ToDo:  Known issue: If there are multiple commands using the transaction, any of them can
+    ///   discard and others in the queue will get a new one. At this stage of development it is
+    ///   unlikely to happen, but it is important to acknowledge it.
+    ///
     func createOrReuseTransaction() -> TransientFrame {
         if let transaction {
             return transaction
@@ -77,6 +83,18 @@ class Session {
         }
     }
     
+    /// Commands call this when they fail to successfully complete the transaction.
+    ///
+    /// See note about discarding in ``createOrReuseTransaction()``
+    ///
+    func discardTransaction() {
+        guard let transaction else { return }
+        design.discard(transaction)
+        self.transaction = nil
+    }
+    
+    /// Called once the transaction was consumed in ``Application/accept(_:)``.
+    /// 
     func consumeTransaction() -> TransientFrame? {
         guard let transaction else { return nil }
         self.transaction = nil

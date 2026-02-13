@@ -55,10 +55,8 @@ extension Application {
                 if ImGui.MenuItem("Export SVG...", "Cmd+Shift+S") {
                 }
 
-                if ImGui.MenuItem("Save As...", "Cmd+Shift+S") {
-                }
-
                 if ImGui.MenuItem("Quit", "Cmd+Q") {
+                    handleAction("quit")
                 }
                 
                 ImGui.EndMenu()
@@ -67,21 +65,31 @@ extension Application {
             // Edit menu
             if ImGui.BeginMenu("Edit") {
                 if ImGui.MenuItem("Undo", "Cmd+Z", false, canUndo()) {
-                    session?.queueCommand(UndoCommand())
+                    handleAction("undo")
                 }
                 if ImGui.MenuItem("Redo", "Cmd+Y", false, canRedo()) {
-                    session?.queueCommand(RedoCommand())
+                    handleAction("redo")
                 }
                 
                 ImGui.Separator()
                 
-                if ImGui.MenuItem("Cut", "Cmd+X") {
+                if ImGui.MenuItem("Cut", "Cmd+X", false, hasSelection()) {
+                    handleAction("cut")
                 }
-                if ImGui.MenuItem("Copy", "Cmd+C") {
+                if ImGui.MenuItem("Copy", "Cmd+C", false, hasSelection()) {
+                    handleAction("copy")
                 }
                 if ImGui.MenuItem("Paste", "Cmd+V") {
+                    handleAction("paste")
                 }
-                
+                if ImGui.MenuItem("Delete", "Delete") {
+                    handleAction("delete")
+                }
+                ImGui.Separator()
+                if ImGui.MenuItem("Select All", "Cmd+A") {
+                    handleAction("select_all")
+                }
+
                ImGui.EndMenu()
             }
             
@@ -122,5 +130,6 @@ extension Application {
     
     func canUndo() -> Bool { session?.design.canUndo ?? false }
     func canRedo() -> Bool { session?.design.canRedo ?? false }
+    func hasSelection() -> Bool { (session?.selection).map { !$0.isEmpty } ?? false }
 
 }
