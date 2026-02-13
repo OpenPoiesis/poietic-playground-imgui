@@ -6,7 +6,6 @@
 //
 import PoieticCore
 
-
 // Events before drawing vs. events after drawing?
 
 enum ApplicationEvent: CaseIterable {
@@ -28,9 +27,5 @@ enum ApplicationEvent: CaseIterable {
     case previewChanged
         // -> Update visuals schedule
         // -> Interactive preview
-    
-}
-
-struct EventQueue {
     
 }

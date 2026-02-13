@@ -12,6 +12,7 @@ import CIimgui
 
 
 class NameInspectorSection: InspectorSection {
+    
     var trait: Trait { Trait.Name }
     var category: InspectorPanel.Category { .properties }
     let title: String = "Name"
@@ -23,8 +24,8 @@ class NameInspectorSection: InspectorSection {
     init() {
         nameContext = "unnamed"
     }
-    func update(_ session: Session) {
-        let overview = session.selectionOverview
+
+    func selectionChanged(selection: Selection, overview: SelectionOverview) {
         if overview.distinctNames.count == 0 {
             nameContext.string = ""
         }
@@ -35,6 +36,8 @@ class NameInspectorSection: InspectorSection {
             nameContext.string = "(multiple)"
         }
     }
+
+    func update(_ session: Session) { /* Nothing for now */ }
 
     func draw(_ session: Session) {
         ImGui.SeparatorText("Name")

@@ -250,7 +250,6 @@ class SelectionTool: CanvasTool {
     }
     
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {
-        print("MOVE OBJ \(object) D:\(designDelta)")
         if object.type.hasTrait(.DiagramBlock) {
             object.position = (object.position ?? .zero) + designDelta
         }

@@ -50,6 +50,7 @@ protocol InspectorSection: ApplicationObject {
     var category: InspectorPanel.Category { get }
     var title: String { get }
     
+    func selectionChanged(selection: Selection, overview: SelectionOverview)
     func update(_ session: Session)
     func draw(_ session: Session)
     
@@ -81,19 +82,34 @@ class InspectorPanel: Panel {
     }
 
     var isVisible: Bool = true
-    var sections: [InspectorSection] = []
+    var allSections: [InspectorSection] = []
+    var activeSections: [InspectorSection] = []
 
     init() {
-        sections.append(NameInspectorSection())
+        allSections.append(NameInspectorSection())
     }
     
     func bind(_ session: Session) {
         self.session = session
     }
+    
+    func selectionChanged(_ session: Session) {
+        print("Inspector: Selection changed")
+        let overview = session.selectionOverview
+        
+        activeSections.removeAll()
+        for section in allSections {
+            guard overview.sharedTraits.contains(where: { $0 === section.trait  }) else {
+                continue
+            }
+            section.selectionChanged(selection: session.selection, overview: overview)
+            activeSections.append(section)
+        }
+    }
 
     func update(_ timeDelta: Double) {
         guard let session else { return }
-        for section in sections {
+        for section in activeSections {
             section.update(session)
         }
     }
@@ -163,12 +179,12 @@ class InspectorPanel: Panel {
     }
     
     func drawOverviewTab(_ session: Session) {
-        for section in sections where section.category == .overview {
+        for section in activeSections where section.category == .overview {
             section.draw(session)
         }
     }
     func drawPropertiesTab(_ session: Session) {
-        for section in sections where section.category == .properties {
+        for section in activeSections where section.category == .properties {
             section.draw(session)
         }
     }

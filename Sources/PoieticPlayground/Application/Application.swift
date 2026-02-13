@@ -93,6 +93,9 @@ class Application {
         self.session = newSession
         bindToSession(newSession)
 
+        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
+        // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
+
         updateWorldFrame()
     }
     
@@ -228,7 +231,7 @@ class Application {
             logError("No session!")
             return
         }
-        canvas.update(timeDelta)
+//        canvas.update(timeDelta)
         inspector.update(timeDelta)
         toolBar.update(timeDelta)
         alertPanel.update(timeDelta)
@@ -257,19 +260,6 @@ class Application {
             self.run(schedule: FrameChangeSchedule.self, session: session)
         }
         
-        if session.selectionChanged {
-            session.selectionChanged = false
-            
-            if let frame = world.frame {
-                session.selectionOverview.update(session.selection, frame: frame)
-            }
-            else {
-                session.selectionOverview.clear()
-            }
-            // TODO: Run selection changed schedule
-            // TODO: Optimise inspectors for the change
-        }
-
         if session.requiresInteractivePreviewUpdate {
             self.run(schedule: InteractivePreviewSchedule.self, session: session)
             session.requiresInteractivePreviewUpdate = false

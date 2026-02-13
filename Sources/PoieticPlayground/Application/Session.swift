@@ -7,8 +7,16 @@
 
 import PoieticCore
 
+
 class Session {
-    var eventFlags: SessionEventFlags = .none
+    enum Event {
+        case selectionChanged
+//        case previewChanged
+    }
+
+    typealias EventObserver = ((Session) -> Void)
+
+    var observers: [Event:[EventObserver]]
     
     let design: Design
     private var transaction: TransientFrame?
@@ -23,10 +31,9 @@ class Session {
     /// The flag is reset each application frame.
     var requiresInteractivePreviewUpdate: Bool
 
-    /// Selection changed, compared to the last application frame.
-    var selectionChanged: Bool
-    
     init(design: Design, world: World) {
+        self.observers = [:]
+        
         self.design = design
         self.world = world
         self.transaction = nil
@@ -36,9 +43,18 @@ class Session {
 
         // Flags
         self.requiresInteractivePreviewUpdate = false
-        self.selectionChanged = false
     }
    
+    func addObserver(_ observer: @escaping EventObserver, on event: Event) {
+        observers[event, default: []].append(observer)
+    }
+    
+    func trigger(_ event: Event) {
+        guard let receivers = self.observers[event] else { return }
+        for receiver in receivers {
+            receiver(self)
+        }
+    }
     func queueCommand(_ command: any Command) {
         self.commandQueue.append(command)
     }
@@ -68,6 +84,15 @@ class Session {
     
     func changeSelection(_ change: SelectionChange) {
         self.selection.apply(change)
-        self.selectionChanged = true
+        if self.selection.isEmpty {
+            self.selectionOverview.clear()
+        }
+        if let frame = world.frame {
+            self.selectionOverview.update(selection, frame: frame)
+        }
+        else {
+            self.selectionOverview.clear()
+        }
+        self.trigger(.selectionChanged)
     }
 }
