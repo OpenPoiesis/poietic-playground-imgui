@@ -5,6 +5,7 @@
 //  Created by Stefan Urbanek on 28/01/2026.
 //
 import CIimgui
+import PoieticCore
 
 struct ShortcutAction {
     let name: String
@@ -27,6 +28,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     ShortcutAction("paste", key: ImGuiMod_Ctrl | ImGuiKey_V),
     ShortcutAction("undo", key: ImGuiMod_Ctrl | ImGuiKey_Z),
     ShortcutAction("redo", key: ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z),
+    ShortcutAction("delete", key: ImGuiKey_Backspace),
 
     // File
     ShortcutAction("open", key: ImGuiMod_Ctrl | ImGuiKey_O),
@@ -67,8 +69,13 @@ extension Application {
             else {
                 toolBar.setTool("pan")
             }
+        // -- Edit --
         case "undo": session?.queueCommand(UndoCommand())
         case "redo": session?.queueCommand(RedoCommand())
+        case "delete":
+            let ids: [ObjectID] = (session?.selection).map { Array($0) } ?? []
+            session?.queueCommand(DeleteObjectsCommand(ids))
+
         default:
             print("Unhandled global shortcut: ", shortcut)
         }
