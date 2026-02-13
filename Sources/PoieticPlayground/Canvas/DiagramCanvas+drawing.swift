@@ -14,13 +14,13 @@ extension DiagramCanvas {
     static let ColorSwatchSize: ImVec2 = ImVec2(10.0, 10.0)
 
     func drawContent() {
-        guard world != nil else { return }
         drawBlocks()
         drawConnectors()
     }
     
     func drawBlocks() {
         let selection: Selection? = world.singleton()
+        
         for (runtimeID, component) in world.query(DiagramBlock.self) {
             guard let objectID = world.entityToObject(runtimeID) else { continue }
             let isSelected = selection?.contains(objectID) ?? false
@@ -31,6 +31,7 @@ extension DiagramCanvas {
     func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         let blockPosition: Vector2D
+        
         if let preview: BlockPreview = world.component(for: runtimeID) {
             blockPosition = preview.position
         }
@@ -40,7 +41,6 @@ extension DiagramCanvas {
         
         let screenPos = worldToScreen(blockPosition)
         var swatchCenter: ImVec2
-        
         var labelCenter: ImVec2
         
         if let pictogram = block.pictogram {
@@ -89,28 +89,34 @@ extension DiagramCanvas {
     }
     
     func drawConnectors() {
-        for (id, component) in world.query(DiagramConnectorGeometry.self) {
-            drawConnector(runtimeID: id, geometry: component)
+        let selection: Selection? = world.singleton()
+
+        for (runtimeID, component) in world.query(DiagramConnectorGeometry.self) {
+            guard let objectID = world.entityToObject(runtimeID) else { continue }
+            let isSelected = selection?.contains(objectID) ?? false
+            drawConnector(runtimeID: runtimeID, geometry: component, isSelected: isSelected)
         }
     }
-    func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry) {
+    func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool) {
         // DEBUG wire
-//        strokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0))
+        if isSelected {
+            strokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0), lineWidth: 4)
+        }
 
         // Open curves
         if let path = geometry.linePath {
-            strokePath(path)
+            strokePath(path, color: style.defaultConnectorColor)
         }
         if let path = geometry.headArrowhead {
-            strokePath(path)
+            strokePath(path, color: style.defaultConnectorColor)
         }
         if let path = geometry.tailArrowhead {
-            strokePath(path)
+            strokePath(path, color: style.defaultConnectorColor)
         }
         // Filled curves
         if let path = geometry.fillPath {
             // TODO: ImGui can not draw correctly concave polygons (they are expensive)
-            strokePath(path)
+            strokePath(path, color: style.defaultConnectorColor)
         }
     }
     func strokePath(_ path: BezierPath, color: Color = .white, lineWidth: Float = 1.0) {

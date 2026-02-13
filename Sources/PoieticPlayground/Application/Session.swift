@@ -10,6 +10,7 @@ import PoieticCore
 
 class Session {
     enum Event {
+        /// Triggered on each ``Session/changeSelection(_:)``.
         case selectionChanged
 //        case previewChanged
     }
@@ -93,6 +94,11 @@ class Session {
         else {
             self.selectionOverview.clear()
         }
+
+        // Pass the selection through the world to the systems for rendering and other processing
+        // (see DiagramCanvas drawing methods, for example)
+        self.world.setSingleton(selection)
+        
         self.trigger(.selectionChanged)
     }
 }

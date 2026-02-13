@@ -140,9 +140,10 @@ class DiagramCanvas: View {
     }
     
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
-        // TODO: This is expensive
-        let worldPosition: Vector2D = screenToWorld(screenPosition)
-        let touchShape = CollisionShape(position: worldPosition, shape: .circle(Self.DefaultHitRadius))
+        // TODO: This is expensive"
+        let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
+        let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
+
         for (runtimeID, block) in world.query(DiagramBlock.self) {
             let blockShape = block.collisionShape.translated(block.position)
             if blockShape.collide(with: touchShape) {
@@ -150,6 +151,20 @@ class DiagramCanvas: View {
                 return target
             }
         }
+        
+        for (runtimeID, connector) in world.query(DiagramConnectorGeometry.self) {
+            // TODO: Have the wire tessellated already
+            let wire = connector.wire.tessellate()
+
+            for i in 0..<(wire.count-1) {
+                let segment = LineSegment(from: wire[i], to: wire[i + 1])
+                if segment.distance(to: worldTouchPosition) < Self.DefaultHitRadius {
+                    let target = CanvasHitTarget(runtimeID: runtimeID, type: .object)
+                    return target
+                }
+            }
+        }
+
         return nil
     }
 }
