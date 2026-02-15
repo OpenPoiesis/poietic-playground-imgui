@@ -75,6 +75,10 @@ extension Color {
         return ImGui.ColorConvertFloat4ToU32(vec)
     }
 
+    init(_ vec: ImVec4) {
+        self.value = SIMD4(vec.x, vec.y, vec.z, vec.w)
+    }
+    
     init(_ imColor: ImColor) {
         let vec = imColor.Value
         self.value = SIMD4(vec.x, vec.y, vec.z, vec.w)
@@ -86,5 +90,4 @@ extension Color {
         let imColor = ImColor(vec)
         self.init(imColor)
     }
-
 }

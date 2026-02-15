@@ -26,6 +26,7 @@ class CanvasTool {
         return session.world
     }
     
+    var hasObjectPalette: Bool { false }
     var name: String { "default"}
     var iconName: String { self.name }
     
@@ -35,6 +36,8 @@ class CanvasTool {
         self.canvas = canvas
     }
 
+    func drawPalette() { }
+    
     /// Function called when tool was set active.
     func activate() { /* Implementation in subclasses */ }
 

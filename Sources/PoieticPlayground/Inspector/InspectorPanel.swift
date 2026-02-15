@@ -42,6 +42,11 @@ class SelectionOverview {
         self.distinctNames = frame.distinctAttribute("name", ids: selection).compactMap { try? $0.stringValue() }
         self.distinctValues = [:]
     }
+    
+    func updateAttribute(_ attribute: String, selection: Selection, frame: DesignFrame) {
+        let values = frame.distinctAttribute(attribute, ids: selection)
+        self.distinctValues[attribute] = Array(values)
+    }
 }
 
 
@@ -87,6 +92,7 @@ class InspectorPanel: Panel {
 
     init() {
         allSections.append(NameInspectorSection())
+        allSections.append(FormulaInspectorSection())
     }
     
     func bind(_ session: Session) {

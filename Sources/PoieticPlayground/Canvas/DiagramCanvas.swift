@@ -81,7 +81,6 @@ class DiagramCanvas: View {
         let worldPos = Vector2D(screenPos - canvasPos) / Double(zoomLevel) + viewOffset
         return ImVec2(worldPos)
     }
-   
     func screenToWorld(_ screenPos: ImVec2) -> Vector2D {
         let worldPos = Vector2D(screenPos - canvasPos) / Double(zoomLevel) + viewOffset
         return worldPos
@@ -92,7 +91,10 @@ class DiagramCanvas: View {
         let screenPos = (worldPos - viewOffset) * Double(zoomLevel)
         return ImVec2(screenPos) + canvasPos
     }
-
+    func toScreenTransform() -> AffineTransform {
+        return AffineTransform(translation: Vector2D(canvasPos) - Vector2D(viewOffset)).scaled(Vector2D(zoomLevel, zoomLevel))
+    }
+   
     func update(_ timeDelta: Double) {
         // Nothing for now
     }

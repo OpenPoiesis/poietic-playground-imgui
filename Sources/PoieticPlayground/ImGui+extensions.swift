@@ -7,12 +7,6 @@
 import CIimgui
 import Diagramming
 
-struct TextInputCallbackData {
-    
-}
-
-
-
 extension ImGui {
     //    static func PushID(_ idString: String) {
     //        idString.withCString { cString in
@@ -20,12 +14,13 @@ extension ImGui {
     //        }
     //    }
     
-    func InputText(label: String, text: inout String) {
-        var buffer = text.utf8CString
-        var bufferSize = buffer.count
-        buffer.withUnsafeMutableBufferPointer { pointer in
-            ImGui.InputText(label, pointer.baseAddress!, bufferSize)
-        }
+    static func GetStyleColor(_ index: ImGuiCol) -> Color {
+        let color = ImGui.GetStyleColorVec4(index)
+        return Color(color.pointee)
+    }
+    static func GetStyleColor(_ index: ImGuiCol_) -> Color {
+        let color = ImGui.GetStyleColorVec4(Int32(index.rawValue))
+        return Color(color.pointee)
     }
 }
 

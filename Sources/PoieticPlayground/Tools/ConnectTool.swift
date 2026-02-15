@@ -5,6 +5,8 @@
 //  Created by Stefan Urbanek on 05/02/2026.
 //
 
+import CIimgui
+import Diagramming
 
 class ConnectTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)

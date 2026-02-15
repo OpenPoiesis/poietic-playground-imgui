@@ -29,7 +29,10 @@ extension DiagramCanvas {
     }
     
     func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
+        let screenTransform = toScreenTransform()
+
         guard let drawList = ImGui.GetWindowDrawList() else { return }
+        
         let blockPosition: Vector2D
         
         if let preview: BlockPreview = world.component(for: runtimeID) {
@@ -44,16 +47,15 @@ extension DiagramCanvas {
         var labelCenter: ImVec2
         
         if let pictogram = block.pictogram {
-            let transform = AffineTransform(translation: blockPosition)
-            let path = pictogram.path.transform(transform)
-            strokePath(path)
+            let transform = screenTransform.translated(blockPosition)
+            drawList.pointee.StrokePath(pictogram.path, transform: transform)
+
             let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + blockPosition)
             labelCenter = ImVec2(screenPos.x, screenBBMin.y)
             
             if isSelected {
-                let translated = pictogram.mask.transform(AffineTransform(translation: blockPosition))
-                fillPath(translated, color: style.selectionFillColor)
-                strokePath(translated, color: style.selectionOutlineColor)
+                drawList.pointee.FillPath(pictogram.mask, color: style.selectionFillColor, transform: transform)
+                drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
             }
         }
         else {
@@ -98,91 +100,29 @@ extension DiagramCanvas {
         }
     }
     func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool) {
+        guard var drawList = ImGui.GetWindowDrawList() else {
+            return
+        }
+        let transform = toScreenTransform()
         // DEBUG wire
         if isSelected {
-            strokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0), lineWidth: 4)
+            drawList.pointee.StrokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0), lineWidth: 4, transform: transform)
         }
 
         // Open curves
         if let path = geometry.linePath {
-            strokePath(path, color: style.defaultConnectorColor)
+            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
         }
         if let path = geometry.headArrowhead {
-            strokePath(path, color: style.defaultConnectorColor)
+            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
         }
         if let path = geometry.tailArrowhead {
-            strokePath(path, color: style.defaultConnectorColor)
+            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
         }
         // Filled curves
         if let path = geometry.fillPath {
             // TODO: ImGui can not draw correctly concave polygons (they are expensive)
-            strokePath(path, color: style.defaultConnectorColor)
-        }
-    }
-    func strokePath(_ path: BezierPath, color: Color = .white, lineWidth: Float = 1.0) {
-        guard let drawList = ImGui.GetWindowDrawList() else {
-            return
-        }
-
-        let strokeColor: ImU32 = color.imIntValue
-
-        var hadStroke: Bool = false
-        var wasClosed: Bool = false
-        
-        for element in path.elements {
-            switch element {
-            case .moveTo(let point):
-                let screenPoint = worldToScreen(point)
-                if hadStroke {
-                    drawList.pointee.PathStroke(strokeColor, 0, lineWidth)
-                }
-                drawList.pointee.PathClear()
-                drawList.pointee.PathLineTo(screenPoint)
-                wasClosed = false
-                hadStroke = false
-
-            case .lineTo(let point):
-                let screenPoint = worldToScreen(point)
-                drawList.pointee.PathLineTo(screenPoint)
-                wasClosed = false
-                hadStroke = true
-
-            case .curveTo(let end, let control1, let control2):
-                let scrEnd = worldToScreen(end)
-                let scrControl1 = worldToScreen(control1)
-                let scrControl2 = worldToScreen(control2)
-                drawList.pointee.PathBezierCubicCurveTo(scrControl1, scrControl2, scrEnd)
-                wasClosed = false
-                hadStroke = true
-
-            case .quadCurveTo(let control, let end):
-                let scrEnd = worldToScreen(end)
-                let scrControl = worldToScreen(control)
-                drawList.pointee.PathBezierQuadraticCurveTo(scrControl, scrEnd)
-                hadStroke = true
-                wasClosed = false
-
-            case .closePath:
-                drawList.pointee.PathStroke(strokeColor, 0, lineWidth)
-                wasClosed = true
-                hadStroke = false
-            }
-        }
-        if hadStroke && !wasClosed {
-            drawList.pointee.PathStroke(strokeColor, 0, lineWidth)
-        }
-    }
-    
-    func fillPath(_ path: BezierPath, color: Color = .white) {
-        guard let drawList = ImGui.GetWindowDrawList() else {
-            return
-        }
-
-        let fillColor: ImU32 = color.imIntValue
-        for segment in path.subpaths() {
-            let points = segment.tessellate()
-            let screenPoints = points.map { worldToScreen($0) }
-            drawList.pointee.AddConcavePolyFilled(screenPoints, Int32(screenPoints.count), fillColor)
+            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
         }
     }
 
