@@ -32,6 +32,10 @@ class CanvasStyle {
     var invalidLabelStyle: LabelStyle = LabelStyle(color: .white)
 
     var intentShadowColor: Color = Color(gray: 0.5)
+    /// Color or highlight tint for objects that are accepting a drag session.
+    var acceptingColor: Color = .screenGreen
+    /// Color or highlight tint for objects that are not accepting a drag session.
+    var notAllowedColor: Color = .screenRed
 
     // Connector
     var defaultConnectorLineWidth: Float = 1.0

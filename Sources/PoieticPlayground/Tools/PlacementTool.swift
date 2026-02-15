@@ -69,7 +69,7 @@ class PlacementTool: CanvasTool {
         if intentShadowID != nil {
             removeIntentShadow()
         }
-        let component = BlockIntentShadow(position: position, pictogram: pictogram, type: type)
+        let component = BlockIntent(type: type, position: position, pictogram: pictogram)
         self.intentShadowID = world.spawn(component)
     }
     
@@ -103,7 +103,7 @@ class PlacementTool: CanvasTool {
               let intentShadowID
         else { return }
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
-        if var component: BlockIntentShadow = world.component(for: intentShadowID) {
+        if var component: BlockIntent = world.component(for: intentShadowID) {
             component.position = worldPos
             world.setComponent(component, for: intentShadowID)
         }
@@ -118,7 +118,7 @@ class PlacementTool: CanvasTool {
         guard let session,
               let canvas,
               let intentShadowID,
-              let shadow: BlockIntentShadow = world.component(for: intentShadowID)
+              let shadow: BlockIntent = world.component(for: intentShadowID)
         else { return }
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
 
@@ -144,8 +144,8 @@ class PlacementTool: CanvasTool {
     }
 }
 
-struct BlockIntentShadow: Component {
+struct BlockIntent: Component {
+    let type: ObjectType
     var position: Vector2D
     let pictogram: Pictogram
-    let type: ObjectType
 }

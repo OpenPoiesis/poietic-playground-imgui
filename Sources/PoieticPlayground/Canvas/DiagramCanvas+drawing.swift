@@ -8,6 +8,16 @@ import CIimgui
 import Diagramming
 import PoieticCore
 
+struct HighlightFlags: OptionSet, Component {
+    let rawValue: UInt8
+    
+    static let none: HighlightFlags = HighlightFlags([])
+    static let selected =  HighlightFlags(rawValue: 1 << 0)
+    static let intended =  HighlightFlags(rawValue: 1 << 1)
+    static let accepting = HighlightFlags(rawValue: 1 << 2)
+    static let notAllowed =   HighlightFlags(rawValue: 1 << 3)
+}
+
 extension DiagramCanvas {
     static let PrimaryLabelPadding: Float = 0.0
     static let SecondaryLabelPadding: Float = 4.0
@@ -20,7 +30,7 @@ extension DiagramCanvas {
     }
     
     func drawIntents() {
-        for (runtimeID, component) in world.query(BlockIntentShadow.self) {
+        for (runtimeID, component) in world.query(BlockIntent.self) {
             drawBlockIntent(runtimeID: runtimeID, block: component)
         }
     }
@@ -30,11 +40,16 @@ extension DiagramCanvas {
         
         for (runtimeID, component) in world.query(DiagramBlock.self) {
             guard let objectID = world.entityToObject(runtimeID) else { continue }
+            var flags: HighlightFlags = world.component(for: runtimeID) ?? .none
             let isSelected = selection?.contains(objectID) ?? false
-            drawBlock(runtimeID: runtimeID, isSelected: isSelected, block: component)
+            if isSelected {
+                flags.insert(.selected)
+            }
+            drawBlock(runtimeID: runtimeID, flags: flags, block: component)
         }
     }
-    func drawBlockIntent(runtimeID: RuntimeID, block: BlockIntentShadow) {
+    
+    func drawBlockIntent(runtimeID: RuntimeID, block: BlockIntent) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         let color = style.intentShadowColor
         let screenTransform = toScreenTransform()
@@ -42,7 +57,7 @@ extension DiagramCanvas {
         drawList.pointee.StrokePath(block.pictogram.path, color: color, transform: transform)
     }
 
-    func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
+    func drawBlock(runtimeID: RuntimeID, flags: HighlightFlags, block: DiagramBlock) {
         let screenTransform = toScreenTransform()
 
         guard let drawList = ImGui.GetWindowDrawList() else { return }
@@ -62,15 +77,20 @@ extension DiagramCanvas {
         
         if let pictogram = block.pictogram {
             let transform = screenTransform.translated(blockPosition)
+
+            if flags.contains(.selected) {
+                drawList.pointee.FillPath(pictogram.mask, color: style.selectionFillColor, transform: transform)
+                drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
+            }
+            if flags.contains(.accepting) {
+                drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
+            }
+
             drawList.pointee.StrokePath(pictogram.path, transform: transform)
 
             let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + blockPosition)
             labelCenter = ImVec2(screenPos.x, screenBBMin.y)
             
-            if isSelected {
-                drawList.pointee.FillPath(pictogram.mask, color: style.selectionFillColor, transform: transform)
-                drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
-            }
         }
         else {
             labelCenter = screenPos
@@ -108,13 +128,17 @@ extension DiagramCanvas {
         let selection: Selection? = world.singleton()
 
         for (runtimeID, component) in world.query(DiagramConnectorGeometry.self) {
-            guard let objectID = world.entityToObject(runtimeID) else { continue }
-            let isSelected = selection?.contains(objectID) ?? false
-            drawConnector(runtimeID: runtimeID, geometry: component, isSelected: isSelected)
+            if let objectID = world.entityToObject(runtimeID) {
+                let isSelected = selection?.contains(objectID) ?? false
+                drawConnector(runtimeID: runtimeID, geometry: component, isSelected: isSelected, isIntent: false)
+            }
+            else if world.hasComponent(ConnectorIntent.self, for: runtimeID) {
+                drawConnector(runtimeID: runtimeID, geometry: component, isSelected: false, isIntent: true)
+            }
         }
     }
-    func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool) {
-        guard var drawList = ImGui.GetWindowDrawList() else {
+    func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
+        guard let drawList = ImGui.GetWindowDrawList() else {
             return
         }
         let transform = toScreenTransform()
