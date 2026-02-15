@@ -96,9 +96,11 @@ class Application {
         bindToSession(newSession)
 
         self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
+        self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
+
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
 
-        updateWorldFrame()
+        updateWorld(newSession)
     }
     
     func bindToSession(_ session: Session) {
@@ -116,17 +118,6 @@ class Application {
         world.setSingleton(notation)
     }
 
-    func updateWorldFrame() {
-        guard let session else { return }
-        guard let frame = session.design.currentFrame else {
-            logError("No current design frame")
-            return
-        }
-        // TODO: Add new-frame related clean-up here.
-        session.world.setFrame(frame)
-        self.run(schedule: FrameChangeSchedule.self, session: session)
-    }
-    
     func run() {
         guard initializeSDL() else { fatalError("Unable to init SDL") }
         guard initializeImGui() else { fatalError("Unable to init ImGui") }
@@ -262,6 +253,9 @@ class Application {
         {
             world.setFrame(maybeNewFrame)
             self.run(schedule: FrameChangeSchedule.self, session: session)
+            session.updateSelectionOverview()
+            session.trigger(.designFrameChanged)
+            // TODO: Remove temporary components here (such as previews)
         }
         
         if session.requiresInteractivePreviewUpdate {
@@ -287,8 +281,9 @@ class Application {
             self.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
             return
         }
-        updateWorldFrame()
-        // TODO: Remove temporary components here (such as previews)
+        if let session {
+            updateWorld(session)
+        }
     }
    
     func draw() {

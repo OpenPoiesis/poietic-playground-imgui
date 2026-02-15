@@ -181,7 +181,7 @@ class SelectionTool: CanvasTool {
 
     }
     func dragCancel(_ event: ToolEvent) {
-        
+        cleanUp()
     }
     
     func previewSelectionMove(screenDelta: ImVec2) {
@@ -244,9 +244,13 @@ class SelectionTool: CanvasTool {
             let object = trans.mutate(id)
             moveObject(object, by: designDelta)
         }
+        cleanUp()
+        session.requiresInteractivePreviewUpdate = false
+    }
+    
+    func cleanUp() {
         world.removeComponentForAll(BlockPreview.self)
         world.removeComponentForAll(ConnectorPreview.self)
-        session.requiresInteractivePreviewUpdate = false
     }
     
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {

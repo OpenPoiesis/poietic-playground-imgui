@@ -9,9 +9,15 @@ import PoieticCore
 
 // TODO: Allow tool switching
 class Session {
+    // FIXME: [IMPORTANT] trigger selectionChanged on design change (undo/redo)
     enum Event {
         /// Triggered on each ``Session/changeSelection(_:)``.
         case selectionChanged
+        /// Triggered when world frame has been changed.
+        ///
+        /// For example: on a transaction or undo/redo action.
+        ///
+        case designFrameChanged
 //        case previewChanged
     }
 
@@ -103,6 +109,15 @@ class Session {
     
     func changeSelection(_ change: SelectionChange) {
         self.selection.apply(change)
+        updateSelectionOverview()
+        self.trigger(.selectionChanged)
+    }
+    
+
+    /// Called on:
+    /// - selection changed with ``changeSelection(_:)``
+    /// - frame changed with ``Application/accept(_:)``
+    func updateSelectionOverview() {
         if self.selection.isEmpty {
             self.selectionOverview.clear()
         }
@@ -116,7 +131,5 @@ class Session {
         // Pass the selection through the world to the systems for rendering and other processing
         // (see DiagramCanvas drawing methods, for example)
         self.world.setSingleton(selection)
-        
-        self.trigger(.selectionChanged)
     }
 }
