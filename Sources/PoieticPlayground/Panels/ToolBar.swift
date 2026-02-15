@@ -7,6 +7,7 @@
 
 import CIimgui
 
+// TODO: Use CanvasTool.Type or enum 
 let ApplicationTools = ["selection", "placement", "connect", "pan"]
 
 class ToolBar: Panel {

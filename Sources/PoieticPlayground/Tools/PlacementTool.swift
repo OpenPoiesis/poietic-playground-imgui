@@ -115,7 +115,7 @@ class PlacementTool: CanvasTool {
         removeIntentShadow()
     }
     func pointerUp(_ event: ToolEvent) {
-        guard let world = session?.world,
+        guard let session,
               let canvas,
               let intentShadowID,
               let shadow: BlockIntentShadow = world.component(for: intentShadowID)
@@ -123,11 +123,14 @@ class PlacementTool: CanvasTool {
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
 
         print("Placing \(shadow.type.name) at \(worldPos)")
-        placeObject(type: shadow.type, at: worldPos)
+        if let objectID = placeObject(type: shadow.type, at: worldPos) {
+            session.queueCommand(SwitchToolCommand("selection"))
+            session.changeSelection(.replaceAllWithOne(objectID))
+        }
     }
     
-    func placeObject(type: ObjectType, at position: Vector2D) {
-        guard let session else { return }
+    func placeObject(type: ObjectType, at position: Vector2D) -> ObjectID? {
+        guard let session else { return nil }
         
         let trans = session.createOrReuseTransaction()
         
@@ -137,6 +140,7 @@ class PlacementTool: CanvasTool {
         let node = trans.createNode(type)
         node.position = position
         node["name"] = Variant(name)
+        return node.objectID
     }
 }
 

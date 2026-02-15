@@ -7,7 +7,7 @@
 
 import PoieticCore
 
-
+// TODO: Allow tool switching
 class Session {
     enum Event {
         /// Triggered on each ``Session/changeSelection(_:)``.
