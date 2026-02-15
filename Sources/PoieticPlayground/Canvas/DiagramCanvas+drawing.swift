@@ -16,6 +16,13 @@ extension DiagramCanvas {
     func drawContent() {
         drawBlocks()
         drawConnectors()
+        drawIntents()
+    }
+    
+    func drawIntents() {
+        for (runtimeID, component) in world.query(BlockIntentShadow.self) {
+            drawBlockIntent(runtimeID: runtimeID, block: component)
+        }
     }
     
     func drawBlocks() {
@@ -27,7 +34,14 @@ extension DiagramCanvas {
             drawBlock(runtimeID: runtimeID, isSelected: isSelected, block: component)
         }
     }
-    
+    func drawBlockIntent(runtimeID: RuntimeID, block: BlockIntentShadow) {
+        guard let drawList = ImGui.GetWindowDrawList() else { return }
+        let color = style.intentShadowColor
+        let screenTransform = toScreenTransform()
+        let transform = screenTransform.translated(block.position)
+        drawList.pointee.StrokePath(block.pictogram.path, color: color, transform: transform)
+    }
+
     func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
         let screenTransform = toScreenTransform()
 

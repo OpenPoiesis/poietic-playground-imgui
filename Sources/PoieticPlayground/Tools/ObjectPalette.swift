@@ -10,6 +10,7 @@ import Diagramming
 
 struct PaletteItem {
     // TODO: Use texture
+    let identifier: String
     let pictogram: Pictogram
     let label: String
     
@@ -54,6 +55,13 @@ class ObjectPalette {
         self.items = items
     }
 
+    var selectedIdentifier: String? {
+        guard !items.isEmpty,
+              selectedIndex < items.count
+        else { return nil }
+        return items[selectedIndex].identifier
+    }
+    
     func draw() {
         let tableFlags = ImGuiTableFlags(ImGuiTableFlags_SizingFixedFit.rawValue)
         if ImGui.BeginTable("grid", Int32(columns), tableFlags, ImVec2()) {

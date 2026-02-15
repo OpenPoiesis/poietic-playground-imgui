@@ -170,7 +170,7 @@ enum ToolEventType {
 
 
     case hoverStart
-    case hoverMove
+//    case hoverMove // Not triggered, use pointerMove
     case hoverEnd
 
     case modifierChange
