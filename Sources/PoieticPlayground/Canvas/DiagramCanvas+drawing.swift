@@ -8,24 +8,18 @@ import CIimgui
 import Diagramming
 import PoieticCore
 
-struct HighlightFlags: OptionSet, Component {
-    let rawValue: UInt8
-    
-    static let none: HighlightFlags = HighlightFlags([])
-    static let selected =  HighlightFlags(rawValue: 1 << 0)
-    static let intended =  HighlightFlags(rawValue: 1 << 1)
-    static let accepting = HighlightFlags(rawValue: 1 << 2)
-    static let notAllowed =   HighlightFlags(rawValue: 1 << 3)
-}
-
 extension DiagramCanvas {
     static let PrimaryLabelPadding: Float = 0.0
     static let SecondaryLabelPadding: Float = 4.0
     static let ColorSwatchSize: ImVec2 = ImVec2(10.0, 10.0)
 
     func drawContent() {
+        // Layer 1: Highlights
+        
+        // Layer 2: Blocks and Connectors
         drawBlocks()
         drawConnectors()
+        // Layer 3: Intents
         drawIntents()
     }
     
@@ -40,12 +34,9 @@ extension DiagramCanvas {
         
         for (runtimeID, component) in world.query(DiagramBlock.self) {
             guard let objectID = world.entityToObject(runtimeID) else { continue }
-            var flags: HighlightFlags = world.component(for: runtimeID) ?? .none
+
             let isSelected = selection?.contains(objectID) ?? false
-            if isSelected {
-                flags.insert(.selected)
-            }
-            drawBlock(runtimeID: runtimeID, flags: flags, block: component)
+            drawBlock(runtimeID: runtimeID, isSelected: isSelected, block: component)
         }
     }
     
@@ -57,11 +48,10 @@ extension DiagramCanvas {
         drawList.pointee.StrokePath(block.pictogram.path, color: color, transform: transform)
     }
 
-    func drawBlock(runtimeID: RuntimeID, flags: HighlightFlags, block: DiagramBlock) {
-        let screenTransform = toScreenTransform()
-
+    func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         
+        let screenTransform = toScreenTransform()
         let blockPosition: Vector2D
         
         if let preview: BlockPreview = world.component(for: runtimeID) {
@@ -78,12 +68,20 @@ extension DiagramCanvas {
         if let pictogram = block.pictogram {
             let transform = screenTransform.translated(blockPosition)
 
-            if flags.contains(.selected) {
+            if isSelected {
                 drawList.pointee.FillPath(pictogram.mask, color: style.selectionFillColor, transform: transform)
                 drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
             }
-            if flags.contains(.accepting) {
-                drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
+            
+            if let highlight: TargetHighlight = world.component(for: runtimeID) {
+                switch highlight {
+                case .accepting:
+                    drawList.pointee.StrokePath(pictogram.mask, color: style.acceptingColor, transform: transform)
+                case .notAllowed:
+                    drawList.pointee.StrokePath(pictogram.mask, color: style.notAllowedColor, transform: transform)
+                case .none:
+                    break
+                }
             }
 
             drawList.pointee.StrokePath(pictogram.path, transform: transform)

@@ -143,9 +143,3 @@ class PlacementTool: CanvasTool {
         return node.objectID
     }
 }
-
-struct BlockIntent: Component {
-    let type: ObjectType
-    var position: Vector2D
-    let pictogram: Pictogram
-}

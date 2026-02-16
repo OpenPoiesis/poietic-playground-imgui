@@ -21,7 +21,7 @@ class ConnectTool: CanvasTool {
 
     var state: State = .idle
     var checker: ConstraintChecker? = nil  // TODO: Not the best location for this
-    var intendedConnectorID: RuntimeID? = nil
+    var intendedConnector: RuntimeEntity? = nil
 
     override func activate() {
         guard let session else { return }
@@ -64,8 +64,8 @@ class ConnectTool: CanvasTool {
     func dragMove(_ event: ToolEvent) {
         guard let canvas,
               state == .connecting,
-              let intendedConnectorID,
-              let intent: ConnectorIntent = world.component(for: intendedConnectorID)
+              let intendedConnector,
+              let intent: ConnectorIntent = intendedConnector.component()
         else { return }
         
         let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
@@ -89,10 +89,9 @@ class ConnectTool: CanvasTool {
     }
 
     func dragEnd(_ event: ToolEvent) {
-        guard let world = session?.world,
-              let intendedConnectorID,
+        guard let intendedConnector,
               let canvas,
-              let intent: ConnectorIntent = world.component(for: intendedConnectorID)
+              let intent: ConnectorIntent = intendedConnector.component()
         else { return }
         defer {
             self.state = .idle
@@ -120,7 +119,7 @@ class ConnectTool: CanvasTool {
         return checker.canConnect(type: type, from: originObjectID, to: targetObjectID, in: frame)
     }
 
-    public func createDragConnector(type: ObjectType,
+    func createDragConnector(type: ObjectType,
                                     origin originID: RuntimeID,
                                     targetPoint: Vector2D,
                                     targetID: RuntimeID?,
@@ -151,25 +150,26 @@ class ConnectTool: CanvasTool {
                                      glyph: glyph,
                                      targetID: targetID,
                                      targetAllowed: targetAllowed)
-        let connectorID = world.spawn(geometry, intent)
-        self.intendedConnectorID = connectorID
+        let connector: RuntimeEntity = world.spawn(geometry, intent)
+        self.intendedConnector = connector
     }
     
-    public func updateDragConnector(targetPoint: Vector2D, targetID: RuntimeID?, targetAllowed: Bool) {
+    func updateDragConnector(targetPoint: Vector2D, targetID: RuntimeID?, targetAllowed: Bool) {
         // TODO: Set color
         // TODO: Change color based on rules (we don't have way for coloring intents yet)
         // TODO: Snap to target block
         print("Update drag connector...")
         guard let world = session?.world,
               let canvas,
-              let intendedConnectorID,
-              let intent: ConnectorIntent = world.component(for: intendedConnectorID),
-              let block: DiagramBlock = world.component(for:intent.originID),
-              let geometry: DiagramConnectorGeometry = world.component(for: intendedConnectorID)
+              let intendedConnector,
+              let intent: ConnectorIntent = intendedConnector.component(),
+              let geometry: DiagramConnectorGeometry = intendedConnector.component(),
+              let block: DiagramBlock = world.component(for:intent.originID)
         else { return }
         print("... drag origin: \(intent.originID)")
 
         // FIXME: XXXXXXX USE OBJECT PALETTE XXXXXXXXXX
+        
         let originTouch = Geometry.touchPoint(shape: block.collisionShape.shape,
                                               position: block.position + block.collisionShape.position,
                                               from: targetPoint,
@@ -184,25 +184,33 @@ class ConnectTool: CanvasTool {
                                         targetID: targetID,
                                         targetAllowed: targetAllowed)
 
-        world.setComponent(newGeometry, for: intendedConnectorID)
-        world.setComponent(newIntent, for: intendedConnectorID)
+        intendedConnector.setComponent(newGeometry)
+        intendedConnector.setComponent(newIntent)
+        
+        if let oldTargetID = intent.targetID,
+           let entity = world.entity(oldTargetID)
+        {
+            entity.removeComponent(TargetHighlight.self)
+        }
+        if let targetID,
+           let entity = world.entity(targetID)
+        {
+            let highlight: TargetHighlight = targetAllowed ? .accepting : .notAllowed
+            entity.setComponent(highlight)
+        }
     }
     
     func removeDragConnector() {
         guard let world = session?.world,
-              let intendedConnectorID
+              let intendedConnector
         else { return }
-        world.despawn(intendedConnectorID)
-        self.intendedConnectorID = nil
+        world.despawn(intendedConnector.runtimeID)
+        self.intendedConnector = nil
+        if let intent: ConnectorIntent = intendedConnector.component(),
+           let targetID = intent.targetID,
+           let target = world.entity(targetID)
+        {
+            target.removeComponent(TargetHighlight.self)
+        }
     }
-
-    
-}
-
-struct ConnectorIntent: Component {
-    let type: ObjectType
-    let originID: RuntimeID
-    let glyph: ConnectorGlyph
-    let targetID: RuntimeID?
-    let targetAllowed: Bool
 }
