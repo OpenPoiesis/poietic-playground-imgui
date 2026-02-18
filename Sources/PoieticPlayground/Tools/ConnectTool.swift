@@ -24,8 +24,22 @@ class ConnectTool: CanvasTool {
     var intendedConnector: RuntimeEntity? = nil
 
     override func activate() {
-        guard let session else { return }
+        guard let session,
+              let notation: Notation = session.world.singleton()
+        else { return }
+
         self.checker = ConstraintChecker(session.design.metamodel)
+        
+//        var items: [PaletteItem] = []
+//        
+//        for type in placeableBlockTypes() {
+//            let pictogram = notation.pictogram(type.name)
+//            let item = PaletteItem(identifier: type.name, pictogram: pictogram, label: type.label)
+//            items.append(item)
+//        }
+//
+//        self.palette = ObjectPalette(columns: 3, items: items)
+
     }
     
     override func handleEvent(_ event: ToolEvent) {

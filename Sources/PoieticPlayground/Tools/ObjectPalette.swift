@@ -9,11 +9,16 @@ import CIimgui
 import Diagramming
 
 struct PaletteItem {
-    // TODO: Use texture
-    let identifier: String
-    let pictogram: Pictogram
-    let label: String
+    // TODO: Use only texture, render pictograms into textures
+    enum Image {
+        case pictogram(Pictogram)
+        case texture(Texture)
+    }
     
+    let identifier: String
+    let image: Image
+    let label: String
+
     func draw(cellOrigin: ImVec2, cellSize: ImVec2, isSelected: Bool) {
         let drawList = ImGui.GetWindowDrawList()
         let textSize = ImGui.CalcTextSize(label)
@@ -29,11 +34,18 @@ struct PaletteItem {
             center.y + cellSize.y - textSize.y - 10
         )
 
-        drawList?.pointee.StrokePictogramIcon(pictogram,
-                                              center: center,
-                                              size: iconSize,
-                                              color: .white,
-                                              lineWidth: 1.0)
+        switch image {
+        case .pictogram(let pictogram):
+            drawList?.pointee.StrokePictogramIcon(pictogram,
+                                                  center: center,
+                                                  size: iconSize,
+                                                  color: .white,
+                                                  lineWidth: 1.0)
+        case .texture(let texture):
+            ImGui.Image(texture.imTextureRef, texture.size, ImVec2(), ImVec2())
+            
+            break // BOOOOOO!!!!!!!!
+        }
 
         let textColor = ImGui.GetStyleColor(ImGuiCol_Text)
 

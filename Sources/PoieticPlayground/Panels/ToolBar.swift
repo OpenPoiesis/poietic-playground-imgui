@@ -7,10 +7,10 @@
 
 import CIimgui
 
-// TODO: Use CanvasTool.Type or enum 
+// TODO: Use CanvasTool.Type or enum
 let ApplicationTools = ["selection", "placement", "connect", "pan"]
 
-class ToolBar: Panel {
+class ToolBar: @MainActor Panel {
     internal weak var app: Application? = nil
     var previousTool: CanvasTool? = nil
     var currentTool: CanvasTool? = nil
@@ -48,7 +48,9 @@ class ToolBar: Panel {
         // Nothing for now
     }
     
-    func draw() {
+    @MainActor func draw() {
+        let manager = ResourceManager.shared
+        
         let buttonSize = ImVec2(32, 32)
         ImGui.Begin("Tools", nil, ImGuiWindowFlags_NoResize
                                         | ImGuiWindowFlags_NoScrollbar
@@ -65,7 +67,7 @@ class ToolBar: Panel {
             
             ImGui.PushID(Int32(index))
 
-            if let texture = self.app?.textures[tool.iconName] {
+            if let texture = manager.textures[tool.iconName] {
                 let ref = ImTextureRef(texture.textureID)
                 if ImGui.ImageButton("##\(tool.name)", ref, buttonSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 0), ImVec4(1, 1, 1, 1)) {
                     if currentTool !== tool {

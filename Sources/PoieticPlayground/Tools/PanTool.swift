@@ -15,6 +15,8 @@ class PanTool: CanvasTool {
     }
 
     override var name: String { "pan"}
+    override var iconName: String { "hand"}
+    
     var cursor: ImGuiMouseCursor_ = ImGuiMouseCursor_Arrow
 
     var startViewOffset: Vector2D = .zero

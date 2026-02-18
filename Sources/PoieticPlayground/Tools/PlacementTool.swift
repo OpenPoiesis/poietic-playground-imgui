@@ -17,7 +17,6 @@ class PlacementTool: CanvasTool {
     override var hasObjectPalette: Bool { true }
     override var iconName: String { "place"}
     
-    var selectedItem: Int = 0
     var palette: ObjectPalette? = nil
 
     var intentShadowID: RuntimeID? = nil
@@ -31,7 +30,7 @@ class PlacementTool: CanvasTool {
         
         for type in placeableBlockTypes() {
             let pictogram = notation.pictogram(type.name)
-            let item = PaletteItem(identifier: type.name, pictogram: pictogram, label: type.label)
+            let item = PaletteItem(identifier: type.name, image: .pictogram(pictogram), label: type.label)
             items.append(item)
         }
 

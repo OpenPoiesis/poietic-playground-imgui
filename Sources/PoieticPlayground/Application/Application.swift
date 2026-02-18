@@ -14,7 +14,6 @@ import Diagramming
 let clearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
 class Application {
-    static let DefaultResourcesPath = "Sources/PoieticPlayground/Resources/"
 //    static let NewDesignTemplatePath = "designs/new_canvas.json"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
     static let DefaultStockFlowPictogramsPath = "stock_flow_pictograms.json"
@@ -26,16 +25,8 @@ class Application {
     var showMetrics = false
     var showInspector = false
 
-    var displayScale: Float = 1.0
-    var gpuDevice: OpaquePointer!
-    var mainWindow: OpaquePointer!
-   
     var quitRequested: Bool = false
     
-    // -- Resources --
-    var resourceLoader: ResourceLoader
-    var textures: [String:Texture] = [:]
-
     // -- Events and Commands
 //    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
 //    var events: Set<ApplicationEvent> = Set()
@@ -76,9 +67,29 @@ class Application {
         ]
 
         self.toolBar.currentTool = canvasTools[0]
-        self.resourceLoader = ResourceLoader(Self.DefaultResourcesPath, application: nil)
-        resourceLoader.app = self
     }
+
+    @MainActor func run() {
+        loadResources()
+       
+        self.toolBar.bind(self)
+
+        
+        // New template design
+        let templateURL = ResourceManager.shared.resourceURL(Self.NewDesignTemplatePath)
+        do {
+            try self.openDesign(url: templateURL)
+        }
+        catch {
+            self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
+            self.newEmptySession()
+        }
+
+        setupEventSchedules()
+
+        mainLoop()
+    }
+    
 
     func newEmptySession() {
         let design = Design(metamodel: StockFlowMetamodel)
@@ -118,71 +129,12 @@ class Application {
         world.setSingleton(notation)
     }
 
-    func run() {
-        guard initializeSDL() else { fatalError("Unable to init SDL") }
-        guard initializeImGui() else { fatalError("Unable to init ImGui") }
-        loadResources()
-       
-        self.toolBar.bind(self)
+    @MainActor func mainLoop() {
+        let backend = GraphicsBackend.shared
 
-        // Prepare world before design
-        let notationURL = resourceLoader.resourceURL(Self.DefaultStockFlowPictogramsPath)
-        self.loadNotation(url: notationURL)
-        
-        // New template design
-        let templateURL = resourceLoader.resourceURL(Self.NewDesignTemplatePath)
-        do {
-            try self.openDesign(url: templateURL)
-        }
-        catch {
-            self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
-            self.newEmptySession()
-        }
-
-        setupEventSchedules()
-        mainLoop()
-        cleanUp()
-    }
-    
-    enum BackendEvent {
-        /// Proceed with frame processing
-        case none
-        /// Quit the application
-        case quit
-        /// Skip this frame
-        case skip
-    }
-    
-    func pollBackendEvent() -> BackendEvent {
-        var event: SDL_Event = SDL_Event()
-        
-        // TODO: See SDL_PeepEvents(...)
-        while SDL_PollEvent(&event) {
-            switch event.type {
-            case SDL_EVENT_QUIT.rawValue:
-                return .quit
-            case SDL_EVENT_WINDOW_CLOSE_REQUESTED.rawValue
-                    where event.window.windowID == SDL_GetWindowID(mainWindow):
-                return .quit
-            default:
-                break
-            }
-
-            ImGui_ImplSDL3_ProcessEvent(&event);
-        }
-        
-        if (SDL_GetWindowFlags(mainWindow) & .SDL_WINDOW_MINIMIZED) != 0
-        {
-            SDL_Delay(10)
-            return .skip
-        }
-        return .none
-    }
-    
-    func mainLoop() {
         var lastTime = ImGui.GetTime()
         loop: while !quitRequested {
-            switch pollBackendEvent() {
+            switch backend.pollEvent() {
             case .quit: break loop
             case .skip: continue
             case .none: break
@@ -211,7 +163,7 @@ class Application {
             // END Debug
 
             ImGui.Render()
-            self.backendRender()
+            backend.render()
         }
     }
     
@@ -286,6 +238,7 @@ class Application {
         }
     }
    
+    @MainActor
     func draw() {
         mainMenu()
         inspector.draw()
@@ -303,41 +256,6 @@ class Application {
                 currentTool.handleEvent(event)
             }
         }
-    }
-    
-    func backendRender() {
-        let drawData = ImGui.GetDrawData()
-        let isMinimized = (drawData.pointee.DisplaySize.x <= 0.0 || drawData.pointee.DisplaySize.y <= 0.0)
-
-        let commandBuffer = SDL_AcquireGPUCommandBuffer(gpuDevice)
-
-        var swapchainTexture: OpaquePointer! = nil
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, mainWindow, &swapchainTexture, nil, nil)
-        if (swapchainTexture != nil && !isMinimized)
-        {
-            // This is mandatory: call ImGui_ImplSDLGPU3_PrepareDrawData() to upload the vertex/index buffer!
-            ImGui_ImplSDLGPU3_PrepareDrawData(drawData, commandBuffer)
-
-            // Setup and start a render pass
-            var target_info = SDL_GPUColorTargetInfo()
-            target_info.texture = swapchainTexture
-            target_info.clear_color = SDL_FColor(r: clearColor.x, g: clearColor.y, b: clearColor.z, a: clearColor.w)
-            target_info.load_op = SDL_GPU_LOADOP_CLEAR
-            target_info.store_op = SDL_GPU_STOREOP_STORE
-            target_info.mip_level = 0
-            target_info.layer_or_depth_plane = 0
-            target_info.cycle = false
-            let render_pass = SDL_BeginGPURenderPass(commandBuffer, &target_info, 1, nil)
-
-            // Render ImGui
-            ImGui_ImplSDLGPU3_RenderDrawData(drawData, commandBuffer, render_pass)
-
-            SDL_EndGPURenderPass(render_pass)
-        }
-
-        // Submit the command buffer
-        SDL_SubmitGPUCommandBuffer(commandBuffer)
-
     }
     
     func alert(title: String, message: String) {
@@ -360,18 +278,6 @@ class Application {
             ImGui.TextUnformatted("Interactive preview update: \(session.requiresInteractivePreviewUpdate)")
         }
         ImGui.End()
-    }
-    
-    func cleanUp() {
-        SDL_WaitForGPUIdle(gpuDevice)
-        ImGui_ImplSDL3_Shutdown()
-        ImGui_ImplSDLGPU3_Shutdown()
-        ImGui.DestroyContext()
-
-        SDL_ReleaseWindowFromGPUDevice(gpuDevice, mainWindow)
-        SDL_DestroyGPUDevice(gpuDevice)
-        SDL_DestroyWindow(mainWindow)
-        SDL_Quit()
     }
     
     func runCommand(_ command: any Command, session: Session) {
