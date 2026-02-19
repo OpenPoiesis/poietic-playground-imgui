@@ -41,6 +41,9 @@ let GlobalShortcuts: [ShortcutAction] = [
     ShortcutAction("save", key: ImGuiMod_Ctrl | ImGuiKey_S),
     ShortcutAction("save_as", key: ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S),
     
+    // View
+    ShortcutAction("toggle_inspector", key: ImGuiMod_Ctrl | ImGuiKey_I),
+
     // Toolds
     ShortcutAction("switch_selection_tool", key: ImGuiKey_1),
     ShortcutAction("switch_placement_tool", key: ImGuiKey_2),
@@ -85,6 +88,10 @@ extension Application {
         case "paste":
             session?.queueCommand(PasteFromPasteboardCommand())
 
+        // -- View ---
+        case "toggle_inspector":
+            self.inspector.isVisible = !self.inspector.isVisible
+            
         default:
             guard let session else { return }
             if !handleSelectionAction(actionName, session: session) {

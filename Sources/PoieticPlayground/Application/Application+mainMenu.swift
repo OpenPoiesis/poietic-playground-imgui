@@ -35,7 +35,7 @@ extension Application {
         // In your main rendering loop, typically after ImGui.NewFrame()
         if ImGui.BeginMainMenuBar() {
             
-            if ImGui.BeginMenu("App") {
+            if ImGui.BeginMenu("Playground") {
                 if ImGui.MenuItem("Settings", "Cmd+,", &settingsPanel.isVisible) {
                     // Nothing
                 }
@@ -46,7 +46,7 @@ extension Application {
                 ImGui.EndMenu()
             }
             // File menu
-            if ImGui.BeginMenu("File") {
+            if ImGui.BeginMenu("Design") {
                 if ImGui.MenuItem("New", "Cmd+N") {
                 }
                 if ImGui.MenuItem("Open", "Cmd+O") {

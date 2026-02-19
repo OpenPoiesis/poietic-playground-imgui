@@ -100,7 +100,17 @@ class DiagramCanvas: View {
     }
     
     func draw() {
-        ImGui.Begin("Canvas Window")
+        let viewport = ImGui.GetMainViewport()
+        ImGui.SetNextWindowPos(viewport.pointee.WorkPos, ImGuiCond(ImGuiCond_Always.rawValue), ImVec2(0, 0))
+        ImGui.SetNextWindowSize(viewport.pointee.WorkSize, ImGuiCond(ImGuiCond_Always.rawValue))
+
+        ImGui.Begin("DiagramCanvas", nil,
+            ImGuiWindowFlags_NoDecoration |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_NoNavFocus)
+        
+//        ImGui.Begin("Canvas Window")
 
         // Disable padding
         ImGui.PushStyleVar(ImGuiStyleVar(ImGuiStyleVar_WindowPadding.rawValue), ImVec2(0, 0))
