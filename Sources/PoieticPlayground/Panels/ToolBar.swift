@@ -109,7 +109,8 @@ class ToolBar: @MainActor Panel {
         let palettePos = ImVec2(toolbarPos.x, toolbarPos.y + toolbarSize.y + paletteSpacing)
 
         ImGui.SetNextWindowPos(palettePos, 0, ImVec2())
-        ImGui.Begin("##object-palette", nil, ImGuiWindowFlags_NoResize
+        ImGui.Begin("##object-palette", nil,
+                    ImGuiWindowFlags_AlwaysAutoResize
                     | ImGuiWindowFlags_NoScrollbar
                     | ImGuiWindowFlags_NoCollapse
                     | ImGuiWindowFlags_NoTitleBar

@@ -22,8 +22,9 @@ struct PaletteItem {
     func draw(cellOrigin: ImVec2, cellSize: ImVec2, isSelected: Bool) {
         let drawList = ImGui.GetWindowDrawList()
         let textSize = ImGui.CalcTextSize(label)
+        let textPadding: Float = 10.0
 
-        let iconSize = ImVec2(cellSize.x, cellSize.y - textSize.y)
+        let iconSize = ImVec2(cellSize.x, cellSize.y - textSize.y - textPadding)
         let center = ImVec2(
             cellOrigin.x + cellSize.x / 2.0,           // Horizontal center of cell
             cellOrigin.y + iconSize.y / 2.0            // Vertical center of icon area
@@ -31,7 +32,7 @@ struct PaletteItem {
 
         let textPos = ImVec2(
             center.x - (textSize.x / 2),
-            center.y + cellSize.y - textSize.y - 10
+            center.y + cellSize.y - textSize.y - textPadding
         )
 
         switch image {
@@ -42,9 +43,18 @@ struct PaletteItem {
                                                   color: .white,
                                                   lineWidth: 1.0)
         case .texture(let texture):
-            ImGui.Image(texture.imTextureRef, texture.size, ImVec2(), ImVec2())
-            
-            break // BOOOOOO!!!!!!!!
+            let scale = min(iconSize.x / Float(texture.width),
+                            iconSize.y / Float(texture.height))
+            let scaledHalfSize = texture.size * (scale / 2)
+
+//            ImGui.Image(texture.imTextureRef, texture.size, ImVec2(), ImVec2())
+            drawList?.pointee.AddImage(
+                   texture.imTextureRef,
+                   ImVec2(center.x - scaledHalfSize.x, center.y - scaledHalfSize.y),  // top-left
+                   ImVec2(center.x + scaledHalfSize.x, center.y + scaledHalfSize.y),  // bottom-right
+                   ImVec2(0, 0),  // UV top-left
+                   ImVec2(1, 1)   // UV bottom-right
+               )
         }
 
         let textColor = ImGui.GetStyleColor(ImGuiCol_Text)
@@ -76,12 +86,18 @@ class ObjectPalette {
     
     func draw() {
         let tableFlags = ImGuiTableFlags(ImGuiTableFlags_SizingFixedFit.rawValue)
+        var column: Int = 0
+        
         if ImGui.BeginTable("grid", Int32(columns), tableFlags, ImVec2()) {
-            defer { ImGui.EndTable() }
-            
             for (index, item) in items.enumerated() {
                 let isSelected = index == selectedIndex
                 
+                if column == 0 {
+                    ImGui.TableNextRow(0, Self.PaletteCellSize.y)
+                }
+                column += 1
+                if column >= columns { column = 0 }
+        
                 ImGui.TableNextColumn()
                 ImGui.PushID(Int32(index))
                 
@@ -93,11 +109,14 @@ class ObjectPalette {
                 let cellSize = ImGui.GetItemRectMax() - cellOrigin
 
                 item.draw(cellOrigin: cellOrigin,
-                          cellSize: Self.PaletteCellSize,
+                          cellSize: cellSize,
+                          // cellSize: Self.PaletteCellSize,
                           isSelected: isSelected)
                 
                 ImGui.PopID()
             }
+
+            ImGui.EndTable()
         }
     }
 }

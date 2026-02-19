@@ -9,11 +9,14 @@ import CIimgui
 import Diagramming
 import PoieticCore
 
+// TODO: This tool is mostly hard-coded to the stock-flow metamodel
+
 class ConnectTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
     override var name: String { "connect"}
     override var iconKey: IconKey { .connect }
-    
+    override var hasObjectPalette: Bool { true }
+
     enum State {
         case idle
         case connecting
@@ -22,6 +25,8 @@ class ConnectTool: CanvasTool {
     var state: State = .idle
     var checker: ConstraintChecker? = nil  // TODO: Not the best location for this
     var intendedConnector: RuntimeEntity? = nil
+    
+    var palette: ObjectPalette? = nil
 
     override func activate() {
         guard let session,
@@ -30,16 +35,39 @@ class ConnectTool: CanvasTool {
 
         self.checker = ConstraintChecker(session.design.metamodel)
         
-//        var items: [PaletteItem] = []
-//        
-//        for type in placeableBlockTypes() {
-//            let pictogram = notation.pictogram(type.name)
-//            let item = PaletteItem(identifier: type.name, pictogram: pictogram, label: type.label)
-//            items.append(item)
-//        }
-//
-//        self.palette = ObjectPalette(columns: 3, items: items)
+        var items: [PaletteItem] = []
+        
+        for type in connectableTypes() {
+            var texture: TextureHandle? = nil
+            switch type.name {
+            case "Parameter":
+                texture = InterfaceStyle.current.texture(forIcon: .arrowParameter)
+            case "Flow":
+                texture = InterfaceStyle.current.texture(forIcon: .arrowOutlined)
+            default:
+                texture = nil
+            }
+            guard let texture else {
+                print("NO TEXTURE FOR: \(type.name)")
+                continue
+            }
+            let item = PaletteItem(identifier: type.name, image: .texture(texture), label: type.label)
+            items.append(item)
+        }
 
+        self.palette = ObjectPalette(columns: 2, items: items)
+
+    }
+    
+    override func drawPalette() {
+        guard let palette else { return }
+        palette.draw()
+    }
+    
+    func connectableTypes() -> [ObjectType] {
+        // TODO: Read from metamodel
+        // TODO: Use connector glyphs and make the object palette single column and wide
+        return [ObjectType.Parameter, ObjectType.Flow]
     }
     
     override func handleEvent(_ event: ToolEvent) {
