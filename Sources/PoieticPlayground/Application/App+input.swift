@@ -22,6 +22,9 @@ struct ShortcutAction {
 }
 
 let GlobalShortcuts: [ShortcutAction] = [
+    // Application
+    ShortcutAction("settings", key: ImGuiMod_Ctrl | ImGuiKey_Comma),
+
     // Edit
     ShortcutAction("undo", key: ImGuiMod_Ctrl | ImGuiKey_Z),
     ShortcutAction("redo", key: ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z),

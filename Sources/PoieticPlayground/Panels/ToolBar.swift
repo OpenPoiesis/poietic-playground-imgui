@@ -12,6 +12,8 @@ let ApplicationTools = ["selection", "placement", "connect", "pan"]
 
 @MainActor
 class ToolBar: @MainActor Panel {
+    var isVisible: Bool = true
+    
     internal weak var app: Application? = nil
     var previousTool: CanvasTool? = nil
     var currentTool: CanvasTool? = nil
@@ -54,7 +56,7 @@ class ToolBar: @MainActor Panel {
         let manager = ResourceManager.shared
         
         let buttonSize = ImVec2(32, 32)
-        ImGui.Begin("Tools", nil, ImGuiWindowFlags_NoResize
+        ImGui.Begin("Tools", &isVisible, ImGuiWindowFlags_NoResize
                                         | ImGuiWindowFlags_NoScrollbar
                                         | ImGuiWindowFlags_NoCollapse)
         

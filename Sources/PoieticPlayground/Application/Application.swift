@@ -33,8 +33,6 @@ class Application {
     static let PictogramAdjustmentScale = 0.5
 
     var showMetrics = false
-    var showInspector = false
-
     var quitRequested: Bool = false
     
     // -- Events and Commands
@@ -47,6 +45,7 @@ class Application {
     // -- Views and Controller-likes --
     var inspector: InspectorPanel
     var alertPanel = AlertPanel()
+    var settingsPanel: SettingsPanel
 
     var canvasTools: [CanvasTool]
     var currentTool: CanvasTool? { toolBar.currentTool }
@@ -68,6 +67,7 @@ class Application {
         self.inspector = InspectorPanel()
         self.toolBar = ToolBar()
         self.canvas = DiagramCanvas()
+        self.settingsPanel = SettingsPanel()
         
         self.canvasTools = [
             SelectionTool(),
@@ -77,6 +77,8 @@ class Application {
         ]
 
         self.toolBar.currentTool = canvasTools[0]
+        
+        self.settingsPanel.bind(self)
     }
 
     @MainActor func run() {
@@ -251,6 +253,7 @@ class Application {
     @MainActor
     func draw() {
         mainMenu()
+        settingsPanel.draw()
         inspector.draw()
         toolBar.draw()
         canvas.draw()

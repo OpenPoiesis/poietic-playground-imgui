@@ -35,6 +35,16 @@ extension Application {
         // In your main rendering loop, typically after ImGui.NewFrame()
         if ImGui.BeginMainMenuBar() {
             
+            if ImGui.BeginMenu("App") {
+                if ImGui.MenuItem("Settings", "Cmd+,", &settingsPanel.isVisible) {
+                    // Nothing
+                }
+                ImGui.Separator()
+                if ImGui.MenuItem("Quit", "Cmd+Q") {
+                    handleAction("quit")
+                }
+                ImGui.EndMenu()
+            }
             // File menu
             if ImGui.BeginMenu("File") {
                 if ImGui.MenuItem("New", "Cmd+N") {
@@ -55,9 +65,6 @@ extension Application {
                 if ImGui.MenuItem("Export SVG...", "Cmd+Shift+S") {
                 }
 
-                if ImGui.MenuItem("Quit", "Cmd+Q") {
-                    handleAction("quit")
-                }
                 
                 ImGui.EndMenu()
             }
@@ -97,10 +104,11 @@ extension Application {
             if ImGui.BeginMenu("View") {
                 if ImGui.MenuItem("Show Value Indicators", nil) {
                 }
-                if ImGui.MenuItem("Show Inspector", nil, &inspector.isVisible) {
-                    inspector.isVisible = !inspector.isVisible
+                if ImGui.MenuItem("Show Inspector", "Cmd+I", &inspector.isVisible) {
+                    // Nothing
                 }
-                if ImGui.MenuItem("Show Toolbar", nil) {
+                if ImGui.MenuItem("Show Toolbar", nil, &toolBar.isVisible) {
+                    // Nothing
                 }
                 ImGui.Separator()
                 if ImGui.MenuItem("Show Metrics", nil, &showMetrics) {

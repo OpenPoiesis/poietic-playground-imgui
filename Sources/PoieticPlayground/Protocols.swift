@@ -6,6 +6,7 @@
 //
 import CIimgui
 
+@MainActor
 protocol ApplicationObject {
     func update(_ timeDelta: Double)
 }
@@ -22,4 +23,5 @@ extension Controller {
 }
 
 protocol Panel: View {
+    var isVisible: Bool { get set }
 }
