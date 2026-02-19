@@ -12,7 +12,7 @@ import PoieticCore
 class ConnectTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
     override var name: String { "connect"}
-    override var iconName: String { "connect"}
+    override var iconKey: IconKey { .connect }
     
     enum State {
         case idle

@@ -23,6 +23,8 @@ struct ResourceError: Error {
 }
 
 class ResourceManager {
+    static let DefaultResourcesPath = "Sources/PoieticPlayground/Resources/"
+
     @MainActor static var shared: (ResourceManager) {
         guard let backend = _shared else {
             fatalError("ResourceManager not initialized")
@@ -37,7 +39,7 @@ class ResourceManager {
     
     let root: URL
     var backend: any GraphicsBackendProtocol
-    var textures: [String:Texture] = [:]
+    var textureCache: [String:TextureHandle] = [:]
     
     init(_ rootPath: String, backend: any GraphicsBackendProtocol) {
         self.root = URL(fileURLWithPath: rootPath)
@@ -47,6 +49,15 @@ class ResourceManager {
     func resourceURL(_ resourcePath: String) -> URL {
         return root.appending(path: resourcePath)
     }
+    
+    func resourceURL(_ resourceName: String, pathComponents: [String]) -> URL {
+        var result = root
+        for component in pathComponents {
+            result = result.appending(component: component, directoryHint: .isDirectory)
+        }
+        return result.appending(component: resourceName, directoryHint: .checkFileSystem)
+    }
+
     func resourceFilePath(_ resourcePath: String) -> URL {
         return root.appending(path: resourcePath)
     }
@@ -59,16 +70,29 @@ class ResourceManager {
         return data
     }
     
-    @MainActor func loadTexture(_ path: String, as name: String) -> Texture? {
-        // TODO: Consolidate API and error handling
-        guard let data = loadData(path) else { return nil }
-        return try? loadTexture(data: data, as: name)
+    @MainActor
+    func loadTexture(_ path: String) -> TextureHandle {
+        if let texture = textureCache[path] {
+            return texture
+        }
+        guard let data = loadData(path) else {
+            fatalError("Unable to load texture data \(path).")
+        }
+
+        do {
+            let texture = try loadTexture(data: data)
+            textureCache[path] = texture
+            return texture
+
+        }
+        catch {
+            fatalError("Unable to load texture \(path). Reason: \(error)")
+        }
     }
-    
-    @MainActor func loadTexture(data: Data, as name: String) throws -> Texture {
+
+    @MainActor
+    private func loadTexture(data: Data) throws -> TextureHandle {
         let backend = GraphicsBackend.shared
-        
-        if let existing = textures[name] { return existing }
         
         let pixels = decodeImageData(data)
         defer { stbi_image_free(pixels.pointer) }
@@ -78,7 +102,6 @@ class ResourceManager {
             width:  pixels.width,
             height: pixels.height
         )
-        textures[name] = texture
         return texture
     }
     

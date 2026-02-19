@@ -48,6 +48,7 @@ struct CommandContext {
 ///         that user sees.
 /// - Remark: In the future, the scriptability of the application can be build around `Command`.
 ///
+@MainActor
 protocol Command {
     var name: String { get }
     func run(_ context: CommandContext) throws (CommandError)

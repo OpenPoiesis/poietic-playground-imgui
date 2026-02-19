@@ -12,14 +12,14 @@ extension String {
         self.isEmpty || self.allSatisfy { $0.isWhitespace }
     }
     
-    public func toSnakeCase() -> String {
+    public func toSnakeCase(splitCharacter: Character = "_") -> String {
         guard !self.isEmpty else { return self }
         
         var result = ""
         
         for (index, char) in self.enumerated() {
             if char.isUppercase && index > 0 {
-                result += "_"
+                result.append(splitCharacter)
             }
             result += char.lowercased()
         }

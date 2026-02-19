@@ -13,7 +13,17 @@ import Diagramming
 
 let clearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
+@MainActor
 class Application {
+    var context: ApplicationContext {
+        guard let _context else {
+            fatalError("Application context not initialized")
+        }
+        return _context
+    }
+    var _context: ApplicationContext!
+
+    // Dumping ground of globals (for now)
 //    static let NewDesignTemplatePath = "designs/new_canvas.json"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
     static let DefaultStockFlowPictogramsPath = "stock_flow_pictograms.json"

@@ -15,7 +15,7 @@ class PanTool: CanvasTool {
     }
 
     override var name: String { "pan"}
-    override var iconName: String { "hand"}
+    override var iconKey: IconKey { .hand }
     
     var cursor: ImGuiMouseCursor_ = ImGuiMouseCursor_Arrow
 

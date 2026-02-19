@@ -13,7 +13,7 @@ class SelectionTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
 
     override var name: String { "selection"}
-    override var iconName: String { "select"}
+    override var iconKey: IconKey { .select }
 
     enum State {
         /// Nothing hit, initial state

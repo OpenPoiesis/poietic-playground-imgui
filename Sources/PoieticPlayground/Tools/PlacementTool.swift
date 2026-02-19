@@ -15,7 +15,7 @@ class PlacementTool: CanvasTool {
     // TODO: Implement the tool (empty stub for now)
     override var name: String { "placement"}
     override var hasObjectPalette: Bool { true }
-    override var iconName: String { "place"}
+    override var iconKey: IconKey { .place }
     
     var palette: ObjectPalette? = nil
 

@@ -12,7 +12,7 @@ struct PaletteItem {
     // TODO: Use only texture, render pictograms into textures
     enum Image {
         case pictogram(Pictogram)
-        case texture(Texture)
+        case texture(TextureHandle)
     }
     
     let identifier: String

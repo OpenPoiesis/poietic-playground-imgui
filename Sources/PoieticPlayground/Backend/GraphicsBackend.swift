@@ -33,8 +33,8 @@ protocol GraphicsBackendProtocol: AnyObject {
     func render()
     
     // Textures
-    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32) throws (GraphicsBackendError)-> Texture
-    func destroyTexture(_ handle: Texture)
+    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32) throws (GraphicsBackendError)-> TextureHandle
+    func destroyTexture(_ handle: TextureHandle)
 }
 
 enum BackendEvent {
@@ -57,6 +57,7 @@ enum GraphicsBackend {
     
     private static var _shared: (any GraphicsBackendProtocol)?
     
+    @MainActor
     static func register(_ backend: any GraphicsBackendProtocol) {
         precondition(_shared == nil, "Backend already registered.")
         _shared = backend

@@ -18,6 +18,7 @@ import PoieticCore
 /// - Optional activation/deactivation with ``activate()``, ``deactivate()``.
 /// - Internal tool state management.
 ///
+@MainActor
 class CanvasTool {
     weak var canvas: DiagramCanvas?
     weak var session: Session?
@@ -28,7 +29,7 @@ class CanvasTool {
     
     var hasObjectPalette: Bool { false }
     var name: String { "default"}
-    var iconName: String { self.name }
+    var iconKey: IconKey { .empty }
     
     /// Called before tool activation.
     final func bind(canvas: DiagramCanvas, session: Session) {

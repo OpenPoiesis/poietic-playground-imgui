@@ -9,6 +9,9 @@ import Csdl3
 import CIimgui
 
 final class SDL3GPUBackend: GraphicsBackendProtocol {
+    private static let SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR
+    private static let PresentMode = SDL_GPU_PRESENTMODE_VSYNC
+
     let displayScale: Float
     private let window: OpaquePointer
     private let device: OpaquePointer
@@ -28,8 +31,8 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
             Device: device,
             ColorTargetFormat: SDL_GetGPUSwapchainTextureFormat(device, window),
             MSAASamples: SDL_GPU_SAMPLECOUNT_1,
-            SwapchainComposition: SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
-            PresentMode: SDL_GPU_PRESENTMODE_VSYNC
+            SwapchainComposition: Self.SwapchainComposition,
+            PresentMode: Self.PresentMode
         )
         guard ImGui_ImplSDLGPU3_Init(&initInfo) else {
             throw GraphicsBackendError("ImGui_ImplSDLGPU3_Init failed", backendError: Self.getError())
@@ -70,7 +73,9 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         let drawData = ImGui.GetDrawData()
         let isMinimized = (drawData.pointee.DisplaySize.x <= 0.0 || drawData.pointee.DisplaySize.y <= 0.0)
 
-        let commandBuffer = SDL_AcquireGPUCommandBuffer(device)
+        guard let commandBuffer = SDL_AcquireGPUCommandBuffer(device) else {
+            fatalError("SDL_AcquireGPUCommandBuffer failed")
+        }
 
         var swapchainTexture: OpaquePointer! = nil
         SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, nil, nil)
@@ -125,8 +130,8 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         let device = try createGPUDevice()
         try Self.claimWindow(device: device, window: window)
         SDL_SetGPUSwapchainParameters(device, window,
-                                      SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
-                                      SDL_GPU_PRESENTMODE_VSYNC)
+                                      Self.SwapchainComposition,
+                                      Self.PresentMode)
 
         return SDL3GPUBackend(window: window, device: device, displayScale: scale)
     }
@@ -169,7 +174,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
 
     // MARK: - Texture
     func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32)
-    throws (GraphicsBackendError) -> Texture
+    throws (GraphicsBackendError) -> TextureHandle
     {
         let texture = try allocateGPUTexture(width: width, height: height)
         var success = false
@@ -183,10 +188,10 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         let textureID = unsafeBitCast(texture, to: ImTextureID.self)
 
         success = true
-        return Texture(width: width, height: height, textureID: textureID)
+        return TextureHandle(width: width, height: height, textureID: textureID)
     }
 
-    func destroyTexture(_ handle: Texture) {
+    func destroyTexture(_ handle: TextureHandle) {
         let texture = unsafeBitCast(handle.textureID, to: OpaquePointer.self)
         SDL_ReleaseGPUTexture(device, texture)
     }
