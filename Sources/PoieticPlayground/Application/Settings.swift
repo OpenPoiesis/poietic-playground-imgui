@@ -17,7 +17,13 @@ class SettingsPanel: Panel {
     }
     
     func draw() {
+        guard isVisible else { return }
         ImGui.Begin("Settings", &isVisible, ImGuiWindowFlags_None | ImGuiWindowFlags_NoCollapse)
+        drawInterfaceStyleSettings()
+        ImGui.End()
+    }
+   
+    func drawInterfaceStyleSettings() {
         ImGui.TextUnformatted("Interface Style")
         ImGui.SameLine()
         if ImGui.RadioButton("Dark", InterfaceStyle.current.scheme == .dark) {
@@ -27,8 +33,7 @@ class SettingsPanel: Panel {
         if ImGui.RadioButton("Light", InterfaceStyle.current.scheme == .light) {
             app?.setInterfaceColorScheme(.light)
         }
-//        ImGui.RadioButton("Light", &interfaceStyleSelection, 1); ImGui.SameLine();
-        ImGui.End()
+
     }
     
     func setInterfaceColorScheme(_ scheme: InterfaceStyle.ColorScheme) {

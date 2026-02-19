@@ -76,6 +76,7 @@ extension Application {
             }
         
         // -- Application --
+        case "settings": self.openSettings()
         case "quit": self.quitRequested = true
         // -- Edit --
         case "undo": session?.queueCommand(UndoCommand())
