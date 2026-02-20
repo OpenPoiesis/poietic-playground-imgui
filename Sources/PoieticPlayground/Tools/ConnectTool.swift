@@ -85,24 +85,22 @@ class ConnectTool: CanvasTool {
               let session,
               let target = canvas.hitTarget(screenPosition: event.screenPos),
               let objectID = world.entityToObject(target.runtimeID),
+              let typeName = palette?.selectedIdentifier,
+              let type = session.design.metamodel.objectType(name: typeName),
               let object = world.frame?[objectID]
         else {
             state = .idle
             return
         }
-        
-        // TODO: Have a better method for bl
-//        guard object.structure.type ==
-        
-//        print("Connect start at: \(objectID)")
         let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
-        createDragConnector(type: .Parameter,
+        createDragConnector(type: type,
                             origin: target.runtimeID,
                             targetPoint: worldPosition,
                             targetID: nil,
                             targetAllowed: true)
         self.state = .connecting
     }
+    
     func dragMove(_ event: ToolEvent) {
         guard let canvas,
               state == .connecting,
@@ -131,18 +129,23 @@ class ConnectTool: CanvasTool {
     }
 
     func dragEnd(_ event: ToolEvent) {
-        guard let intendedConnector,
-              let canvas,
-              let intent: ConnectorIntent = intendedConnector.component()
-        else { return }
         defer {
             self.state = .idle
             removeDragConnector()
         }
+
+        guard let intendedConnector,
+              let canvas,
+              let intent: ConnectorIntent = intendedConnector.component(),
+              let target = canvas.hitTarget(screenPosition: event.screenPos),
+              let targetObjectID = canvas.world.entityToObject(target.runtimeID)
+        else { return }
         
-        guard let target = canvas.hitTarget(screenPosition: event.screenPos) else {
-            return
+        if canConnect(type: intent.type, from: intent.originID, to: target.runtimeID) {
+            createConnection(type: intent.type, from: intent.originID, to: target.runtimeID)
         }
+
+        
         print("Drag concluded with: \(target)")
     }
     func dragCancel(_ event: ToolEvent) {
@@ -159,6 +162,14 @@ class ConnectTool: CanvasTool {
         else { return false }
         
         return checker.canConnect(type: type, from: originObjectID, to: targetObjectID, in: frame)
+    }
+    func createConnection(type: ObjectType, from originRuntimeID: RuntimeID, to targetRuntimeID: RuntimeID) {
+        guard let session,
+              let originObjectID = session.world.entityToObject(originRuntimeID),
+              let targetObjectID = session.world.entityToObject(targetRuntimeID)
+        else { return }
+        let trans = session.createOrReuseTransaction()
+        trans.createEdge(type, origin: originObjectID, target: targetObjectID)
     }
 
     func createDragConnector(type: ObjectType,
@@ -248,11 +259,7 @@ class ConnectTool: CanvasTool {
         else { return }
         world.despawn(intendedConnector.runtimeID)
         self.intendedConnector = nil
-        if let intent: ConnectorIntent = intendedConnector.component(),
-           let targetID = intent.targetID,
-           let target = world.entity(targetID)
-        {
-            target.removeComponent(TargetHighlight.self)
-        }
+        world.removeComponentForAll(TargetHighlight.self)
     }
+    
 }

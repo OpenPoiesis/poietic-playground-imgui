@@ -8,6 +8,8 @@ import CIimgui
 import Diagramming
 import PoieticCore
 
+import Ccairo
+
 extension DiagramCanvas {
     static let PrimaryLabelPadding: Float = 0.0
     static let SecondaryLabelPadding: Float = 4.0

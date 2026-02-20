@@ -28,6 +28,7 @@ let package = Package(
                 "Csdl3",
                 "CIimgui",
                 "Cstb",
+                "Ccairo",
             ],
             resources: [
               .copy("Resources/icons/"),
@@ -44,7 +45,16 @@ let package = Package(
                 .brew(["sdl3"])
             ]
         ),
-        .target(
+        .systemLibrary(
+            name: "Ccairo",
+            pkgConfig: "cairo",
+            providers: [
+                .apt(["cairo-dev"]),
+                .brew(["cairo"])
+            ]
+        ),
+
+            .target(
             name: "CIimgui",
             dependencies: [
                 "Csdl3"
