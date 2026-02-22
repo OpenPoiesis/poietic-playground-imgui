@@ -98,7 +98,7 @@ extension Application {
     @discardableResult
     func run(schedule: ScheduleLabel.Type, session: Session) -> Bool {
         let label = String(describing: schedule)
-        log("Running schedule: \(label)")
+//        log("Running schedule: \(label)")
         do {
             try session.world.run(schedule: schedule)
         }

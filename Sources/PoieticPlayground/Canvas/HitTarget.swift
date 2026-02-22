@@ -7,19 +7,25 @@
 
 import PoieticCore
 
-class CanvasHitTarget {
-    enum TargetType {
-        case object
+/// Hit targets:
+/// - object directly
+/// - primary/secondary label of object
+/// - error indicator of object
+/// - handle of object
+///     - geometry
+///     - action
+
+enum CanvasHitTarget {
+    enum ObjectPart {
+        /// Direct object body hit. For blocks, the pictogram's collision shape is used. For
+        /// connectors a practical distance from the connector wire (center curve) is used.
+        case body
         case primaryLabel
         case secondaryLabel
         case errorIndicator
-        case handle
     }
-    let runtimeID: RuntimeID
-    let type: TargetType
-    
-    init(runtimeID: RuntimeID, type: TargetType) {
-        self.runtimeID = runtimeID
-        self.type = type
-    }
+
+    /// Canvas object or its part was hit, typically a design object.
+    case object(RuntimeID, ObjectPart)
+    case handle(RuntimeID)
 }

@@ -282,8 +282,8 @@ class Application {
         ImGui.TextUnformatted("Current tool: \(toolBar.currentTool?.name, default: "no tool")")
         if let session {
             let frame = session.world.frame
-            let wFrameLabel: String = frame.map { String(describing: $0) } ?? "(no frame)"
-            let cFrameLabel: String = session.design.currentFrame.map { String(describing: $0) } ?? "(no frame)"
+            let wFrameLabel: String = frame.map { String(describing: $0.id) } ?? "(no frame)"
+            let cFrameLabel: String = session.design.currentFrame.map { String(describing: $0.id) } ?? "(no frame)"
             ImGui.TextUnformatted("Design frame: \(cFrameLabel)")
             ImGui.TextUnformatted("World frame: \(wFrameLabel)")
             ImGui.TextUnformatted("Has Transaction: \(session.hasTransaction)")

@@ -11,6 +11,7 @@ import PoieticCore
 import Ccairo
 
 extension DiagramCanvas {
+    static let HandleSize: Float = 15.0
     static let PrimaryLabelPadding: Float = 0.0
     static let SecondaryLabelPadding: Float = 4.0
     static let ColorSwatchSize: ImVec2 = ImVec2(10.0, 10.0)
@@ -23,6 +24,19 @@ extension DiagramCanvas {
         drawConnectors()
         // Layer 3: Intents
         drawIntents()
+        // Layer 4: Handles
+        drawHandles()
+    }
+    
+    func drawHandles() {
+        guard let drawList = ImGui.GetWindowDrawList() else { return }
+        let color = style.handleColor
+        let radius = Self.HandleSize / 2
+
+        for (_, handle) in world.query(CanvasHandle.self) {
+            let screenPos = worldToScreen(handle.position)
+            drawList.pointee.AddCircle(screenPos, radius, color.imIntValue, 0, 4)
+        }
     }
     
     func drawIntents() {

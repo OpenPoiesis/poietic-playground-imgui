@@ -152,6 +152,8 @@ class DiagramCanvas: View {
     }
     
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
+        var targets: [CanvasHitTarget] = []
+        
         // TODO: This is expensive"
         let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
@@ -159,8 +161,8 @@ class DiagramCanvas: View {
         for (runtimeID, block) in world.query(DiagramBlock.self) {
             let blockShape = block.collisionShape.translated(block.position)
             if blockShape.collide(with: touchShape) {
-                let target = CanvasHitTarget(runtimeID: runtimeID, type: .object)
-                return target
+                let target: CanvasHitTarget = .object(runtimeID, .body)
+                targets.append(target)
             }
         }
         
@@ -171,12 +173,19 @@ class DiagramCanvas: View {
             for i in 0..<(wire.count-1) {
                 let segment = LineSegment(from: wire[i], to: wire[i + 1])
                 if segment.distance(to: worldTouchPosition) < Self.DefaultHitRadius {
-                    let target = CanvasHitTarget(runtimeID: runtimeID, type: .object)
-                    return target
+                    let target: CanvasHitTarget = .object(runtimeID, .body)
+                    targets.append(target)
                 }
             }
         }
 
-        return nil
+        for (runtimeID, handle) in world.query(CanvasHandle.self) {
+            let distance = worldTouchPosition.distance(to: handle.position)
+            guard distance <= Self.DefaultHitRadius else { continue }
+            let target: CanvasHitTarget = .handle(runtimeID)
+            targets.append(target)
+        }
+
+        return targets.last
     }
 }

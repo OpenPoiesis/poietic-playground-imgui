@@ -25,15 +25,18 @@ class SelectionTool: CanvasTool {
         /// Dragging selection around.
         case objectMove
         /// Handle that can be moved was hit.
-        case handleHit
+        case handleEngaged(RuntimeID)
         /// Dragging handle around.
-        case handleMove
-        /// Some other object child was hit, such as label or issue indicator.
-        case childHit
+        case handleMove(RuntimeID)
+        /// Object part was hit, such as label or issue indicator.
+        case objectPartHit(RuntimeID, CanvasHitTarget.ObjectPart)
     }
+    
     var state: State = .idle
     var dragStartScreenPos: ImVec2 = ImVec2()
     
+    // MARK: - Events
+
     override func handleEvent(_ event: ToolEvent) {
         switch event.type {
         case .pointerDown: self.pointerDown(event)
@@ -44,6 +47,7 @@ class SelectionTool: CanvasTool {
         default: break
         }
     }
+    
     func pointerDown(_ event: ToolEvent) {
         guard let canvas,
               let session
@@ -55,18 +59,20 @@ class SelectionTool: CanvasTool {
         guard let target = canvas.hitTarget(screenPosition: event.screenPos) else {
             session.changeSelection(.removeAll)
             state = .objectSelect
+            self.removeHandles()
             return
         }
+        
+        print("Hit target: \(target)")
 
         let selection = session.selection
 
-        switch target.type {
-        case .object:
+        switch target {
+        case .object(let runtimeID, .body):
             // TODO: Defer opening of context menu on inputEnded or move context menu out of the tool
-            guard let objectID = world.entityToObject(target.runtimeID)
+            guard let objectID = world.entityToObject(runtimeID)
             else { return } // Not a design object
             
-//            TODO: canvas.removeHandles()
             if event.modifiers.contains(.shift) {
                 session.changeSelection(.toggle(objectID))
             }
@@ -79,22 +85,18 @@ class SelectionTool: CanvasTool {
                     session.changeSelection(.replaceAllWithOne(objectID))
                 }
             }
+            self.removeHandles()
             if let objectID = selection.selectionOfOne(),
-               let entityID = world.objectToEntity(objectID)
+               let runtimeID = world.objectToEntity(objectID)
             {
-                // TODO: createHandles(canvas: canvas, for: entityID)
+                createHandles(for: runtimeID)
             }
             state = .objectHit
-        case .handle:
-//            hitTarget = target
-            state = .handleHit
-            session.changeSelection(.removeAll)
-        case .primaryLabel,
-                .secondaryLabel,
-                .errorIndicator:
-//            canvas.removeHandles()
-//            hitTarget = target
-            state = .childHit
+        case .object(let runtimeID, let part):
+            self.removeHandles()
+            state = .objectPartHit(runtimeID, part)
+        case .handle(let runtimeID):
+            state = .handleEngaged(runtimeID)
         }
 
     }
@@ -104,16 +106,18 @@ class SelectionTool: CanvasTool {
         switch state {
         case .idle: break
         case .objectSelect: break
-        case .objectHit, .objectMove, .childHit:
+        case .objectHit, .objectMove, .objectPartHit:
 //            Input.setDefaultCursorShape(.drag)
             previewSelectionMove(screenDelta: event.delta)
             state = .objectMove
             
-        case .handleHit, .handleMove:
+        case .handleEngaged(let runtimeID), .handleMove(let runtimeID):
+            print("DRAG START WITHG HANDLE")
 //            Input.setDefaultCursorShape(.drag)
-//            dragHandle(canvas: canvas, byCanvasDelta: delta)
-            state = .handleMove
+//            dragHandle(byCanvasDelta: delta)
+            state = .handleMove(runtimeID)
         }
+        print("Drag started: \(state)")
     }
     func dragMove(_ event: ToolEvent) {
 //        TODO: popupManager?.closeInlinePopup()
@@ -121,21 +125,27 @@ class SelectionTool: CanvasTool {
         switch state {
         case .idle: break
         case .objectSelect: break
-        case .objectHit, .objectMove, .childHit:
+        case .objectHit,
+                .objectMove,
+                .objectPartHit:
 //            Input.setDefaultCursorShape(.drag)
             previewSelectionMove(screenDelta: event.delta)
             state = .objectMove
             
-        case .handleHit, .handleMove:
+        case .handleEngaged(let handleID),
+                .handleMove(let handleID):
 //            Input.setDefaultCursorShape(.drag)
-//            dragHandle(canvas: canvas, byCanvasDelta: delta)
-            state = .handleMove
+            dragHandle(handleID, screenDelta: event.delta)
+            state = .handleMove(handleID)
         }
     }
     func dragEnd(_ event: ToolEvent) {
+        defer {
+            state = .idle
+        }
+        // TODO: Mouse cursors
         guard let canvas,
-              let session,
-              let frame = session.world.frame
+              let session
         else { return }
 
 //        Input.setDefaultCursorShape(.arrow)
@@ -145,15 +155,16 @@ class SelectionTool: CanvasTool {
         switch state {
         case .objectMove:
             finalizeSelectionMove(session.selection, by: worldDelta)
-            break
-        case .handleMove:
-//            self.finishDraggingHandle(globalPosition: globalPosition)
-            break
-        case .idle: break
-        case .handleHit: break
-        case .objectHit: break
-        case .objectSelect: break
-        case .childHit:
+
+        case .handleMove(let handleID):
+            guard let handle = session.world.entity(handleID) else { break }
+            let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
+            finalizeHandleMove(handle, finalPosition: worldPosition, totalDelta: worldDelta)
+            state = .handleMove(handleID)
+
+        case .idle, .objectHit, .objectSelect, .handleEngaged: break
+
+        case .objectPartHit(_, _):
             break
 //            guard let hitTarget,
 //                  let block = hitTarget.object as? DiagramCanvasBlock,
@@ -183,6 +194,8 @@ class SelectionTool: CanvasTool {
     func dragCancel(_ event: ToolEvent) {
         cleanUp()
     }
+    
+    // MARK: - Object Move
     
     func previewSelectionMove(screenDelta: ImVec2) {
         guard let canvas,
@@ -247,12 +260,7 @@ class SelectionTool: CanvasTool {
         cleanUp()
         session.requiresInteractivePreviewUpdate = false
     }
-    
-    func cleanUp() {
-        world.removeComponentForAll(BlockPreview.self)
-        world.removeComponentForAll(ConnectorPreview.self)
-    }
-    
+
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {
         if object.type.hasTrait(.DiagramBlock) {
             object.position = (object.position ?? .zero) + designDelta
@@ -263,7 +271,147 @@ class SelectionTool: CanvasTool {
             else { return }
             
             let movedMidpoints = midpoints.map { $0 + designDelta }
-            object["midpoints"] = PoieticCore.Variant(movedMidpoints)
+            object["midpoints"] = Variant(movedMidpoints)
+        }
+    }
+    
+
+    // MARK: - Handle Drag
+    func createHandles(for runtimeID: RuntimeID) {
+        guard let world = session?.world,
+              let entity = world.entity(runtimeID)
+        else { return }
+        
+        if entity.contains(DiagramConnector.self) {
+            createMidpointHandles(entity)
+        }
+        // ... create other handle types
+    }
+    
+    func createMidpointHandles(_ entity: RuntimeEntity) {
+        guard let connector: DiagramConnector = entity.component()
+        else { return }
+        
+        let preview: ConnectorPreview? = entity.component()
+        let midpoints = preview?.midpoints ?? connector.midpoints
+        
+        if midpoints.isEmpty {
+            guard let origin = world.entity(connector.originID),
+                  let originBlock: DiagramBlock = origin.component(),
+                  let target = world.entity(connector.targetID),
+                  let targetBlock: DiagramBlock = target.component()
+            else { return }
+
+            let segment = LineSegment(from: originBlock.position, to: targetBlock.position)
+            let midpoint = segment.midpoint
+            
+            let handle = CanvasHandle(owner: entity.runtimeID,
+                                      position: midpoint,
+                                      kind: .midpoint(0))
+            let handleID: RuntimeID = world.spawn(handle)
+            world.setDependency(of: handleID, on: entity.runtimeID)
+        }
+        else {
+            for (index, point) in midpoints.enumerated() {
+                let handle = CanvasHandle(owner: entity.runtimeID,
+                                          position: point,
+                                          kind: .midpoint(index))
+                let handleID: RuntimeID = world.spawn(handle)
+                world.setDependency(of: handleID, on: entity.runtimeID)
+            }
+        }
+    }
+    
+    func dragHandle(_ handleRuntimeID: RuntimeID, screenDelta: ImVec2) {
+        guard let session,
+              let canvas,
+              let handle = session.world.entity(handleRuntimeID),
+              var component: CanvasHandle = handle.component()
+        else { return }
+        let worldDelta = Vector2D(screenDelta) / canvas.zoomLevel
+        component.position += worldDelta
+        handle.setComponent(component)
+        
+        switch component.kind {
+        case .midpoint(let index):
+            guard let owner = session.world.entity(component.owner) else { break }
+            dragMidpointHandle(owner, index: index, currentPosition: component.position, currentDelta: worldDelta)
+        }
+        
+        session.requiresInteractivePreviewUpdate = true
+    }
+    
+    func dragMidpointHandle(_ owner: RuntimeEntity, index: Int, currentPosition: Vector2D, currentDelta: Vector2D) {
+        var midpoints: [Vector2D]
+        
+        if let preview: ConnectorPreview = owner.component() {
+            if preview.midpoints.isEmpty {
+                midpoints = [currentPosition]
+            }
+            else {
+                midpoints = preview.midpoints
+            }
+        }
+        else {
+            midpoints = [currentPosition]
+        }
+        
+        guard index < midpoints.count else { return }
+
+        midpoints[index] += currentDelta
+
+        let newPreview = ConnectorPreview(midpoints: midpoints)
+        owner.setComponent(newPreview)
+    }
+
+    /// Parameters:
+    ///     - handleRuntimeID:
+    
+    func finalizeHandleMove(_ handle: RuntimeEntity, finalPosition: Vector2D, totalDelta: Vector2D) {
+        guard let session,
+              let canvas,
+              var component: CanvasHandle = handle.component()
+        else { return }
+
+        switch component.kind {
+        case .midpoint(let index):
+            guard let owner = session.world.entity(component.owner) else { break }
+            finalizeMidpointMove(owner: owner, index: index, finalPosition: finalPosition)
+        }
+        session.requiresInteractivePreviewUpdate = true
+    }
+
+    func finalizeMidpointMove(owner: RuntimeEntity, index: Int, finalPosition: Vector2D) {
+        guard let session,
+              let objectID = owner.objectID
+        else { return }
+        
+        let trans = session.createOrReuseTransaction()
+        guard trans.contains(objectID) else { return }
+        
+        let object = trans.mutate(objectID)
+        guard object.type.hasTrait(.DiagramConnector) else { return }
+        
+        if var midpoints: [Point] = object["midpoints"] {
+            guard midpoints.count < index else { return }
+            midpoints[index] = finalPosition
+            object["midpoints"] = Variant(midpoints)
+        }
+        else {
+            object["midpoints"] = Variant([finalPosition])
+        }
+
+    }
+    // MARK: - Clean-up
+    
+    func cleanUp() {
+        world.removeComponentForAll(BlockPreview.self)
+        world.removeComponentForAll(ConnectorPreview.self)
+    }
+    
+    func removeHandles() {
+        for (runtimeID, _) in world.query(CanvasHandle.self) {
+            world.despawn(runtimeID)
         }
     }
 

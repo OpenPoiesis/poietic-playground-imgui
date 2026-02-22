@@ -84,7 +84,8 @@ class ConnectTool: CanvasTool {
         guard let canvas,
               let session,
               let target = canvas.hitTarget(screenPosition: event.screenPos),
-              let objectID = world.entityToObject(target.runtimeID),
+              case .object(let runtimeID, _) = target,
+              let objectID = world.entityToObject(runtimeID),
               let typeName = palette?.selectedIdentifier,
               let type = session.design.metamodel.objectType(name: typeName),
               let object = world.frame?[objectID]
@@ -94,7 +95,7 @@ class ConnectTool: CanvasTool {
         }
         let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
         createDragConnector(type: type,
-                            origin: target.runtimeID,
+                            origin: runtimeID,
                             targetPoint: worldPosition,
                             targetID: nil,
                             targetAllowed: true)
@@ -113,10 +114,11 @@ class ConnectTool: CanvasTool {
         let targetAllowed: Bool
 
         if let target = canvas.hitTarget(screenPosition: event.screenPos),
-           let targetObjectID = canvas.world.entityToObject(target.runtimeID)
+           case .object(let runtimeID, _) = target,
+           let targetObjectID = canvas.world.entityToObject(runtimeID)
         {
-            targetID = target.runtimeID
-            targetAllowed = canConnect(type: intent.type, from: intent.originID, to: target.runtimeID)
+            targetID = runtimeID
+            targetAllowed = canConnect(type: intent.type, from: intent.originID, to: runtimeID)
         }
         else {
             targetID = nil
@@ -138,11 +140,12 @@ class ConnectTool: CanvasTool {
               let canvas,
               let intent: ConnectorIntent = intendedConnector.component(),
               let target = canvas.hitTarget(screenPosition: event.screenPos),
-              let targetObjectID = canvas.world.entityToObject(target.runtimeID)
+              case .object(let runtimeID, _) = target,
+              let targetObjectID = canvas.world.entityToObject(runtimeID)
         else { return }
         
-        if canConnect(type: intent.type, from: intent.originID, to: target.runtimeID) {
-            createConnection(type: intent.type, from: intent.originID, to: target.runtimeID)
+        if canConnect(type: intent.type, from: intent.originID, to: runtimeID) {
+            createConnection(type: intent.type, from: intent.originID, to: runtimeID)
         }
 
         

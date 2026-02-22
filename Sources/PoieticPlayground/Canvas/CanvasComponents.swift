@@ -28,3 +28,23 @@ enum TargetHighlight: Component {
     case notAllowed
 }
 
+struct CanvasHandle: Component {
+    enum Kind {
+        case midpoint(Int)
+        // TODO: case connect(ObjectType)
+    }
+    /// Runtime entity owning the handle, typically an entity corresponding to a design object.
+    let owner: RuntimeID
+    let kind: Kind
+    /// Current position of the handle in world coordinates.
+    ///
+    /// Use this position for drawing the handle and for creating a transaction when dragging
+    /// operation is concluded.
+    var position: Vector2D
+    
+    init(owner: RuntimeID, position: Vector2D, kind: Kind) {
+        self.owner = owner
+        self.position = position
+        self.kind = kind
+    }
+}
