@@ -1,0 +1,199 @@
+//
+//  DiagramCanvas+input.swift
+//  PoieticPlayground
+//
+//  Created by Stefan Urbanek on 04/02/2026.
+//
+import CIimgui
+import Diagramming
+
+struct InputState {
+    enum PointerState: Equatable {
+        /// Pointer or mouse is up – idle.
+        case idle
+        /// Pointer or mouse is pressed, not yet moved.
+        ///
+        /// The associated value is the first button that triggered the state.
+        case pressed(MouseButton)
+        /// Pointer or mouse has been moved.
+        ///
+        /// The associated value is the first button that triggered the state.
+        case dragging(MouseButton)
+    }
+
+    var pointerState: PointerState = .idle
+
+    var mousePos: ImVec2? = nil
+    var previousModifiers: KeyModifiers = .none
+    var wasMouseInViewport: Bool = false
+}
+
+// TODO: Create CanvasInputRecognizer:
+
+//class CanvasInputRecognizer {
+//    let state: InputState = InputState()
+//    func recognizeEvents(_ io: ImGuiIO, isMouseInViewport: Bool) -> [ToolEvent] {
+//        return []
+//    }
+//}
+
+// TODO: Consider moving this outside of canvas. We need inputState and isMouseInViewport
+extension DiagramCanvas {
+    // MARK: - Input Handling
+    func recognizeEvents(_ io: ImGuiIO) -> [ToolEvent] {
+        var events: [ToolEvent] = []
+       
+        // Current state
+        let mousePos = io.MousePos
+        let mouseDelta = io.MouseDelta
+        let buttonsDown = MouseButtonMask(io.MouseDown)
+        let currentModifiers = KeyModifiers(io.KeyMods)
+        
+        let eventBody = ToolEvent.Body(
+            screenPos: mousePos,
+            delta: mouseDelta,
+            buttonsDown: .none,
+            modifiers: currentModifiers
+        )
+
+        // # Viewport check and Hover Events
+        //
+        // Case 1: Mouse left viewport while idle - bail completely
+        if !isMouseInViewport && (inputState.pointerState == .idle) {
+            if inputState.wasMouseInViewport {
+                let event = ToolEvent(.hoverEnd, body: eventBody)
+                events.append(event)
+            }
+            inputState.wasMouseInViewport = false
+            return events
+        }
+
+        // Case 2: Mouse left viewport during operation - continue but emit HoverEnd
+        if !isMouseInViewport && inputState.wasMouseInViewport {
+            let event = ToolEvent(.hoverEnd, body: eventBody)
+            events.append(event)
+            inputState.wasMouseInViewport = false
+        }
+        // Case 3: Mouse returned to viewport - emit HoverStart
+        if isMouseInViewport && !inputState.wasMouseInViewport {
+            let event = ToolEvent(.hoverStart, body: eventBody)
+            events.append(event)
+            inputState.wasMouseInViewport = true
+        }
+        
+        // # Pointer Events
+        // Pointer Down - ImGui tells us which buttons were clicked THIS FRAME
+        let buttonsClicked = MouseButtonMask(io.MouseClicked)
+        for button in buttonsClicked.buttons {
+            let event = ToolEvent(.pointerDown,
+                                  body: eventBody,
+                                  triggerButton: button)
+            events.append(event)
+        }
+        
+        // Pointer Move - if mouse moved
+        if mouseDelta.lengthSquared() > 0.0 {
+            let event = ToolEvent(.pointerMove, body: eventBody)
+            events.append(event)
+        }
+        
+        // Pointer Up - ImGui tells us which buttons were released THIS FRAME
+        let buttonsReleased = MouseButtonMask(io.MouseReleased)
+        for button in buttonsReleased.buttons {
+            let event = ToolEvent(.pointerUp,
+                                  body: eventBody,
+                                  triggerButton: button)
+            events.append(event)
+        }
+        
+        // # Modifier Change
+        //
+        if currentModifiers != inputState.previousModifiers {
+            let event = ToolEvent(.modifierChange, body: eventBody)
+            events.append(event)
+        }
+        inputState.previousModifiers = currentModifiers
+        
+        // === SCROLL EVENT ===
+        if io.MouseWheel != 0.0 || io.MouseWheelH != 0.0 {
+            let event = ToolEvent(.scroll,
+                                  body: eventBody,
+                                  scrollDelta: ImVec2(io.MouseWheelH, io.MouseWheel))
+            events.append(event)
+        }
+        
+        // # Escape Key Handling
+        //
+        let escapePressed = ImGui.IsKeyPressed(ImGuiKey_Escape)
+        
+        // # Input State Machine and Gesture Recognition
+        //
+        switch inputState.pointerState {
+        case .idle:
+            for button in buttonsClicked.buttons {
+                inputState.pointerState = .pressed(button)
+                break // Track first button only
+            }
+            
+        case .pressed(let dragButton):
+            let distance = dragButton.unpackItem(io.MouseDragMaxDistanceSqr)
+
+            if buttonsReleased.contains(dragButton.mask) {
+                // TODO: The click count handling does not seem to work
+                let clickCount = dragButton.unpackItem(io.MouseClickedCount)
+                let eventType: ToolEventType?
+                if clickCount == 1 {
+                    eventType = .click
+                }
+                else if clickCount == 2 {
+                    eventType = .doubleClick
+                }
+                else if clickCount >= 3 {
+                    eventType = .tripleClick
+                }
+                else {
+                    eventType = nil
+                }
+                if let eventType {
+                    let event = ToolEvent(eventType, body: eventBody, triggerButton: dragButton)
+                    events.append(event)
+                }
+                inputState.pointerState = .idle
+            }
+                // Check if drag threshold exceeded
+            else if distance > io.MouseDragThreshold {
+                inputState.pointerState = .dragging(dragButton)
+                
+                let event = ToolEvent(.dragStart, body: eventBody, triggerButton: dragButton)
+                events.append(event)
+            }
+            // Escape cancels the press
+            else if escapePressed {
+                inputState.pointerState = .idle
+            }
+
+        case .dragging(let dragButton):
+            // Continue dragging
+            if buttonsDown.contains(dragButton.mask) {
+                if mouseDelta.lengthSquared() > 0.0 {
+                    let event = ToolEvent(.dragMove, body: eventBody, triggerButton: dragButton)
+                    events.append(event)
+                }
+            }
+            // Drag ended
+            else if buttonsReleased.contains(dragButton.mask) {
+                let event = ToolEvent(.dragEnd, body: eventBody, triggerButton: dragButton)
+                events.append(event)
+                inputState.pointerState = .idle
+            }
+            // Escape cancels drag
+            if escapePressed {
+                let event = ToolEvent(.dragCancel, body: eventBody, triggerButton: dragButton)
+                events.append(event)
+                inputState.pointerState = .idle
+            }
+        }
+        
+        return events
+    }
+}

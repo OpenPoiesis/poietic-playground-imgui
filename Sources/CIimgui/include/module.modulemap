@@ -1,5 +1,6 @@
 module CIimgui {
     header "imgui.h"
+    header "imgui+swift.h"
     header "../backends/imgui_impl_sdl3.h"
     header "../backends/imgui_impl_sdlgpu3.h"
     header "../backends/imgui_impl_sdlgpu3_shaders.h"
