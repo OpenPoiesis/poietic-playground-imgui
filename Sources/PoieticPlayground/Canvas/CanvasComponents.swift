@@ -30,6 +30,13 @@ enum TargetHighlight: Component {
 
 struct CanvasHandle: Component {
     enum Kind {
+        /// Handle represents a connector mid-point.
+        ///
+        /// Moving the handle requires that the position is reflected in ``ConnectorPreview``.
+        ///
+        /// - SeeAlso: ``SelectionTool/dragMidpointHandle(_:index:currentPosition:currentDelta:)``,
+        /// ``SelectionTool/finalizeHandleMove(_:finalPosition:totalDelta:)``
+        /// 
         case midpoint(Int)
         // TODO: case connect(ObjectType)
     }

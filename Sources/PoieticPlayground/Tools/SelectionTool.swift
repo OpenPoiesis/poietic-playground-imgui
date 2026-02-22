@@ -341,6 +341,8 @@ class SelectionTool: CanvasTool {
         session.requiresInteractivePreviewUpdate = true
     }
     
+    /// Reflect handle position to connector preview.
+    ///
     func dragMidpointHandle(_ owner: RuntimeEntity, index: Int, currentPosition: Vector2D, currentDelta: Vector2D) {
         var midpoints: [Vector2D]
         
@@ -350,16 +352,16 @@ class SelectionTool: CanvasTool {
             }
             else {
                 midpoints = preview.midpoints
+
+                if index < preview.midpoints.count {
+                    midpoints[index] = currentPosition
+                }
             }
         }
         else {
             midpoints = [currentPosition]
         }
         
-        guard index < midpoints.count else { return }
-
-        midpoints[index] += currentDelta
-
         let newPreview = ConnectorPreview(midpoints: midpoints)
         owner.setComponent(newPreview)
     }
@@ -369,8 +371,7 @@ class SelectionTool: CanvasTool {
     
     func finalizeHandleMove(_ handle: RuntimeEntity, finalPosition: Vector2D, totalDelta: Vector2D) {
         guard let session,
-              let canvas,
-              var component: CanvasHandle = handle.component()
+              let component: CanvasHandle = handle.component()
         else { return }
 
         switch component.kind {
@@ -393,7 +394,7 @@ class SelectionTool: CanvasTool {
         guard object.type.hasTrait(.DiagramConnector) else { return }
         
         if var midpoints: [Point] = object["midpoints"] {
-            guard midpoints.count < index else { return }
+            guard index < midpoints.count else { return }
             midpoints[index] = finalPosition
             object["midpoints"] = Variant(midpoints)
         }
