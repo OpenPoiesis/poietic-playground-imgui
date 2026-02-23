@@ -22,9 +22,11 @@ class LabelStyle {
 }
 
 class CanvasStyle {
+    var background: Color = Color(red: 0.97, green: 0.96, blue: 0.94)
+    var gridColor = Color(red: 0.3, green: 0.3, blue: 0.3, alpha: 0.2)
+
     var adaptableColors: [String:Color] = DefaultAdaptableColors
     
-    var background: Color = Color(red: 0.97, green: 0.96, blue: 0.94)
     // Block
     var lineWidths: [String:Float] = [:]
     var pictogramColor: Color = DefaultPictogramColor

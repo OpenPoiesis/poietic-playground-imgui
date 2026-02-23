@@ -7,32 +7,70 @@
 
 import Ccairo
 
-enum CanvasSurfaceError: Error {
+enum OverlayError: Error {
     case noContext
     case noSurface
     case noData
     case uploadFailed(any Error)
 }
 
-class CanvasSurface {
-    /// Name of the surface for debugging purposes.
+/// Canvas visual overlay.
+///
+/// Lifecycles:
+///
+/// 1. State is ``State/contentDirty``, requires initial rendering of the document.
+/// 2. After ``render(_:)`` the state is ``State/textureDirty``, requires texture upload.
+/// 3. ``uploadToGPU()`` completes the overlay life cycle, returning it to clean state.
+///
+class Overlay {
+    
+    enum State {
+        case uninitialized
+        case clean
+        /// Content (usually design/document) changed and the content needs to be regenerated.
+        ///
+        /// It is required to (re-)draw into `surface` through `context`.
+        case needsRender
+        /// Surface content has been changed and we need to upload the texture.
+        case needsUpload
+    }
+    
+    /// Name of the overlay for debugging purposes.
     let name: String
     
+    /// Cairo surface pointer `cairo_surface_t *`.
     private var surface: OpaquePointer? // cairo_surface_t*
-    private var context: OpaquePointer? // cairo_t*
+    /// Cairo context pointer `cairo_t *`.
+    private var context: OpaquePointer?
+    /// Texture handle, if successfully created by a graphic backend.
     private(set) var texture: TextureHandle?
 
     private var width: Int32 = 0
     private var height: Int32 = 0
     
-    // rename to requiresUpload
-    private(set) var isDirty: Bool = true
-//    private(set) var requiresRedraw: Bool = true
-
+    private(set) var state: State = .needsRender
+    
     init(name: String) {
         self.name = name
     }
+
+    var needsRender: Bool {
+        switch state {
+        case .needsRender: return true
+        case .clean, .needsUpload, .uninitialized: return false
+        }
+    }
     
+    var needsUpload: Bool {
+        switch state {
+        case .needsUpload: return true
+        case .clean, .needsRender, .uninitialized: return false
+        }
+    }
+    
+    func setNeedsRender() { self.state = .needsRender }
+    func setNeedsUpload() { self.state = .needsUpload }
+
     @MainActor
     func ensureSize(width: Int32, height: Int32) {
         guard width > 0 && height > 0 else { return }
@@ -42,7 +80,7 @@ class CanvasSurface {
             create(width: width, height: height)
             self.width = width
             self.height = height
-            isDirty = true
+            self.state = .needsRender
         }
     }
 
@@ -73,9 +111,10 @@ class CanvasSurface {
         
         width = 0
         height = 0
+        self.state = .uninitialized
     }
 
-    func render(_ draw: (OpaquePointer) -> Void) throws (CanvasSurfaceError) {
+    func render(_ draw: (OpaquePointer) -> Void) throws (OverlayError) {
         guard let context else {
             throw .noContext
         }
@@ -86,12 +125,11 @@ class CanvasSurface {
         cairo_restore(context)
         cairo_set_operator(context, CAIRO_OPERATOR_OVER)
         draw(context)
-        isDirty = true
+        self.state = .needsUpload
     }
     
     @MainActor
-    func uploadToGPU() throws (CanvasSurfaceError) {
-        guard isDirty else { return }
+    func uploadToGPU() throws (OverlayError) {
         guard let surface = surface else {
             throw .noSurface
         }
@@ -113,28 +151,24 @@ class CanvasSurface {
         
         do {
             texture = try backend.createTexture(pixels: data, width: w, height: h)
-            isDirty = false
+            self.state = .clean
         }
         catch {
             throw .uploadFailed(error)
         }
     }
-    
-    func markDirty() {
-        self.isDirty = true
-    }
 }
 
-class SurfaceLayerStack {
-    private var layers: [CanvasSurface] = []
+class OverlayStack {
+    private var layers: [Overlay] = []
     
     /// Add a layer to the stack (bottom to top order)
-    func add(_ surface: CanvasSurface) {
-        layers.append(surface)
+    func add(_ overlay: Overlay) {
+        layers.append(overlay)
     }
     
     /// Get first surface layer with given name
-    func layer(named name: String) -> CanvasSurface? {
+    func layer(named name: String) -> Overlay? {
         layers.first { $0.name == name }
     }
     
@@ -148,9 +182,9 @@ class SurfaceLayerStack {
     
     /// Upload all dirty layers to GPU
     @MainActor
-    func uploadDirty() throws (CanvasSurfaceError) {
+    func uploadIfNeeded() throws (OverlayError) {
         for layer in layers {
-            guard layer.isDirty else { continue }
+            guard layer.needsUpload else { continue }
             try layer.uploadToGPU()
         }
     }
@@ -161,7 +195,7 @@ class SurfaceLayerStack {
     }
     
     /// Mark all layers dirty
-    func markAllDirty() {
-        layers.forEach { $0.markDirty() }
+    func setAllNeedsRender() {
+        layers.forEach { $0.setNeedsRender() }
     }
 }

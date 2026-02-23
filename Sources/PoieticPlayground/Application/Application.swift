@@ -11,18 +11,9 @@ import CIimgui
 import Csdl3
 import Diagramming
 
-let clearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
 @MainActor
 class Application {
-    var context: ApplicationContext {
-        guard let _context else {
-            fatalError("Application context not initialized")
-        }
-        return _context
-    }
-    var _context: ApplicationContext!
-
     // Dumping ground of globals (for now)
 //    static let NewDesignTemplatePath = "designs/new_canvas.json"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
@@ -35,10 +26,6 @@ class Application {
     var showMetrics = false
     var quitRequested: Bool = false
     
-    // -- Events and Commands
-//    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
-//    var events: Set<ApplicationEvent> = Set()
-
     // -- Document --
     var canvas: DiagramCanvas
     
@@ -98,7 +85,6 @@ class Application {
         }
 
         setupEventSchedules()
-
         mainLoop()
     }
     
@@ -120,6 +106,10 @@ class Application {
 
         self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
         self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
+        
+        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
+        self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
 
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
 
@@ -206,7 +196,6 @@ class Application {
         }
         
         updateWorld(session)
-        // scheduled
     }
     
     func updateWorld(_ session: Session) {
@@ -225,6 +214,7 @@ class Application {
         if session.requiresInteractivePreviewUpdate {
             self.run(schedule: InteractivePreviewSchedule.self, session: session)
             session.requiresInteractivePreviewUpdate = false
+            session.trigger(.previewChanged)
         }
     }
 

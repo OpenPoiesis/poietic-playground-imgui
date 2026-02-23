@@ -72,17 +72,24 @@ struct DrawingContext {
     }
 
     func strokePath(_ path: BezierPath, transform: AffineTransform = .identity) {
-        createPath(path, transform: transform)
+        addPath(path, transform: transform)
         cairo_stroke(context)
     }
 
     func fillPath(_ path: BezierPath, transform: AffineTransform = .identity) {
-        createPath(path, transform: transform)
+        addPath(path, transform: transform)
         cairo_fill(context)
     }
 
+    func addLine(from a: Vector2D, to b: Vector2D) {
+        cairo_move_to(context, a.x, a.y)
+        cairo_line_to(context, b.x, b.y)
+    }
+    func stroke() {
+        cairo_stroke(context)
+    }
     
-    func createPath(_ path: BezierPath, transform: AffineTransform = .identity) {
+    func addPath(_ path: BezierPath, transform: AffineTransform = .identity) {
         var current: Vector2D = .zero
         for element in path.elements {
             switch element {

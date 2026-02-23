@@ -50,7 +50,8 @@ class PanTool: CanvasTool {
 
         let screenOffset = event.screenPos - self.previousScreenPos
         let canvasOffset = Vector2D(screenOffset) * Double(canvas.zoomLevel)
-        canvas.viewOffset -= canvasOffset
+        canvas.setView(offset: canvas.viewOffset - canvasOffset,
+                       zoom: canvas.zoomLevel)
         
         self.previousScreenPos = event.screenPos
 
@@ -63,7 +64,8 @@ class PanTool: CanvasTool {
 
         let screenOffset = event.screenPos - self.previousScreenPos
         let canvasOffset = Vector2D(screenOffset) * Double(canvas.zoomLevel)
-        canvas.viewOffset -= canvasOffset
+        canvas.setView(offset: canvas.viewOffset - canvasOffset,
+                       zoom: canvas.zoomLevel)
 
         state = .idle
         cursor = ImGuiMouseCursor_Arrow

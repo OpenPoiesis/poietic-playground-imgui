@@ -19,7 +19,8 @@ extension DiagramCanvas {
     func drawToCairo(_ cairoContext: OpaquePointer) {
         let context = DrawingContext(cairoContext)
 //        dcontext.setColor(style.background)
-
+        cairo_set_antialias(cairoContext, CAIRO_ANTIALIAS_DEFAULT)
+        drawGrid(context)
         drawBlocks(context)
         drawConnectors(context)
     }
@@ -181,14 +182,15 @@ extension DiagramCanvas {
         // TODO: Use colors from CanvasStyle.connectorColors
         context.setColor(style.defaultConnectorColor)
         if let path = geometry.linePath {
-            context.strokePath(path, transform: transform)
+            context.addPath(path, transform: transform)
         }
         if let path = geometry.headArrowhead {
-            context.strokePath(path, transform: transform)
+            context.addPath(path, transform: transform)
         }
         if let path = geometry.tailArrowhead {
-            context.strokePath(path, transform: transform)
+            context.addPath(path, transform: transform)
         }
+        context.stroke()
         // Filled curves
         if let path = geometry.fillPath {
             context.setColor(style.defaultConnectorColor)
@@ -197,10 +199,8 @@ extension DiagramCanvas {
         }
     }
 
-    func drawGrid() {
-        guard showGrid,
-              let drawList = ImGui.GetWindowDrawList()
-        else { return }
+    func drawGrid(_ context: DrawingContext) {
+        guard showGrid else { return }
         
         // Calculate visible area in world coordinates
         let worldTopLeft: Vector2D = screenToWorld(canvasPos)
@@ -211,13 +211,14 @@ extension DiagramCanvas {
         let startX = floor(worldTopLeft.x / gridSize) * gridSize
         let endX = ceil(worldBottomRight.x / gridSize) * gridSize
         
+        context.setColor(style.gridColor)
+        
         for x in stride(from: startX, through: endX, by: gridSize) {
-            let screenX = Float((x - viewOffset.x) * zoomLevel) + canvasPos.x
-            let p1 = ImVec2(screenX, canvasPos.y)
-            let p2 = ImVec2(screenX, canvasPos.y + canvasSize.y)
+            let screenX = (x - viewOffset.x) * zoomLevel + Double(canvasPos.x)
+            let p1 = Vector2D(screenX, Double(canvasPos.y))
+            let p2 = Vector2D(screenX, Double(canvasPos.y + canvasSize.y))
             
-            drawList.pointee.AddLine(p1, p2,
-                ImGui.ColorConvertFloat4ToU32(gridColor), 1.0)
+            context.addLine(from: p1, to: p2)
         }
         
         // Draw horizontal grid lines
@@ -225,13 +226,13 @@ extension DiagramCanvas {
         let endY = ceil(worldBottomRight.y / gridSize) * gridSize
         
         for y in stride(from: startY, through: endY, by: gridSize) {
-            let screenY = Float((y - viewOffset.y) * zoomLevel) + canvasPos.y
-            let p1 = ImVec2(canvasPos.x, screenY)
-            let p2 = ImVec2(canvasPos.x + canvasSize.x, screenY)
+            let screenY = ((y - viewOffset.y) * zoomLevel) + Double(canvasPos.y)
+            let p1 = Vector2D(Double(canvasPos.x), screenY)
+            let p2 = Vector2D(Double(canvasPos.x + canvasSize.x), screenY)
             
-            drawList.pointee.AddLine(p1, p2,
-                ImGui.ColorConvertFloat4ToU32(gridColor), 1.0)
+            context.addLine(from: p1, to: p2)
         }
+        context.stroke()
     }
 
     func drawStatusInfo(_ text: String) {
@@ -258,6 +259,4 @@ extension DiagramCanvas {
         drawList?.pointee.AddText(ImVec2(bgPos1.x + padding, bgPos1.y + padding),
                                  textColor, infoText, nil)
     }
-
-
 }

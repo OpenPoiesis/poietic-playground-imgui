@@ -8,6 +8,8 @@
 import Csdl3
 import CIimgui
 
+private let ClearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
+
 final class SDL3GPUBackend: GraphicsBackendProtocol {
     private static let SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR
     private static let PresentMode = SDL_GPU_PRESENTMODE_VSYNC
@@ -87,7 +89,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
             // Setup and start a render pass
             var target_info = SDL_GPUColorTargetInfo()
             target_info.texture = swapchainTexture
-            target_info.clear_color = SDL_FColor(r: clearColor.x, g: clearColor.y, b: clearColor.z, a: clearColor.w)
+            target_info.clear_color = SDL_FColor(r: ClearColor.x, g: ClearColor.y, b: ClearColor.z, a: ClearColor.w)
             target_info.load_op = SDL_GPU_LOADOP_CLEAR
             target_info.store_op = SDL_GPU_STOREOP_STORE
             target_info.mip_level = 0
