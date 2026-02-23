@@ -114,7 +114,7 @@ class Overlay {
         self.state = .uninitialized
     }
 
-    func render(_ draw: (OpaquePointer) -> Void) throws (OverlayError) {
+    func render(_ draw: (DrawingContext) -> Void) throws (OverlayError) {
         guard let context else {
             throw .noContext
         }
@@ -123,8 +123,12 @@ class Overlay {
         cairo_set_operator(context, CAIRO_OPERATOR_CLEAR)
         cairo_paint(context)
         cairo_restore(context)
+
+        cairo_save(context)
         cairo_set_operator(context, CAIRO_OPERATOR_OVER)
-        draw(context)
+        draw(DrawingContext(context))
+        cairo_restore(context)
+
         self.state = .needsUpload
     }
     

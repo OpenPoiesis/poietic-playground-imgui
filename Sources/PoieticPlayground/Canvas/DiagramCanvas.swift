@@ -114,12 +114,21 @@ class DiagramCanvas: View {
         return worldPos
     }
 
-    /// Convert world coordinates to screen coordinates
+    /// Convert world coordinates to ImGui screen coordinates.
+    ///
+    /// - Note: For drawing use the ``toOverlayTransform``.
+    ///
     func worldToScreen(_ worldPos: Vector2D) -> ImVec2 {
         let screenPos = (worldPos - viewOffset) * Double(zoomLevel)
         return ImVec2(screenPos) + canvasPos
     }
    
+    /// Convert world coordinates to canvas overlay coordinates.
+    func worldToOverlay(_ worldPos: Vector2D) -> Vector2D {
+        return toOverlayTransform.apply(to: worldPos)
+    }
+   
+
     func update(_ timeDelta: Double) {
         // Nothing for now
     }

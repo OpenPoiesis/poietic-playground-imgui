@@ -42,7 +42,7 @@ class CanvasStyle {
     var notAllowedColor: Color = .screenRed
 
     // Connector
-    var defaultConnectorLineWidth: Float = 1.0
+    var defaultConnectorLineWidth: Double = 1.0
     var defaultConnectorColor: Color = DefaultConnectorColor
     var defaultConnectorFillColor: Color = DefaultConnectorFillColor
 

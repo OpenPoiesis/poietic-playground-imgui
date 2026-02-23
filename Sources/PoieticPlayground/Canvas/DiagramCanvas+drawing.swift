@@ -16,10 +16,9 @@ extension DiagramCanvas {
     static let SecondaryLabelPadding: Double = 4.0
     static let ColorSwatchSize: Vector2D = Vector2D(10.0, 10.0)
 
-    func drawMainOverlay(_ cairoContext: OpaquePointer) {
-        let context = DrawingContext(cairoContext)
-//        dcontext.setColor(style.background)
-        cairo_set_antialias(cairoContext, CAIRO_ANTIALIAS_DEFAULT)
+    func drawMainOverlay(_ context: DrawingContext) {
+//        context.setColor(style.background)
+//        cairo_set_antialias(cairoContext, CAIRO_ANTIALIAS_DEFAULT)
         drawGrid(context)
         drawBlocks(context)
         drawConnectors(context)
@@ -28,23 +27,26 @@ extension DiagramCanvas {
     }
     
     func drawHandles(_ context: DrawingContext) {
+        context.save()
         let radius = Self.HandleSize / 2
 
         for (_, handle) in world.query(CanvasHandle.self) {
             context.setColor(style.handleColor)
-            let screenPos = Vector2D(worldToScreen(handle.position))
+            let screenPos = toOverlayTransform.apply(to: handle.position)
             context.addCircle(center: screenPos, radius: radius)
             context.stroke()
         }
+        context.restore()
     }
     
     func drawIntents(_ context: DrawingContext) {
         for (runtimeID, component) in world.query(BlockIntent.self) {
-            drawBlockIntent(runtimeID: runtimeID, block: component)
+            drawBlockIntent(context, runtimeID: runtimeID, block: component)
         }
     }
     
     func drawBlocks(_ context: DrawingContext) {
+        context.save()
         let selection: Selection? = world.singleton()
         
         for (runtimeID, component) in world.query(DiagramBlock.self) {
@@ -53,13 +55,16 @@ extension DiagramCanvas {
             let isSelected = selection?.contains(objectID) ?? false
             drawBlock(context, runtimeID: runtimeID, isSelected: isSelected, block: component)
         }
+        context.restore()
     }
 
-    func drawBlockIntent(runtimeID: RuntimeID, block: BlockIntent) {
-        guard let drawList = ImGui.GetWindowDrawList() else { return }
-        let color = style.intentShadowColor
+    func drawBlockIntent(_ context: DrawingContext, runtimeID: RuntimeID, block: BlockIntent) {
         let transform = toOverlayTransform.translated(block.position)
-        drawList.pointee.StrokePath(block.pictogram.path, color: color, transform: transform)
+        context.save()
+        context.setColor(style.intentShadowColor)
+        context.addPath(block.pictogram.path, transform: transform)
+        context.stroke()
+        context.restore()
     }
 
     func drawBlock(_ context: DrawingContext, runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
@@ -72,12 +77,12 @@ extension DiagramCanvas {
             blockPosition = block.position
         }
         
-        let screenPos = Vector2D(worldToScreen(blockPosition))
+        let blockTrans = toOverlayTransform.translated(blockPosition)
+        let blockSurfacePos = blockTrans.apply(to: blockPosition)
         var swatchCenter: Vector2D
         var labelCenter: Vector2D
         
         if let pictogram = block.pictogram {
-            let blockTrans = toOverlayTransform.translated(blockPosition)
 
             if isSelected {
                 context.setColor(style.selectionFillColor)
@@ -103,10 +108,10 @@ extension DiagramCanvas {
             context.strokePath(pictogram.path, transform: blockTrans)
             
             let screenBBMin = toOverlayTransform.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
-            labelCenter = Vector2D(screenPos.x, screenBBMin.y)
+            labelCenter = Vector2D(blockSurfacePos.x, screenBBMin.y)
         }
         else {
-            labelCenter = screenPos
+            labelCenter = blockSurfacePos
         }
 
         swatchCenter = labelCenter
@@ -114,7 +119,6 @@ extension DiagramCanvas {
       
         if let label = block.label {
             context.setFontSize(style.primaryLabelStyle.fontSize)
-            let size = context.textSize(label)
             let te = context.textExtents(label)
             let position = Vector2D(labelCenter.x - (te.width / 2) - te.x_bearing,
                                     labelCenter.y + (te.height) - te.y_bearing)
@@ -123,7 +127,7 @@ extension DiagramCanvas {
             context.showText(label, at: position)
 
             labelCenter.y = position.y + Self.SecondaryLabelPadding
-            swatchCenter = Vector2D(position.x - Self.ColorSwatchSize.x, position.y - size.y/2)
+            swatchCenter = Vector2D(position.x - Self.ColorSwatchSize.x, position.y - te.height/2)
         }
 
         if let label = block.secondaryLabel {
@@ -145,6 +149,7 @@ extension DiagramCanvas {
     }
     
     func drawConnectors(_ context: DrawingContext) {
+        context.save()
         let selection: Selection? = world.singleton()
 
         for (runtimeID, component) in world.query(DiagramConnectorGeometry.self) {
@@ -156,19 +161,15 @@ extension DiagramCanvas {
                 drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: false, isIntent: true)
             }
         }
+        context.restore()
     }
     
     func drawConnector(_ context: DrawingContext, runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
         let transform = toOverlayTransform
-        // DEBUG wire
-        if isSelected {
-            context.setColor(Color(red: 1.0, green: 0.5, blue: 0.0))
-            context.setLineWidth(4)
-            context.strokePath(geometry.wire, transform: transform)
-        }
 
         // Open curves
         // TODO: Use colors from CanvasStyle.connectorColors
+        context.setLineWidth(style.defaultConnectorLineWidth)
         context.setColor(style.defaultConnectorColor)
         if let path = geometry.linePath {
             context.addPath(path, transform: transform)
@@ -186,10 +187,25 @@ extension DiagramCanvas {
             // TODO: ImGui can not draw correctly concave polygons (they are expensive)
             context.fillPath(path, transform: transform)
         }
+
+        // DEBUG wire
+        if isSelected {
+            context.save()
+            context.setColor(Color(red: 1.0, green: 0.8, blue: 0.0))
+            context.setLineWidth(4)
+            context.strokePath(geometry.wire, transform: transform)
+
+            context.setColor(Color(red: 1.0, green: 0.8, blue: 0.0, alpha: 0.5))
+            let outline = geometry.outline(inflatedBy: 10)
+            context.fillPath(outline, transform: transform)
+
+            context.restore()
+        }
     }
 
     func drawGrid(_ context: DrawingContext) {
         guard showGrid else { return }
+        context.save()
         
         // Calculate visible area in world coordinates
         let worldTopLeft: Vector2D = screenToWorld(canvasPos)
@@ -222,6 +238,7 @@ extension DiagramCanvas {
             context.addLine(from: p1, to: p2)
         }
         context.stroke()
+        context.restore()
     }
 
     func drawStatusInfo(_ text: String) {

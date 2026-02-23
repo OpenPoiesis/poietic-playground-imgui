@@ -89,10 +89,23 @@ struct DrawingContext {
     func addCircle(center: Vector2D, radius: Double) {
         cairo_arc(context, center.x, center.y, radius, 0.0, Double.pi * 2)
     }
+
     func stroke() {
         cairo_stroke(context)
     }
+
+    func fill() {
+        cairo_fill(context)
+    }
     
+    func save() {
+        cairo_save(context)
+    }
+    
+    func restore() {
+        cairo_restore(context)
+    }
+
     func addPath(_ path: BezierPath, transform: AffineTransform = .identity) {
         var current: Vector2D = .zero
         for element in path.elements {
