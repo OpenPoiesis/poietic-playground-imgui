@@ -134,3 +134,25 @@ extension ImGuiInputTextFlags_ {
         ImGuiInputTextFlags(Int32(bitPattern: lhs.rawValue) | Int32(bitPattern: rhs.rawValue))
     }
 }
+
+extension ImGuiTableFlags {
+    static func |(lhs: ImGuiTableFlags, rhs: ImGuiTableFlags_) -> ImGuiTableFlags {
+        ImGuiTableFlags(lhs | Int32(bitPattern: rhs.rawValue))
+    }
+}
+extension ImGuiTableFlags_ {
+    static func |(lhs: ImGuiTableFlags_, rhs: ImGuiTableFlags_) -> ImGuiTableFlags {
+        ImGuiTableFlags(Int32(bitPattern: lhs.rawValue) | Int32(bitPattern: rhs.rawValue))
+    }
+}
+
+extension ImGuiTableColumnFlags {
+    static func |(lhs: ImGuiTableColumnFlags, rhs: ImGuiTableColumnFlags_) -> ImGuiTableColumnFlags {
+        ImGuiTableColumnFlags(lhs | Int32(bitPattern: rhs.rawValue))
+    }
+}
+extension ImGuiTableColumnFlags_ {
+    static func |(lhs: ImGuiTableColumnFlags_, rhs: ImGuiTableColumnFlags_) -> ImGuiTableColumnFlags {
+        ImGuiTableColumnFlags(Int32(bitPattern: lhs.rawValue) | Int32(bitPattern: rhs.rawValue))
+    }
+}

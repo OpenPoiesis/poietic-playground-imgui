@@ -212,5 +212,4 @@ class InspectorPanel: Panel {
             section.draw(session)
         }
     }
-
 }

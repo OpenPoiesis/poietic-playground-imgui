@@ -33,6 +33,8 @@ class Application {
     var inspector: InspectorPanel
     var alertPanel = AlertPanel()
     var settingsPanel: SettingsPanel
+    
+    var issuesPanel: IssuesPanel
 
     var canvasTools: [CanvasTool]
     var currentTool: CanvasTool? { toolBar.currentTool }
@@ -55,6 +57,7 @@ class Application {
         self.toolBar = ToolBar()
         self.canvas = DiagramCanvas()
         self.settingsPanel = SettingsPanel()
+        self.issuesPanel = IssuesPanel()
         
         self.canvasTools = [
             SelectionTool(),
@@ -123,6 +126,7 @@ class Application {
             tool.bind(canvas: canvas, session: session)
         }
         inspector.bind(session)
+        issuesPanel.bind(session)
     }
     
     /// Set world singletons when the world changes.
@@ -184,6 +188,7 @@ class Application {
         inspector.update(timeDelta)
         toolBar.update(timeDelta)
         alertPanel.update(timeDelta)
+        issuesPanel.update(timeDelta)
 
         // Run commands
         while !session.commandQueue.isEmpty {
@@ -248,6 +253,7 @@ class Application {
         toolBar.draw()
         canvas.draw()
         alertPanel.draw()
+        issuesPanel.draw()
     }
     
     func processUnhandledInput() {

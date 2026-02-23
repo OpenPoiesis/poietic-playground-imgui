@@ -107,6 +107,10 @@ extension Application {
                 if ImGui.MenuItem("Show Inspector", "Cmd+I", &inspector.isVisible) {
                     // Nothing
                 }
+                if ImGui.MenuItem("Show Issues", nil, &issuesPanel.isVisible) {
+                    // Nothing
+                }
+                ImGui.Separator()
                 if ImGui.MenuItem("Show Toolbar", nil, &toolBar.isVisible) {
                     // Nothing
                 }
