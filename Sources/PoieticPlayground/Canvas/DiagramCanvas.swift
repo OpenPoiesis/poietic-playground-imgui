@@ -36,6 +36,9 @@ import PoieticCore
 class DiagramCanvas: View {
     static let DefaultHitRadius: Double = 5.0
 
+    var layers: SurfaceLayerStack
+    var mainLayer: CanvasSurface
+
     weak var session: Session?
     internal var world: World {
         guard let session else { fatalError("DiagramCanvas used before binding")}
@@ -70,6 +73,12 @@ class DiagramCanvas: View {
     init(session: Session? = nil) {
         self.session = session
         self.style = CanvasStyle()
+
+        self.layers = SurfaceLayerStack()
+        
+        self.mainLayer = CanvasSurface(name: "main")
+        self.layers.add(self.mainLayer)
+
     }
     
     func bind(_ session: Session) {
@@ -100,6 +109,9 @@ class DiagramCanvas: View {
     }
     
     func draw() {
+        NEWdraw()
+        return
+        
         let viewport = ImGui.GetMainViewport()
         ImGui.SetNextWindowPos(viewport.pointee.WorkPos, ImGuiCond(ImGuiCond_Always.rawValue), ImVec2(0, 0))
         ImGui.SetNextWindowSize(viewport.pointee.WorkSize, ImGuiCond(ImGuiCond_Always.rawValue))
@@ -115,12 +127,10 @@ class DiagramCanvas: View {
         // Disable padding
         ImGui.PushStyleVar(ImGuiStyleVar(ImGuiStyleVar_WindowPadding.rawValue), ImVec2(0, 0))
         // Set a background colour
-        ImGui.PushStyleColor(ImGuiCol(ImGuiCol_ChildBg.rawValue), ImColor(Int32(50), 50, 80, 255).intValue)
         ImGui.BeginChild("canvas",
                          ImVec2(0.0, 0.0),
                          ImGuiChildFlags_None | ImGuiChildFlags_Borders,
                          ImGuiWindowFlags_None | ImGuiWindowFlags_NoMove)
-        ImGui.PopStyleColor()
         ImGui.PopStyleVar()
 
         canvasPos = ImGui.GetCursorScreenPos()

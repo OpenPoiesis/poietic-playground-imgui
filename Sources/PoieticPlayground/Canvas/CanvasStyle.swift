@@ -5,7 +5,7 @@
 //  Created by Stefan Urbanek on 06/02/2026.
 //
 
-let DefaultPictogramColor = Color.white
+let DefaultPictogramColor = Color.black
 let DefaultConnectorColor = Color(gray: 0.8)
 let DefaultConnectorFillColor = Color(gray: 0.3)
 let DefaultIntentShadowColor = Color(gray: 0.3)
@@ -13,23 +13,25 @@ let DefaultBlockLabelColor: Color = .white
 
 class LabelStyle {
     let color: Color
-    // let size: Float
+    let fontSize: Double
     // let fontStyle: ... bold/italics
-    init(color: Color){
+    init(color: Color, fontSize: Double = 12.0){
         self.color = color
+        self.fontSize = fontSize
     }
 }
 
 class CanvasStyle {
     var adaptableColors: [String:Color] = DefaultAdaptableColors
     
+    var background: Color = Color(red: 0.97, green: 0.96, blue: 0.94)
     // Block
     var lineWidths: [String:Float] = [:]
     var pictogramColor: Color = DefaultPictogramColor
 
-    var primaryLabelStyle: LabelStyle = LabelStyle(color: .white)
-    var secondaryLabelStyle: LabelStyle = LabelStyle(color: .screenCyan)
-    var invalidLabelStyle: LabelStyle = LabelStyle(color: .white)
+    var primaryLabelStyle: LabelStyle = LabelStyle(color: .black, fontSize: 12.0)
+    var secondaryLabelStyle: LabelStyle = LabelStyle(color: .screenBlue, fontSize: 11.0)
+    var invalidLabelStyle: LabelStyle = LabelStyle(color: .screenRed)
 
     var intentShadowColor: Color = Color(gray: 0.5)
     /// Color or highlight tint for objects that are accepting a drag session.

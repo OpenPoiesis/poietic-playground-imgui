@@ -12,16 +12,23 @@ import Ccairo
 
 extension DiagramCanvas {
     static let HandleSize: Float = 15.0
-    static let PrimaryLabelPadding: Float = 0.0
-    static let SecondaryLabelPadding: Float = 4.0
-    static let ColorSwatchSize: ImVec2 = ImVec2(10.0, 10.0)
+    static let PrimaryLabelPadding: Double = 0.0
+    static let SecondaryLabelPadding: Double = 4.0
+    static let ColorSwatchSize: Vector2D = Vector2D(10.0, 10.0)
 
+    func drawToCairo(_ cairoContext: OpaquePointer) {
+        let context = DrawingContext(cairoContext)
+//        dcontext.setColor(style.background)
+
+        drawBlocks(context)
+        drawConnectors(context)
+    }
     func drawContent() {
         // Layer 1: Highlights
         
         // Layer 2: Blocks and Connectors
-        drawBlocks()
-        drawConnectors()
+//        drawBlocks()
+//        drawConnectors()
         // Layer 3: Intents
         drawIntents()
         // Layer 4: Handles
@@ -45,17 +52,17 @@ extension DiagramCanvas {
         }
     }
     
-    func drawBlocks() {
+    func drawBlocks(_ context: DrawingContext) {
         let selection: Selection? = world.singleton()
         
         for (runtimeID, component) in world.query(DiagramBlock.self) {
             guard let objectID = world.entityToObject(runtimeID) else { continue }
 
             let isSelected = selection?.contains(objectID) ?? false
-            drawBlock(runtimeID: runtimeID, isSelected: isSelected, block: component)
+            drawBlock(context, runtimeID: runtimeID, isSelected: isSelected, block: component)
         }
     }
-    
+
     func drawBlockIntent(runtimeID: RuntimeID, block: BlockIntent) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         let color = style.intentShadowColor
@@ -64,10 +71,8 @@ extension DiagramCanvas {
         drawList.pointee.StrokePath(block.pictogram.path, color: color, transform: transform)
     }
 
-    func drawBlock(runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
-        guard let drawList = ImGui.GetWindowDrawList() else { return }
-        
-        let screenTransform = toScreenTransform()
+    func drawBlock(_ context: DrawingContext, runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
+        let screenTrans = toScreenTransform()
         let blockPosition: Vector2D
         
         if let preview: BlockPreview = world.component(for: runtimeID) {
@@ -77,34 +82,38 @@ extension DiagramCanvas {
             blockPosition = block.position
         }
         
-        let screenPos = worldToScreen(blockPosition)
-        var swatchCenter: ImVec2
-        var labelCenter: ImVec2
+        let screenPos = Vector2D(worldToScreen(blockPosition))
+        var swatchCenter: Vector2D
+        var labelCenter: Vector2D
         
         if let pictogram = block.pictogram {
-            let transform = screenTransform.translated(blockPosition)
+            let blockTrans = screenTrans.translated(blockPosition)
 
             if isSelected {
-                drawList.pointee.FillPath(pictogram.mask, color: style.selectionFillColor, transform: transform)
-                drawList.pointee.StrokePath(pictogram.mask, color: style.selectionOutlineColor, transform: transform)
+                context.setColor(style.selectionFillColor)
+                context.fillPath(pictogram.mask, transform: blockTrans)
+                context.setColor(style.selectionOutlineColor)
+                context.strokePath(pictogram.mask, transform: blockTrans)
             }
             
             if let highlight: TargetHighlight = world.component(for: runtimeID) {
                 switch highlight {
                 case .accepting:
-                    drawList.pointee.StrokePath(pictogram.mask, color: style.acceptingColor, transform: transform)
+                    context.setColor(style.acceptingColor)
+                    context.strokePath(pictogram.mask, transform: blockTrans)
                 case .notAllowed:
-                    drawList.pointee.StrokePath(pictogram.mask, color: style.notAllowedColor, transform: transform)
+                    context.setColor(style.notAllowedColor)
+                    context.strokePath(pictogram.mask, transform: blockTrans)
                 case .none:
                     break
                 }
             }
 
-            drawList.pointee.StrokePath(pictogram.path, transform: transform)
-
-            let screenBBMin = worldToScreen(pictogram.pathBoundingBox.topLeft + blockPosition)
-            labelCenter = ImVec2(screenPos.x, screenBBMin.y)
+            context.setColor(style.pictogramColor)
+            context.strokePath(pictogram.path, transform: blockTrans)
             
+            let screenBBMin = screenTrans.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
+            labelCenter = Vector2D(screenPos.x, screenBBMin.y)
         }
         else {
             labelCenter = screenPos
@@ -112,69 +121,79 @@ extension DiagramCanvas {
 
         swatchCenter = labelCenter
         labelCenter.y += Self.PrimaryLabelPadding
-       
+      
         if let label = block.label {
-            let color = style.primaryLabelStyle.color.imIntValue
-            let size = ImGui.CalcTextSize(label)
-            let position = ImVec2(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
-            drawList.pointee.AddText(position, color, label, nil)
-            labelCenter.y += size.y + Self.SecondaryLabelPadding
-            swatchCenter = ImVec2(position.x - Self.ColorSwatchSize.x, position.y + size.y/2)
+            context.setFontSize(style.primaryLabelStyle.fontSize)
+            let size = context.textSize(label)
+            let te = context.textExtents(label)
+            let position = Vector2D(labelCenter.x - (te.width / 2) - te.x_bearing,
+                                    labelCenter.y + (te.height) - te.y_bearing)
+
+            context.setColor(style.primaryLabelStyle.color)
+            context.showText(label, at: position)
+
+            labelCenter.y = position.y + Self.SecondaryLabelPadding
+            swatchCenter = Vector2D(position.x - Self.ColorSwatchSize.x, position.y - size.y/2)
         }
 
         if let label = block.secondaryLabel {
-            let color = style.secondaryLabelStyle.color.imIntValue
-            let size = ImGui.CalcTextSize(label)
-            let position = ImVec2(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
-            drawList.pointee.AddText(position, color, label, nil)
+            context.setFontSize(style.secondaryLabelStyle.fontSize)
+            let size = context.textSize(label)
+            let position = Vector2D(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
+
+            context.setColor(style.secondaryLabelStyle.color)
+            context.showText(label, at: position)
         }
 
         if let colorName = block.accentColorName {
             let color = style.adaptableColor(colorName, default: .white)
-            let pmin = swatchCenter - (Self.ColorSwatchSize / 2.0)
-            let pmax = pmin + Self.ColorSwatchSize
-            drawList.pointee.AddRectFilled(pmin, pmax, color.imIntValue)
+            let swatchOrigin = swatchCenter - (Self.ColorSwatchSize / 2.0)
+            context.setColor(color)
+            context.fillRect(origin: swatchOrigin, size: Self.ColorSwatchSize)
         }
         
     }
     
-    func drawConnectors() {
+    func drawConnectors(_ context: DrawingContext) {
         let selection: Selection? = world.singleton()
 
         for (runtimeID, component) in world.query(DiagramConnectorGeometry.self) {
             if let objectID = world.entityToObject(runtimeID) {
                 let isSelected = selection?.contains(objectID) ?? false
-                drawConnector(runtimeID: runtimeID, geometry: component, isSelected: isSelected, isIntent: false)
+                drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: isSelected, isIntent: false)
             }
             else if world.hasComponent(ConnectorIntent.self, for: runtimeID) {
-                drawConnector(runtimeID: runtimeID, geometry: component, isSelected: false, isIntent: true)
+                drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: false, isIntent: true)
             }
         }
     }
-    func drawConnector(runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
-        guard let drawList = ImGui.GetWindowDrawList() else {
-            return
-        }
+    
+    func drawConnector(_ context: DrawingContext, runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
         let transform = toScreenTransform()
         // DEBUG wire
         if isSelected {
-            drawList.pointee.StrokePath(geometry.wire, color: Color(red: 1.0, green: 0.5, blue: 0.0), lineWidth: 4, transform: transform)
+            context.setColor(Color(red: 1.0, green: 0.5, blue: 0.0))
+            context.setLineWidth(4)
+            context.strokePath(geometry.wire, transform: transform)
         }
 
         // Open curves
+        // TODO: Use colors from CanvasStyle.connectorColors
+        context.setColor(style.defaultConnectorColor)
         if let path = geometry.linePath {
-            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
+            context.strokePath(path, transform: transform)
         }
         if let path = geometry.headArrowhead {
-            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
+            context.strokePath(path, transform: transform)
         }
         if let path = geometry.tailArrowhead {
-            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
+            context.strokePath(path, transform: transform)
         }
         // Filled curves
         if let path = geometry.fillPath {
+            context.setColor(style.defaultConnectorColor)
             // TODO: ImGui can not draw correctly concave polygons (they are expensive)
-            drawList.pointee.StrokePath(path, color: style.defaultConnectorColor, transform: transform)
+            context.fillPath(path, transform: transform)
         }
     }
 

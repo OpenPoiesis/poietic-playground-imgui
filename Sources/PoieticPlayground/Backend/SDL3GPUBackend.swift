@@ -203,7 +203,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     {
         var info = SDL_GPUTextureCreateInfo()
         info.type         = SDL_GPU_TEXTURETYPE_2D
-        info.format       = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM
+        info.format       = SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM
         info.usage        = SDL_GPU_TEXTUREUSAGE_SAMPLER
         info.width        = width
         info.height       = height
