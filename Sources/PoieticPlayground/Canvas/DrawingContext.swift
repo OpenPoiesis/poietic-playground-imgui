@@ -85,6 +85,10 @@ struct DrawingContext {
         cairo_move_to(context, a.x, a.y)
         cairo_line_to(context, b.x, b.y)
     }
+    
+    func addCircle(center: Vector2D, radius: Double) {
+        cairo_arc(context, center.x, center.y, radius, 0.0, Double.pi * 2)
+    }
     func stroke() {
         cairo_stroke(context)
     }

@@ -11,43 +11,34 @@ import PoieticCore
 import Ccairo
 
 extension DiagramCanvas {
-    static let HandleSize: Float = 15.0
+    static let HandleSize: Double = 15.0
     static let PrimaryLabelPadding: Double = 0.0
     static let SecondaryLabelPadding: Double = 4.0
     static let ColorSwatchSize: Vector2D = Vector2D(10.0, 10.0)
 
-    func drawToCairo(_ cairoContext: OpaquePointer) {
+    func drawMainOverlay(_ cairoContext: OpaquePointer) {
         let context = DrawingContext(cairoContext)
 //        dcontext.setColor(style.background)
         cairo_set_antialias(cairoContext, CAIRO_ANTIALIAS_DEFAULT)
         drawGrid(context)
         drawBlocks(context)
         drawConnectors(context)
-    }
-    func drawContent() {
-        // Layer 1: Highlights
-        
-        // Layer 2: Blocks and Connectors
-//        drawBlocks()
-//        drawConnectors()
-        // Layer 3: Intents
-        drawIntents()
-        // Layer 4: Handles
-        drawHandles()
+        drawIntents(context)
+        drawHandles(context)
     }
     
-    func drawHandles() {
-        guard let drawList = ImGui.GetWindowDrawList() else { return }
-        let color = style.handleColor
+    func drawHandles(_ context: DrawingContext) {
         let radius = Self.HandleSize / 2
 
         for (_, handle) in world.query(CanvasHandle.self) {
-            let screenPos = worldToScreen(handle.position)
-            drawList.pointee.AddCircle(screenPos, radius, color.imIntValue, 0, 4)
+            context.setColor(style.handleColor)
+            let screenPos = Vector2D(worldToScreen(handle.position))
+            context.addCircle(center: screenPos, radius: radius)
+            context.stroke()
         }
     }
     
-    func drawIntents() {
+    func drawIntents(_ context: DrawingContext) {
         for (runtimeID, component) in world.query(BlockIntent.self) {
             drawBlockIntent(runtimeID: runtimeID, block: component)
         }
@@ -67,13 +58,11 @@ extension DiagramCanvas {
     func drawBlockIntent(runtimeID: RuntimeID, block: BlockIntent) {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         let color = style.intentShadowColor
-        let screenTransform = toScreenTransform()
-        let transform = screenTransform.translated(block.position)
+        let transform = toOverlayTransform.translated(block.position)
         drawList.pointee.StrokePath(block.pictogram.path, color: color, transform: transform)
     }
 
     func drawBlock(_ context: DrawingContext, runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
-        let screenTrans = toScreenTransform()
         let blockPosition: Vector2D
         
         if let preview: BlockPreview = world.component(for: runtimeID) {
@@ -88,7 +77,7 @@ extension DiagramCanvas {
         var labelCenter: Vector2D
         
         if let pictogram = block.pictogram {
-            let blockTrans = screenTrans.translated(blockPosition)
+            let blockTrans = toOverlayTransform.translated(blockPosition)
 
             if isSelected {
                 context.setColor(style.selectionFillColor)
@@ -113,7 +102,7 @@ extension DiagramCanvas {
             context.setColor(style.pictogramColor)
             context.strokePath(pictogram.path, transform: blockTrans)
             
-            let screenBBMin = screenTrans.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
+            let screenBBMin = toOverlayTransform.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
             labelCenter = Vector2D(screenPos.x, screenBBMin.y)
         }
         else {
@@ -170,7 +159,7 @@ extension DiagramCanvas {
     }
     
     func drawConnector(_ context: DrawingContext, runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
-        let transform = toScreenTransform()
+        let transform = toOverlayTransform
         // DEBUG wire
         if isSelected {
             context.setColor(Color(red: 1.0, green: 0.5, blue: 0.0))

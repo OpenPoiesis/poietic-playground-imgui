@@ -51,7 +51,8 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     func pollEvent() -> BackendEvent {
         var event = SDL_Event()
 
-        while SDL_PollEvent(&event) {
+//        while SDL_PollEvent(&event) {
+        while SDL_WaitEventTimeout(&event, 16) {
             switch event.type {
             case SDL_EVENT_QUIT.rawValue:
                 return .quit

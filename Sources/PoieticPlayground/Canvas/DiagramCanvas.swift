@@ -56,14 +56,21 @@ class DiagramCanvas: View {
 
     /// Canvas view offset in world coordinates.
     ///
-    /// - SeeAlso: ``viewScale``I a
+    /// - SeeAlso: ``setView(offset:zoom:)``, ``zoomLevel``
     private(set) var viewOffset: Vector2D = .zero
 
     /// Canvas view scale.
     ///
-    /// - SeeAlso: ``viewOffset``
+    /// - SeeAlso: ``setView(offset:zoom:)``, ``viewOffset``
     ///
     private(set) var zoomLevel: Double = 1.0
+    
+    /// Transformation from world coordinates to the drawing context/surface coordinates.
+    ///
+    /// The transform is derived from canvas view offset and zoom level.
+    ///
+    /// - SeeAlso: ``setView(offset:zoom:)``
+    private(set) var toOverlayTransform: AffineTransform = .identity
     
     /// Grid spacing in world coordinates.
     var gridSize: Double = 50.0
@@ -77,7 +84,6 @@ class DiagramCanvas: View {
         
         self.mainOverlay = Overlay(name: "main")
         self.overlays.add(self.mainOverlay)
-
     }
     
     func onSelectionChanged(_ session: Session) {
@@ -113,9 +119,6 @@ class DiagramCanvas: View {
         let screenPos = (worldPos - viewOffset) * Double(zoomLevel)
         return ImVec2(screenPos) + canvasPos
     }
-    func toScreenTransform() -> AffineTransform {
-        return AffineTransform(translation: Vector2D(canvasPos) - Vector2D(viewOffset)).scaled(Vector2D(zoomLevel, zoomLevel))
-    }
    
     func update(_ timeDelta: Double) {
         // Nothing for now
@@ -132,11 +135,8 @@ class DiagramCanvas: View {
             ImGuiWindowFlags_NoBringToFrontOnFocus |
             ImGuiWindowFlags_NoNavFocus)
         
-//        ImGui.Begin("Canvas Window")
-
         // Disable padding
         ImGui.PushStyleVar(ImGuiStyleVar(ImGuiStyleVar_WindowPadding.rawValue), ImVec2(0, 0))
-        // Set a background colour
         ImGui.PushStyleColor(ImGuiCol(ImGuiCol_ChildBg.rawValue), style.background.imIntValue)
         ImGui.BeginChild("canvas",
                          ImVec2(0.0, 0.0),
@@ -148,40 +148,35 @@ class DiagramCanvas: View {
         canvasPos = ImGui.GetCursorScreenPos()
         canvasSize = ImGui.GetContentRegionAvail()
         
-        // Used for processUnhandledInput(...)
+        // Note: We need to do it here for processUnhandledInput(...) to correctly capture
+        // the mouse events for canvas. If there is a better solution, I am open.
         isMouseInViewport = ImGui.IsWindowHovered(
             ImGuiHoveredFlags_ChildWindows |
             ImGuiHoveredFlags_AllowWhenBlockedByPopup
         )
 
         // Ensure all layers match canvas size
-        let width = Int32(canvasSize.x)
-        let height = Int32(canvasSize.y)
-        overlays.ensureSize(width: width, height: height)
+        overlays.ensureSize(width: Int32(canvasSize.x),
+                            height: Int32(canvasSize.y))
         
-        // Render dirty layers
-        renderLayers()
-        
-        // Upload to GPU
+        drawOverlays()
         try! overlays.uploadIfNeeded()
-        
-        // Composite to screen
-        compositeToScreen()
+        drawOverlayTextures()
         
         ImGui.EndChild()
         ImGui.End()
     }
     
-    func renderLayers() {
+    func drawOverlays() {
         if mainOverlay.needsRender {
             // TODO: Handle exception
             try! mainOverlay.render { context in
-                drawToCairo(context)
+                drawMainOverlay(context)
             }
         }
     }
 
-    private func compositeToScreen() {
+    private func drawOverlayTextures() {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
         // Fallback if no textures
         guard !overlays.textures().isEmpty else {
@@ -196,7 +191,6 @@ class DiagramCanvas: View {
                 ImVec2(0, 0), ImVec2(1, 1), 0xFFFFFFFF
             )
         }
-        
     }
     
     private func drawTextureError() {
@@ -222,15 +216,19 @@ class DiagramCanvas: View {
     func setView(offset: Vector2D, zoom: Double) {
         viewOffset = offset
         zoomLevel = max(0.01, min(100.0, zoom))
+        toOverlayTransform = AffineTransform(translation: -viewOffset)
+                                .scaled(Vector2D(zoomLevel, zoomLevel))
         overlays.setAllNeedsRender()
     }
     
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
         var targets: [CanvasHitTarget] = []
-        
+
         // TODO: This is expensive"
+        print("HitTarget - screenPos: \(screenPosition), canvasPos: \(canvasPos)")
         let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
+        print("  → worldPos: \(worldTouchPosition)")
 
         for (runtimeID, block) in world.query(DiagramBlock.self) {
             let blockShape = block.collisionShape.translated(block.position)
@@ -259,6 +257,7 @@ class DiagramCanvas: View {
             let target: CanvasHitTarget = .handle(runtimeID)
             targets.append(target)
         }
+        print("--- Targets: ", targets)
 
         return targets.last
     }
