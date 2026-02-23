@@ -127,7 +127,15 @@ class DiagramCanvas: View {
     func worldToOverlay(_ worldPos: Vector2D) -> Vector2D {
         return toOverlayTransform.apply(to: worldPos)
     }
-   
+    func overlayToWorld(_ overlayPos: Vector2D) -> Vector2D {
+        let worldPos = overlayPos / zoomLevel + viewOffset
+        return worldPos
+    }
+    
+    var visibleWorldRect: Rect2D {
+        Rect2D(origin: viewOffset, size: (Vector2D(canvasSize) / zoomLevel))
+    }
+    
 
     func update(_ timeDelta: Double) {
         // Nothing for now

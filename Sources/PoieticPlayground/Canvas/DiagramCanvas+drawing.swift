@@ -78,7 +78,7 @@ extension DiagramCanvas {
         }
         
         let blockTrans = toOverlayTransform.translated(blockPosition)
-        let blockSurfacePos = blockTrans.apply(to: blockPosition)
+        let blockSurfacePos = toOverlayTransform.apply(to: blockPosition)
         var swatchCenter: Vector2D
         var labelCenter: Vector2D
         
@@ -206,22 +206,22 @@ extension DiagramCanvas {
     func drawGrid(_ context: DrawingContext) {
         guard showGrid else { return }
         context.save()
-        
         // Calculate visible area in world coordinates
-        let worldTopLeft: Vector2D = screenToWorld(canvasPos)
-        let screenBottomRight = canvasPos + canvasSize
-        let worldBottomRight: Vector2D = screenToWorld(screenBottomRight)
+        let worldViewSize = (Vector2D(canvasSize) / zoomLevel)
+        let worldTopLeft = viewOffset
+        let worldBottomRight = viewOffset + worldViewSize
         
         // Draw vertical grid lines
         let startX = floor(worldTopLeft.x / gridSize) * gridSize
         let endX = ceil(worldBottomRight.x / gridSize) * gridSize
         
         context.setColor(style.gridColor)
+        context.setLineWidth(0.5)
         
         for x in stride(from: startX, through: endX, by: gridSize) {
-            let screenX = (x - viewOffset.x) * zoomLevel + Double(canvasPos.x)
-            let p1 = Vector2D(screenX, Double(canvasPos.y))
-            let p2 = Vector2D(screenX, Double(canvasPos.y + canvasSize.y))
+            let screenX = (x - viewOffset.x) * zoomLevel
+            let p1 = Vector2D(screenX, 0)
+            let p2 = Vector2D(screenX, Double(canvasSize.y))
             
             context.addLine(from: p1, to: p2)
         }
@@ -231,9 +231,9 @@ extension DiagramCanvas {
         let endY = ceil(worldBottomRight.y / gridSize) * gridSize
         
         for y in stride(from: startY, through: endY, by: gridSize) {
-            let screenY = ((y - viewOffset.y) * zoomLevel) + Double(canvasPos.y)
-            let p1 = Vector2D(Double(canvasPos.x), screenY)
-            let p2 = Vector2D(Double(canvasPos.x + canvasSize.x), screenY)
+            let screenY = (y - viewOffset.y) * zoomLevel
+            let p1 = Vector2D(0, screenY)
+            let p2 = Vector2D(Double(canvasSize.x), screenY)
             
             context.addLine(from: p1, to: p2)
         }
