@@ -95,6 +95,8 @@ extension Application {
 //        case "select_all": ???
         case "paste":
             session?.queueCommand(PasteFromPasteboardCommand())
+        case "select_all":
+            self.selectAll()
 
         // -- View ---
         case "toggle_inspector":

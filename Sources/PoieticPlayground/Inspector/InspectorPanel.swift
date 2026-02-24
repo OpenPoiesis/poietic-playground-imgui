@@ -148,8 +148,6 @@ class InspectorPanel: Panel {
         drawTitle(session)
 
         let tabBarFlags = ImGuiTabBarFlags_None
-        let selectedFlags = Int32(ImGuiTabItemFlags_SetSelected.rawValue)
-        let emptyFlags = Int32(ImGuiTabItemFlags_None.rawValue)
 
         // FIXME: Enable tab switching. We need "pending state"
         if ImGui.BeginTabBar("MyTabBar", Int32(tabBarFlags.rawValue)) {
