@@ -53,6 +53,10 @@ let GlobalShortcuts: [ShortcutAction] = [
     // Inspector
     ShortcutAction("overview_inspector", key: ImGuiMod_Ctrl | ImGuiKey_1),
     ShortcutAction("properties_inspector", key: ImGuiMod_Ctrl | ImGuiKey_2),
+    
+    // Inline Editors
+    ShortcutAction("name_inline_editor", key: ImGuiKey_Enter),
+    ShortcutAction("secondary_inline_editor", key: ImGuiKey_Equal),
 ]
 
 
@@ -98,11 +102,14 @@ extension Application {
         
         // -- Inspector --
         case "overview_inspector":
-            self.inspector.currentCategory = .overview
+            self.inspector.selectTab(.overview)
             self.inspector.isVisible = true
         case "properties_inspector":
-            self.inspector.currentCategory = .properties
+            self.inspector.selectTab(.properties)
             self.inspector.isVisible = true
+
+        case "name_inline_editor": break
+        case "secondary_inline_editor": break
 
         default:
             guard let session else { return }

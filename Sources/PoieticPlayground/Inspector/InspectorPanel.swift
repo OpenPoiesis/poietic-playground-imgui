@@ -90,7 +90,13 @@ class InspectorPanel: Panel {
     }
 
     var isVisible: Bool = true
-    var currentCategory: Category = .overview
+    private(set) var currentTab: Category = .overview
+    var requestedTab: Category? = nil
+    func selectTab(_ tab: Category) {
+        requestedTab = tab
+    }
+
+    
     var allSections: [InspectorSection] = []
     var activeSections: [InspectorSection] = []
 
@@ -145,18 +151,36 @@ class InspectorPanel: Panel {
         let selectedFlags = Int32(ImGuiTabItemFlags_SetSelected.rawValue)
         let emptyFlags = Int32(ImGuiTabItemFlags_None.rawValue)
 
+        // FIXME: Enable tab switching. We need "pending state"
         if ImGui.BeginTabBar("MyTabBar", Int32(tabBarFlags.rawValue)) {
-            let overviewFlags = self.currentCategory == .overview ? selectedFlags : emptyFlags
+            let overviewFlags: Int32
+            if requestedTab == .overview {
+                overviewFlags = Int32(ImGuiTabItemFlags_SetSelected.rawValue)
+            } else {
+                overviewFlags = Int32(ImGuiTabItemFlags_None.rawValue)
+            }
+
+//            let overviewFlags = self.currentCategory == .overview ? selectedFlags : emptyFlags
             if ImGui.BeginTabItem("Overview", nil, overviewFlags) {
+                self.currentTab = .overview
                 drawOverviewTab(session)
                 ImGui.EndTabItem()
             }
-            let propertiesFlags = self.currentCategory == .properties ? selectedFlags : emptyFlags
+
+            let propertiesFlags: Int32
+            if requestedTab == .properties {
+                propertiesFlags = Int32(ImGuiTabItemFlags_SetSelected.rawValue)
+            } else {
+                propertiesFlags = Int32(ImGuiTabItemFlags_None.rawValue)
+            }
             if ImGui.BeginTabItem("Properties", nil, propertiesFlags) {
+                self.currentTab = .properties
                 drawPropertiesTab(session)
                 ImGui.EndTabItem()
             }
             ImGui.EndTabBar()
+            
+            requestedTab = nil
         }
         
         ImGui.End()
