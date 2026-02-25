@@ -10,7 +10,6 @@ import PoieticFlows
 import CIimgui
 
 
-
 class NameInspectorSection: InspectorSection {
     
     var trait: Trait { Trait.Name }
@@ -20,21 +19,21 @@ class NameInspectorSection: InspectorSection {
 
     static let displayOrder: Int = 0
     static let inspectorCategory: InspectorPanel.Category = .properties
-    let nameContext: InputTextBuffer
+    let nameBuffer: InputTextBuffer
 
     init() {
-        nameContext = "unnamed"
+        nameBuffer = "unnamed"
     }
 
     func selectionChanged(selection: Selection, overview: SelectionOverview) {
         if overview.distinctNames.count == 0 {
-            nameContext.string = ""
+            nameBuffer.string = ""
         }
         if overview.distinctNames.count == 1 {
-            nameContext.string = overview.distinctNames.first!
+            nameBuffer.string = overview.distinctNames.first!
         }
         else {
-            nameContext.string = "(multiple)"
+            nameBuffer.string = "(multiple)"
         }
     }
 
@@ -43,10 +42,10 @@ class NameInspectorSection: InspectorSection {
     func draw(_ session: Session) {
 //        ImGui.SeparatorText("Name")
 
-        ImGui.InputText("Name", buffer: nameContext)
+        ImGui.InputText("Name", buffer: nameBuffer)
         if ImGui.IsItemDeactivatedAfterEdit() {
             acceptChange(session)
-            print("Entered: string: '\(nameContext.string)' buffer: \(nameContext.bufferPointer)")
+            print("Entered: string: '\(nameBuffer.string)' buffer: \(nameBuffer.bufferPointer)")
         }
     }
     
@@ -55,7 +54,7 @@ class NameInspectorSection: InspectorSection {
         for id in session.selection {
             guard trans.contains(id) else { continue }
             let mutable = trans.mutate(id)
-            mutable.setAttribute(value: Variant(nameContext.string), forKey: "name")
+            mutable.setAttribute(value: Variant(nameBuffer.string), forKey: "name")
         }
     }
 }
