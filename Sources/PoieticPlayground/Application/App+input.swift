@@ -43,12 +43,21 @@ let GlobalShortcuts: [ShortcutAction] = [
     
     // View
     ShortcutAction("toggle_inspector", key: ImGuiMod_Ctrl | ImGuiKey_I),
+    ShortcutAction("toggle_issues_panel", key: ImGuiMod_Ctrl | ImGuiKey_5),
 
-    // Toolds
+    // Tools
     ShortcutAction("switch_selection_tool", key: ImGuiKey_1),
     ShortcutAction("switch_placement_tool", key: ImGuiKey_2),
     ShortcutAction("switch_connect_tool", key: ImGuiKey_3),
     ShortcutAction("switch_pan_tool", key: ImGuiKey_Space),
+    
+    // Inspector
+    ShortcutAction("overview_inspector", key: ImGuiMod_Ctrl | ImGuiKey_1),
+    ShortcutAction("properties_inspector", key: ImGuiMod_Ctrl | ImGuiKey_2),
+
+    // Inline Editors
+    ShortcutAction("name_inline_editor", key: ImGuiKey_Enter),
+    ShortcutAction("secondary_inline_editor", key: ImGuiKey_Equal),
 ]
 
 
@@ -87,11 +96,28 @@ extension Application {
 //        case "select_all": ???
         case "paste":
             session?.queueCommand(PasteFromPasteboardCommand())
+        case "select_all":
+            self.selectAll()
 
         // -- View ---
         case "toggle_inspector":
             self.inspector.isVisible = !self.inspector.isVisible
+        case "toggle_issues_panel":
+            self.issuesPanel.isVisible = !self.issuesPanel.isVisible
             
+        // -- Inspector --
+        case "overview_inspector":
+            self.inspector.selectTab(.overview)
+            self.inspector.isVisible = true
+        case "properties_inspector":
+            self.inspector.selectTab(.properties)
+            self.inspector.isVisible = true
+
+        case "name_inline_editor":
+            self.canvas.openInlineEditorForSelection("name")
+        case "secondary_inline_editor":
+            self.canvas.openInlineEditorForSelection("formula")
+
         default:
             guard let session else { return }
             if !handleSelectionAction(actionName, session: session) {

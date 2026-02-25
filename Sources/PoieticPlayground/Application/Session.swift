@@ -18,7 +18,7 @@ class Session {
         /// For example: on a transaction or undo/redo action.
         ///
         case designFrameChanged
-//        case previewChanged
+        case previewChanged
     }
 
     typealias EventObserver = ((Session) -> Void)

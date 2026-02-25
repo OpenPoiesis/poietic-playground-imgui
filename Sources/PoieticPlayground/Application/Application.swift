@@ -11,34 +11,21 @@ import CIimgui
 import Csdl3
 import Diagramming
 
-let clearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
 @MainActor
 class Application {
-    var context: ApplicationContext {
-        guard let _context else {
-            fatalError("Application context not initialized")
-        }
-        return _context
-    }
-    var _context: ApplicationContext!
-
     // Dumping ground of globals (for now)
-//    static let NewDesignTemplatePath = "designs/new_canvas.json"
+    //    static let NewDesignTemplatePath = "designs/new_canvas.json"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
     static let DefaultStockFlowPictogramsPath = "stock_flow_pictograms.json"
     static let MainWindowName = "Poietic Playground"
     static let DefaultWindowWidth = 1280
     static let DefaultWindowHeight = 800
     static let PictogramAdjustmentScale = 0.5
-
+    
     var showMetrics = false
     var quitRequested: Bool = false
     
-    // -- Events and Commands
-//    var eventSchedules: [ApplicationEvent:ScheduleLabel.Type] = [:]
-//    var events: Set<ApplicationEvent> = Set()
-
     // -- Document --
     var canvas: DiagramCanvas
     
@@ -46,11 +33,13 @@ class Application {
     var inspector: InspectorPanel
     var alertPanel = AlertPanel()
     var settingsPanel: SettingsPanel
-
+    
+    var issuesPanel: IssuesPanel
+    
     var canvasTools: [CanvasTool]
     var currentTool: CanvasTool? { toolBar.currentTool }
     var toolBar: ToolBar
-
+    
     // ## GUI
     //
     // ## The Document – Design and World
@@ -62,12 +51,13 @@ class Application {
         
         // Document
         self.session = nil
-
+        
         // User Interface
         self.inspector = InspectorPanel()
         self.toolBar = ToolBar()
         self.canvas = DiagramCanvas()
         self.settingsPanel = SettingsPanel()
+        self.issuesPanel = IssuesPanel()
         
         self.canvasTools = [
             SelectionTool(),
@@ -75,17 +65,17 @@ class Application {
             ConnectTool(),
             PanTool(),
         ]
-
+        
         self.toolBar.currentTool = canvasTools[0]
         
         self.settingsPanel.bind(self)
     }
-
+    
     @MainActor func run() {
         loadResources()
-       
+        
         self.toolBar.bind(self)
-
+        
         
         // New template design
         let templateURL = ResourceManager.shared.resourceURL(Self.NewDesignTemplatePath)
@@ -96,13 +86,12 @@ class Application {
             self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
             self.newEmptySession()
         }
-
+        
         setupEventSchedules()
-
         mainLoop()
     }
     
-
+    
     func newEmptySession() {
         let design = Design(metamodel: StockFlowMetamodel)
         newSession(design)
@@ -117,12 +106,16 @@ class Application {
         let newSession = Session(design: design, world: world)
         self.session = newSession
         bindToSession(newSession)
-
+        
         self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
         self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
-
+        
+        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
+        self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
+        
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
-
+        
         updateWorld(newSession)
     }
     
@@ -133,6 +126,7 @@ class Application {
             tool.bind(canvas: canvas, session: session)
         }
         inspector.bind(session)
+        issuesPanel.bind(session)
     }
     
     /// Set world singletons when the world changes.
@@ -140,10 +134,10 @@ class Application {
         Self.setupSchedules(world)
         world.setSingleton(notation)
     }
-
+    
     @MainActor func mainLoop() {
         let backend = GraphicsBackend.shared
-
+        
         var lastTime = ImGui.GetTime()
         loop: while !quitRequested {
             switch backend.pollEvent() {
@@ -155,14 +149,14 @@ class Application {
             ImGui_ImplSDLGPU3_NewFrame()
             ImGui_ImplSDL3_NewFrame()
             ImGui.NewFrame()
-
+            
             self.processInput()
-
+            
             let newTime = ImGui.GetTime()
             let timeDelta = newTime - lastTime
             lastTime = newTime
-
-
+            
+            
             self.update(timeDelta)
             self.draw()
             self.processUnhandledInput()
@@ -173,7 +167,7 @@ class Application {
             ImGui.ShowIDStackToolWindow()
             ImGui.ShowDemoWindow()
             // END Debug
-
+            
             ImGui.Render()
             backend.render()
         }
@@ -190,23 +184,23 @@ class Application {
             logError("No session!")
             return
         }
-//        canvas.update(timeDelta)
+        //        canvas.update(timeDelta)
         inspector.update(timeDelta)
         toolBar.update(timeDelta)
         alertPanel.update(timeDelta)
-
+        issuesPanel.update(timeDelta)
+        
         // Run commands
         while !session.commandQueue.isEmpty {
             let command = session.commandQueue.removeFirst()
             self.runCommand(command, session: session)
         }
-
+        
         if let trans = session.consumeTransaction() {
             accept(trans)
         }
         
         updateWorld(session)
-        // scheduled
     }
     
     func updateWorld(_ session: Session) {
@@ -225,9 +219,10 @@ class Application {
         if session.requiresInteractivePreviewUpdate {
             self.run(schedule: InteractivePreviewSchedule.self, session: session)
             session.requiresInteractivePreviewUpdate = false
+            session.trigger(.previewChanged)
         }
     }
-
+    
     func accept(_ trans: TransientFrame) {
         self.log("Accept? Has changes: \(trans.hasChanges)")
         guard trans.hasChanges else {
@@ -249,7 +244,7 @@ class Application {
             updateWorld(session)
         }
     }
-   
+    
     @MainActor
     func draw() {
         mainMenu()
@@ -258,6 +253,7 @@ class Application {
         toolBar.draw()
         canvas.draw()
         alertPanel.draw()
+        issuesPanel.draw()
     }
     
     func processUnhandledInput() {
@@ -276,7 +272,7 @@ class Application {
         self.alertPanel.message = message
         self.alertPanel.isVisible = true
     }
-   
+    
     func applicationSessionDebugWindow() {
         ImGui.Begin("Application Session")
         ImGui.TextUnformatted("Current tool: \(toolBar.currentTool?.name, default: "no tool")")

@@ -36,6 +36,12 @@ import PoieticCore
 class DiagramCanvas: View {
     static let DefaultHitRadius: Double = 5.0
 
+    var editorManager: InlineEditorManager
+    
+    // TODO: Not fully implemented, only one overlay at the moment
+    var overlays: OverlayStack
+    var mainOverlay: Overlay
+    
     weak var session: Session?
     internal var world: World {
         guard let session else { fatalError("DiagramCanvas used before binding")}
@@ -53,27 +59,58 @@ class DiagramCanvas: View {
 
     /// Canvas view offset in world coordinates.
     ///
-    /// - SeeAlso: ``viewScale``I a
-    var viewOffset: Vector2D = .zero
+    /// - SeeAlso: ``setView(offset:zoom:)``, ``zoomLevel``
+    private(set) var viewOffset: Vector2D = .zero
 
     /// Canvas view scale.
     ///
-    /// - SeeAlso: ``viewOffset``
+    /// - SeeAlso: ``setView(offset:zoom:)``, ``viewOffset``
     ///
-    var zoomLevel: Double = 1.0
+    private(set) var zoomLevel: Double = 1.0
+    
+    /// Transformation from world coordinates to the drawing context/surface coordinates.
+    ///
+    /// The transform is derived from canvas view offset and zoom level.
+    ///
+    /// - SeeAlso: ``setView(offset:zoom:)``
+    private(set) var toOverlayTransform: AffineTransform = .identity
     
     /// Grid spacing in world coordinates.
     var gridSize: Double = 50.0
-    var showGrid = true                       // Whether to show the grid
-    var gridColor = ImVec4(0.3, 0.3, 0.3, 0.2) // Grid line color
+    var showGrid = true
 
     init(session: Session? = nil) {
         self.session = session
         self.style = CanvasStyle()
+
+        self.overlays = OverlayStack()
+        
+        self.mainOverlay = Overlay(name: "main")
+        self.overlays.add(self.mainOverlay)
+        
+        self.editorManager = InlineEditorManager()
+        
+        self.editorManager.register(name: "name", editor: NameInlineEditor())
+        self.editorManager.register(name: "formula", editor: FormulaInlineEditor())
     }
     
+    func onSelectionChanged(_ session: Session) {
+        // TODO: Make only selection overlay dirty (once we have selection overlays)
+        overlays.setAllNeedsRender()
+    }
+
+    func onDesignFrameChanged(_ session: Session) {
+        overlays.setAllNeedsRender()
+    }
+
+    func onInteractivePreviewChanged(_ session: Session) {
+        // TODO: Make only preview overlay dirty (once we have selection overlays)
+        overlays.setAllNeedsRender()
+    }
+
     func bind(_ session: Session) {
         self.session = session
+        self.editorManager.bind(session: session, canvas: self)
     }
     
     /// Convert screen coordinates to world coordinates
@@ -86,15 +123,29 @@ class DiagramCanvas: View {
         return worldPos
     }
 
-    /// Convert world coordinates to screen coordinates
+    /// Convert world coordinates to ImGui screen coordinates.
+    ///
+    /// - Note: For drawing use the ``toOverlayTransform``.
+    ///
     func worldToScreen(_ worldPos: Vector2D) -> ImVec2 {
         let screenPos = (worldPos - viewOffset) * Double(zoomLevel)
         return ImVec2(screenPos) + canvasPos
     }
-    func toScreenTransform() -> AffineTransform {
-        return AffineTransform(translation: Vector2D(canvasPos) - Vector2D(viewOffset)).scaled(Vector2D(zoomLevel, zoomLevel))
-    }
    
+    /// Convert world coordinates to canvas overlay coordinates.
+    func worldToOverlay(_ worldPos: Vector2D) -> Vector2D {
+        return toOverlayTransform.apply(to: worldPos)
+    }
+    func overlayToWorld(_ overlayPos: Vector2D) -> Vector2D {
+        let worldPos = overlayPos / zoomLevel + viewOffset
+        return worldPos
+    }
+    
+    var visibleWorldRect: Rect2D {
+        Rect2D(origin: viewOffset, size: (Vector2D(canvasSize) / zoomLevel))
+    }
+    
+
     func update(_ timeDelta: Double) {
         // Nothing for now
     }
@@ -110,12 +161,9 @@ class DiagramCanvas: View {
             ImGuiWindowFlags_NoBringToFrontOnFocus |
             ImGuiWindowFlags_NoNavFocus)
         
-//        ImGui.Begin("Canvas Window")
-
         // Disable padding
         ImGui.PushStyleVar(ImGuiStyleVar(ImGuiStyleVar_WindowPadding.rawValue), ImVec2(0, 0))
-        // Set a background colour
-        ImGui.PushStyleColor(ImGuiCol(ImGuiCol_ChildBg.rawValue), ImColor(Int32(50), 50, 80, 255).intValue)
+        ImGui.PushStyleColor(ImGuiCol(ImGuiCol_ChildBg.rawValue), style.background.imIntValue)
         ImGui.BeginChild("canvas",
                          ImVec2(0.0, 0.0),
                          ImGuiChildFlags_None | ImGuiChildFlags_Borders,
@@ -126,37 +174,89 @@ class DiagramCanvas: View {
         canvasPos = ImGui.GetCursorScreenPos()
         canvasSize = ImGui.GetContentRegionAvail()
         
-        // Used for processUnhandledInput(...)
+        // Note: We need to do it here for processUnhandledInput(...) to correctly capture
+        // the mouse events for canvas. If there is a better solution, I am open.
         isMouseInViewport = ImGui.IsWindowHovered(
             ImGuiHoveredFlags_ChildWindows |
             ImGuiHoveredFlags_AllowWhenBlockedByPopup
         )
 
-        drawGrid()
-        drawContent()
-
+        // Ensure all layers match canvas size
+        overlays.ensureSize(width: Int32(canvasSize.x),
+                            height: Int32(canvasSize.y))
+        
+        drawOverlays()
+        try! overlays.uploadIfNeeded()
+        drawOverlayTextures()
+       
+        editorManager.draw()
+        
         ImGui.EndChild()
         ImGui.End()
     }
+    
+    func drawOverlays() {
+        if mainOverlay.needsRender {
+            // TODO: Handle exception
+            try! mainOverlay.render { context in
+                drawMainOverlay(context)
+            }
+        }
+    }
 
+    private func drawOverlayTextures() {
+        guard let drawList = ImGui.GetWindowDrawList() else { return }
+        // Fallback if no textures
+        guard !overlays.textures().isEmpty else {
+            drawTextureError()
+            return
+        }
+
+        for texture in overlays.textures() {
+            drawList.pointee.AddImage(
+                texture.imTextureRef,
+                canvasPos, canvasPos + canvasSize,
+                ImVec2(0, 0), ImVec2(1, 1), 0xFFFFFFFF
+            )
+        }
+    }
+    
+    private func drawTextureError() {
+        let drawList = ImGui.GetWindowDrawList()
+        let errorColor = Color.screenRed.withTransparency(0.3).imIntValue
+
+        drawList?.pointee.AddRectFilled(canvasPos, canvasPos+canvasSize, errorColor)
+        
+        let errorText = "Texture Upload Failed"
+        let textSize = ImGui.CalcTextSize(errorText)
+        let textPos = ImVec2(
+            canvasPos.x + (canvasSize.x - textSize.x) / 2,
+            canvasPos.y + (canvasSize.y - textSize.y) / 2
+        )
+        drawList?.pointee.AddText(textPos, Color.white.imIntValue, errorText, nil)
+    }
 
     // MARK: - Canvas Control Methods
     func resetView() {
-        viewOffset = .zero
-        zoomLevel = 1.0
+        self.setView(offset: .zero, zoom: 1.0)
     }
     
     func setView(offset: Vector2D, zoom: Double) {
         viewOffset = offset
         zoomLevel = max(0.01, min(100.0, zoom))
+        toOverlayTransform = AffineTransform(translation: -viewOffset)
+                                .scaled(Vector2D(zoomLevel, zoomLevel))
+        overlays.setAllNeedsRender()
     }
     
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
         var targets: [CanvasHitTarget] = []
-        
+
         // TODO: This is expensive"
+        print("HitTarget - screenPos: \(screenPosition), canvasPos: \(canvasPos)")
         let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
+        print("  → worldPos: \(worldTouchPosition)")
 
         for (runtimeID, block) in world.query(DiagramBlock.self) {
             let blockShape = block.collisionShape.translated(block.position)
@@ -185,7 +285,18 @@ class DiagramCanvas: View {
             let target: CanvasHitTarget = .handle(runtimeID)
             targets.append(target)
         }
+        print("--- Targets: ", targets)
 
         return targets.last
+    }
+    
+    // MARK: - Inline Editors
+    func openInlineEditorForSelection(_ editorName: String) {
+        guard let session,
+              let objectID = session.selection.selectionOfOne(),
+              let entity = session.world.entity(objectID)
+        else { return }
+        
+        self.editorManager.openEditor(editorName, for: entity)
     }
 }

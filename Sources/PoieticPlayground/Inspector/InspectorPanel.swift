@@ -54,7 +54,10 @@ protocol InspectorSection: ApplicationObject {
     var trait: Trait { get }
     var category: InspectorPanel.Category { get }
     var title: String { get }
-    
+    /// List of inspected attributes. This is required to be provided so that
+    /// selection overview can be computed.
+    var inspectedAttributes: [String] { get }
+
     func selectionChanged(selection: Selection, overview: SelectionOverview)
     func update(_ session: Session)
     func draw(_ session: Session)
@@ -87,6 +90,13 @@ class InspectorPanel: Panel {
     }
 
     var isVisible: Bool = true
+    private(set) var currentTab: Category = .overview
+    var requestedTab: Category? = nil
+    func selectTab(_ tab: Category) {
+        requestedTab = tab
+    }
+
+    
     var allSections: [InspectorSection] = []
     var activeSections: [InspectorSection] = []
 
@@ -102,14 +112,25 @@ class InspectorPanel: Panel {
     func selectionChanged(_ session: Session) {
         print("Inspector: Selection changed")
         let overview = session.selectionOverview
+        var attributes: Set<String> = []
         
         activeSections.removeAll()
         for section in allSections {
             guard overview.sharedTraits.contains(where: { $0 === section.trait  }) else {
                 continue
             }
-            section.selectionChanged(selection: session.selection, overview: overview)
+            attributes.formUnion(section.inspectedAttributes)
             activeSections.append(section)
+        }
+
+        if let frame = session.world.frame {
+            for attribute in attributes {
+                overview.updateAttribute(attribute, selection: selection, frame: frame)
+            }
+        }
+        
+        for section in activeSections {
+            section.selectionChanged(selection: session.selection, overview: overview)
         }
     }
 
@@ -122,23 +143,42 @@ class InspectorPanel: Panel {
     
     func draw() {
         guard isVisible, let session else { return }
-
         ImGui.Begin("Inspector")
         
         drawTitle(session)
 
         let tabBarFlags = ImGuiTabBarFlags_None
-        
-        if (ImGui.BeginTabBar("MyTabBar", Int32(tabBarFlags.rawValue))) {
-            if (ImGui.BeginTabItem("Overview")) {
+
+        // FIXME: Enable tab switching. We need "pending state"
+        if ImGui.BeginTabBar("MyTabBar", Int32(tabBarFlags.rawValue)) {
+            let overviewFlags: Int32
+            if requestedTab == .overview {
+                overviewFlags = Int32(ImGuiTabItemFlags_SetSelected.rawValue)
+            } else {
+                overviewFlags = Int32(ImGuiTabItemFlags_None.rawValue)
+            }
+
+//            let overviewFlags = self.currentCategory == .overview ? selectedFlags : emptyFlags
+            if ImGui.BeginTabItem("Overview", nil, overviewFlags) {
+                self.currentTab = .overview
                 drawOverviewTab(session)
                 ImGui.EndTabItem()
             }
-            if (ImGui.BeginTabItem("Properties")) {
+
+            let propertiesFlags: Int32
+            if requestedTab == .properties {
+                propertiesFlags = Int32(ImGuiTabItemFlags_SetSelected.rawValue)
+            } else {
+                propertiesFlags = Int32(ImGuiTabItemFlags_None.rawValue)
+            }
+            if ImGui.BeginTabItem("Properties", nil, propertiesFlags) {
+                self.currentTab = .properties
                 drawPropertiesTab(session)
                 ImGui.EndTabItem()
             }
             ImGui.EndTabBar()
+            
+            requestedTab = nil
         }
         
         ImGui.End()
@@ -194,5 +234,4 @@ class InspectorPanel: Panel {
             section.draw(session)
         }
     }
-
 }

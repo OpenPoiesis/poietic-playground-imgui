@@ -11,42 +11,45 @@ import CIimgui
 
 
 
-class NameInspectorSection: InspectorSection {
+class FormulaInspectorSection: InspectorSection {
     
-    var trait: Trait { Trait.Name }
+    var trait: Trait { Trait.Formula }
     var category: InspectorPanel.Category { .properties }
-    let title: String = "Name"
-    let inspectedAttributes: [String] = ["name"]
-
+    let title: String = "Formula"
+    let inspectedAttributes: [String] = ["formula"]
+    
     static let displayOrder: Int = 0
     static let inspectorCategory: InspectorPanel.Category = .properties
-    let nameContext: InputTextBuffer
+
+    let formulaBuffer: InputTextBuffer
 
     init() {
-        nameContext = "unnamed"
+        formulaBuffer = "0"
     }
 
     func selectionChanged(selection: Selection, overview: SelectionOverview) {
-        if overview.distinctNames.count == 0 {
-            nameContext.string = ""
+        let distinctValues = overview.distinctValues["formula", default: []]
+        
+        if distinctValues.count == 0 {
+            formulaBuffer.string = ""
         }
-        if overview.distinctNames.count == 1 {
-            nameContext.string = overview.distinctNames.first!
+        else if distinctValues.count == 1 {
+            let first = distinctValues.first!
+            formulaBuffer.string = (try? first.stringValue()) ?? ""
         }
         else {
-            nameContext.string = "(multiple)"
+            formulaBuffer.string = "(multiple)"
         }
     }
 
     func update(_ session: Session) { /* Nothing for now */ }
 
     func draw(_ session: Session) {
-//        ImGui.SeparatorText("Name")
+//        ImGui.SeparatorText("Formula")
 
-        ImGui.InputText("Name", buffer: nameContext)
+        ImGui.InputText("Formula", buffer: formulaBuffer)
         if ImGui.IsItemDeactivatedAfterEdit() {
             acceptChange(session)
-            print("Entered: string: '\(nameContext.string)' buffer: \(nameContext.bufferPointer)")
         }
     }
     
@@ -55,7 +58,7 @@ class NameInspectorSection: InspectorSection {
         for id in session.selection {
             guard trans.contains(id) else { continue }
             let mutable = trans.mutate(id)
-            mutable.setAttribute(value: Variant(nameContext.string), forKey: "name")
+            mutable.setAttribute(value: Variant(formulaBuffer.string), forKey: "formula")
         }
     }
 }

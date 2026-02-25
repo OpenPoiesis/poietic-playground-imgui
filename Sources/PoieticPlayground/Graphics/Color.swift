@@ -27,7 +27,11 @@ let DefaultAdaptableColors: [String:Color] = [
 ///
 struct Color {
     private let value: SIMD4<Float>
-    
+   
+    var red: Float { value.x }
+    var green: Float { value.y }
+    var blue: Float { value.z }
+
     var alpha: Float { value.w }
     
     init(_ vector: SIMD4<Float>) {

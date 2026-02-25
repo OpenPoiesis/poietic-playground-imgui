@@ -107,12 +107,13 @@ func ImGuiInputTextSwiftCallback(pointer: UnsafeMutablePointer<ImGuiInputTextCal
 }
 
 extension ImGui {
-    static func InputText(_ label: String, buffer: InputTextBuffer) {
-        let flags = ImGuiInputTextFlags_CallbackResize.rawValue // TODO: Add more
+    @discardableResult
+    static func InputText(_ label: String, buffer: InputTextBuffer, flags: ImGuiInputTextFlags = 0) -> Bool {
+        let actualFlags = flags | ImGuiInputTextFlags_CallbackResize
         
         let unmanaged = Unmanaged.passUnretained(buffer)
         let userData = unmanaged.toOpaque()
         let ccharPointer = UnsafeMutablePointer<CChar>(OpaquePointer(buffer.bufferPointer))
-        ImGui.InputText(label, ccharPointer, buffer.bufferCapacity, Int32(flags), ImGuiInputTextSwiftCallback, userData)
+        return ImGui.InputText(label, ccharPointer, buffer.bufferCapacity, Int32(actualFlags), ImGuiInputTextSwiftCallback, userData)
     }
 }

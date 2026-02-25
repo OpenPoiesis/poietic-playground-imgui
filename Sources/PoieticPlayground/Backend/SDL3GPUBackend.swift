@@ -8,6 +8,8 @@
 import Csdl3
 import CIimgui
 
+private let ClearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
+
 final class SDL3GPUBackend: GraphicsBackendProtocol {
     private static let SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR
     private static let PresentMode = SDL_GPU_PRESENTMODE_VSYNC
@@ -49,7 +51,8 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     func pollEvent() -> BackendEvent {
         var event = SDL_Event()
 
-        while SDL_PollEvent(&event) {
+//        while SDL_PollEvent(&event) {
+        while SDL_WaitEventTimeout(&event, 16) {
             switch event.type {
             case SDL_EVENT_QUIT.rawValue:
                 return .quit
@@ -87,7 +90,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
             // Setup and start a render pass
             var target_info = SDL_GPUColorTargetInfo()
             target_info.texture = swapchainTexture
-            target_info.clear_color = SDL_FColor(r: clearColor.x, g: clearColor.y, b: clearColor.z, a: clearColor.w)
+            target_info.clear_color = SDL_FColor(r: ClearColor.x, g: ClearColor.y, b: ClearColor.z, a: ClearColor.w)
             target_info.load_op = SDL_GPU_LOADOP_CLEAR
             target_info.store_op = SDL_GPU_STOREOP_STORE
             target_info.mip_level = 0
@@ -203,7 +206,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     {
         var info = SDL_GPUTextureCreateInfo()
         info.type         = SDL_GPU_TEXTURETYPE_2D
-        info.format       = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM
+        info.format       = SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM
         info.usage        = SDL_GPU_TEXTUREUSAGE_SAMPLER
         info.width        = width
         info.height       = height
