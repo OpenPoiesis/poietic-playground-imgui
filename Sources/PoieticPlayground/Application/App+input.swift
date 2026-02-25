@@ -90,6 +90,9 @@ extension Application {
         // -- Application --
         case "settings": self.openSettings()
         case "quit": self.quitRequested = true
+        // -- File --
+        case "save": session?.queueCommand(SaveDesignCommand())
+
         // -- Edit --
         case "undo": session?.queueCommand(UndoCommand())
         case "redo": session?.queueCommand(RedoCommand())
@@ -116,7 +119,7 @@ extension Application {
         case "name_inline_editor":
             self.canvas.openInlineEditorForSelection("name")
         case "secondary_inline_editor":
-            self.canvas.openInlineEditorForSelection("formula")
+            self.canvas.openSecondaryInlineEditorForSelection()
 
         default:
             guard let session else { return }

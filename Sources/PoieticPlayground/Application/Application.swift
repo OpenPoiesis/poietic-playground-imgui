@@ -10,7 +10,7 @@ import PoieticFlows
 import CIimgui
 import Csdl3
 import Diagramming
-
+import Foundation
 
 @MainActor
 class Application {
@@ -99,11 +99,15 @@ class Application {
     
     /// Set a new design document and propagate the change through the application.
     ///
-    func newSession(_ design: Design) {
+    func newSession(_ design: Design, designURL: URL? = nil) {
         self.log("New session.")
+        if let designURL {
+            self.log("Design URL: \(designURL.standardizedFileURL)")
+        }
         let world = World(design: design)
         setupWorld(world)
         let newSession = Session(design: design, world: world)
+        newSession.designURL = designURL
         self.session = newSession
         bindToSession(newSession)
         

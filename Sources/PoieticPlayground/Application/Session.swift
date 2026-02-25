@@ -6,6 +6,7 @@
 //
 
 import PoieticCore
+import Foundation
 
 // TODO: Allow tool switching
 class Session {
@@ -26,6 +27,8 @@ class Session {
     var observers: [Event:[EventObserver]]
     
     let design: Design
+    var designURL: URL? = nil
+    
     private var transaction: TransientFrame?
     var hasTransaction: Bool { transaction != nil }
     var commandQueue: [any Command]

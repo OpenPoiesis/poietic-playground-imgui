@@ -92,6 +92,10 @@ class DiagramCanvas: View {
         
         self.editorManager.register(name: "name", editor: NameInlineEditor())
         self.editorManager.register(name: "formula", editor: FormulaInlineEditor())
+        self.editorManager.register(name: "delay",
+                                    editor: NumericValueInlineEditor(attribute: "delay_duration", iconKey: .timeWindow))
+        self.editorManager.register(name: "smooth",
+                                    editor: NumericValueInlineEditor(attribute: "window_time", iconKey: .timeWindow))
     }
     
     func onSelectionChanged(_ session: Session) {
@@ -298,5 +302,27 @@ class DiagramCanvas: View {
         else { return }
         
         self.editorManager.openEditor(editorName, for: entity)
+    }
+
+    func openSecondaryInlineEditorForSelection() {
+        guard let session,
+              let objectID = session.selection.selectionOfOne(),
+              let entity = session.world.entity(objectID),
+              let object = entity.designObject
+        else { return }
+       
+        if object.type.hasTrait(.Formula) {
+            self.editorManager.openEditor("formula", for: entity)
+        }
+        else if object.type.hasTrait(.Delay) {
+            self.editorManager.openEditor("delay", for: entity)
+        }
+        else if object.type.hasTrait(.Smooth) {
+            self.editorManager.openEditor("smooth", for: entity)
+        }
+        else if object.type.hasTrait(.GraphicalFunction) {
+            // TODO: Implement graphical function editor
+            self.editorManager.openEditor("graphical_function", for: entity)
+        }
     }
 }
