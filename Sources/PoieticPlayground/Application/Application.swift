@@ -113,13 +113,15 @@ class Application {
         self.session = newSession
         bindToSession(newSession)
         
-        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
         self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
+        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
         
-        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
         
+        self.session?.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
+
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
         
         updateWorld(newSession)
