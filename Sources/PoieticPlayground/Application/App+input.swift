@@ -43,6 +43,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     
     // View
     ShortcutAction("toggle_inspector", key: ImGuiMod_Ctrl | ImGuiKey_I),
+    ShortcutAction("toggle_issues_panel", key: ImGuiMod_Ctrl | ImGuiKey_5),
 
     // Tools
     ShortcutAction("switch_selection_tool", key: ImGuiKey_1),
@@ -53,7 +54,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     // Inspector
     ShortcutAction("overview_inspector", key: ImGuiMod_Ctrl | ImGuiKey_1),
     ShortcutAction("properties_inspector", key: ImGuiMod_Ctrl | ImGuiKey_2),
-    
+
     // Inline Editors
     ShortcutAction("name_inline_editor", key: ImGuiKey_Enter),
     ShortcutAction("secondary_inline_editor", key: ImGuiKey_Equal),
@@ -101,7 +102,9 @@ extension Application {
         // -- View ---
         case "toggle_inspector":
             self.inspector.isVisible = !self.inspector.isVisible
-        
+        case "toggle_issues_panel":
+            self.issuesPanel.isVisible = !self.issuesPanel.isVisible
+            
         // -- Inspector --
         case "overview_inspector":
             self.inspector.selectTab(.overview)
@@ -110,8 +113,10 @@ extension Application {
             self.inspector.selectTab(.properties)
             self.inspector.isVisible = true
 
-        case "name_inline_editor": break
-        case "secondary_inline_editor": break
+        case "name_inline_editor":
+            self.canvas.openInlineEditorForSelection("name")
+        case "secondary_inline_editor":
+            self.canvas.openInlineEditorForSelection("formula")
 
         default:
             guard let session else { return }

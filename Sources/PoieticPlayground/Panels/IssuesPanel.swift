@@ -9,7 +9,7 @@ import CIimgui
 import PoieticCore
 
 class IssuesPanel: Panel {
-    var isVisible: Bool = true
+    var isVisible: Bool = false
     var session: Session?
     
     func bind(_ session: Session) {

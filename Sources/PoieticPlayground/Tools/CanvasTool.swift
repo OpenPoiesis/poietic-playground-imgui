@@ -18,10 +18,43 @@ import PoieticCore
 /// - Optional activation/deactivation with ``activate()``, ``deactivate()``.
 /// - Internal tool state management.
 ///
+/// Tools are authority for interactions and interaction state. They can:
+///
+/// - Change selection with ``Session/changeSelection(_:)``
+/// - Create transactions with ``Session/createOrReuseTransaction()``
+/// - Queue commands.
+/// - Open and close inline editors.
+///
+/// Tools can create interactive preview components in the world (``Session/world``) which
+/// will be drawn by setting ``Session/requiresInteractivePreviewUpdate`` to ``true``.
+///
 @MainActor
 class CanvasTool {
+    
+    /// Canvas the tool is bound to.
+    ///
+    /// Tool is bound to a canvas together with a session using ``bind(canvas:session:)``.
+    ///
+    /// Functions typically used:
+    ///
+    /// - ``DiagramCanvas/screenToWorld(_:)->Vector2D``
+    /// - ``DiagramCanvas/hitTarget(screenPosition:)``
+    /// - ``DiagramCanvas/zoomLevel``
+    ///
     weak var canvas: DiagramCanvas?
+
+    /// Session the tool is bound to.
+    ///
+    /// Tool is bound to a session together with a canvas using ``bind(canvas:session:)``.
+    ///
+    /// Session properties and functions typically used by a tool:
+    ///
+    /// - ``Session/selection`` and ``Session/changeSelection(_:)``
+    /// - ``Session/createOrReuseTransaction()``
+    /// - ``Session/requiresInteractivePreviewUpdate``
+    ///
     weak var session: Session?
+
     internal var world: World {
         guard let session else { fatalError("CanvasTool used before binding")}
         return session.world

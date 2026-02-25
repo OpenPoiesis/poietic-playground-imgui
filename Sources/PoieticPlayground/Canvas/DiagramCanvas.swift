@@ -36,6 +36,9 @@ import PoieticCore
 class DiagramCanvas: View {
     static let DefaultHitRadius: Double = 5.0
 
+    var editorManager: InlineEditorManager
+    
+    // TODO: Not fully implemented, only one overlay at the moment
     var overlays: OverlayStack
     var mainOverlay: Overlay
     
@@ -84,6 +87,11 @@ class DiagramCanvas: View {
         
         self.mainOverlay = Overlay(name: "main")
         self.overlays.add(self.mainOverlay)
+        
+        self.editorManager = InlineEditorManager()
+        
+        self.editorManager.register(name: "name", editor: NameInlineEditor())
+        self.editorManager.register(name: "formula", editor: FormulaInlineEditor())
     }
     
     func onSelectionChanged(_ session: Session) {
@@ -102,6 +110,7 @@ class DiagramCanvas: View {
 
     func bind(_ session: Session) {
         self.session = session
+        self.editorManager.bind(session: session, canvas: self)
     }
     
     /// Convert screen coordinates to world coordinates
@@ -179,6 +188,8 @@ class DiagramCanvas: View {
         drawOverlays()
         try! overlays.uploadIfNeeded()
         drawOverlayTextures()
+       
+        editorManager.draw()
         
         ImGui.EndChild()
         ImGui.End()
@@ -277,5 +288,15 @@ class DiagramCanvas: View {
         print("--- Targets: ", targets)
 
         return targets.last
+    }
+    
+    // MARK: - Inline Editors
+    func openInlineEditorForSelection(_ editorName: String) {
+        guard let session,
+              let objectID = session.selection.selectionOfOne(),
+              let entity = session.world.entity(objectID)
+        else { return }
+        
+        self.editorManager.openEditor(editorName, for: entity)
     }
 }
