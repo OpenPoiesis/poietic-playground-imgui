@@ -30,15 +30,16 @@ class Application {
     var canvas: DiagramCanvas
     
     // -- Views and Controller-likes --
-    var inspector: InspectorPanel
+    let inspector: InspectorPanel
     var alertPanel = AlertPanel()
-    var settingsPanel: SettingsPanel
+    let settingsPanel: SettingsPanel
     
-    var issuesPanel: IssuesPanel
+    let issuesPanel: IssuesPanel
     
     var canvasTools: [CanvasTool]
     var currentTool: CanvasTool? { toolBar.currentTool }
-    var toolBar: ToolBar
+    let toolBar: ToolBar
+    let controlBar: ControlBar
     
     // ## GUI
     //
@@ -55,6 +56,7 @@ class Application {
         // User Interface
         self.inspector = InspectorPanel()
         self.toolBar = ToolBar()
+        self.controlBar = ControlBar()
         self.canvas = DiagramCanvas()
         self.settingsPanel = SettingsPanel()
         self.issuesPanel = IssuesPanel()
@@ -193,6 +195,7 @@ class Application {
         toolBar.update(timeDelta)
         alertPanel.update(timeDelta)
         issuesPanel.update(timeDelta)
+        controlBar.update(timeDelta)
         
         // Run commands
         while !session.commandQueue.isEmpty {
@@ -258,6 +261,7 @@ class Application {
         canvas.draw()
         alertPanel.draw()
         issuesPanel.draw()
+        controlBar.draw()
     }
     
     func processUnhandledInput() {
