@@ -55,6 +55,11 @@ class CanvasStyle {
     var selectionFillColor: Color = Color.screenYellow.darkened(0.2).withTransparency(0.2)
     var handleColor: Color = Color.screenBlue.darkened(0.9).withTransparency(0.8)
 
+//    var errorIndicatorBackground: Color = Color.white.withTransparency(0.5)
+//    var errorIndicatorColor: Color = Color(red: 0.7, green: 0.2, blue: 0.2)
+    var errorIndicatorColor: Color = Color.white
+    var errorIndicatorBackground: Color = Color(red: 0.9, green: 0.2, blue: 0.1, alpha: 0.8)
+
     init() {
         
     }

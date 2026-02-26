@@ -20,6 +20,7 @@ class SettingsPanel: Panel {
         guard isVisible else { return }
         ImGui.Begin("Settings", &isVisible, ImGuiWindowFlags_None | ImGuiWindowFlags_NoCollapse)
         drawInterfaceStyleSettings()
+//        drawNotationSettings()
         ImGui.End()
     }
    
@@ -34,6 +35,10 @@ class SettingsPanel: Panel {
             app?.setInterfaceColorScheme(.light)
         }
 
+    }
+    
+    func drawNotationSettings() {
+        ImGui.SeparatorText("Notation")
     }
     
     func setInterfaceColorScheme(_ scheme: InterfaceStyle.ColorScheme) {
