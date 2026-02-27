@@ -43,8 +43,8 @@ extension DiagramCanvas {
     }
     
     func drawIntents(_ context: DrawingContext) {
-        for (runtimeID, component) in world.query(BlockIntent.self) {
-            drawBlockIntent(context, runtimeID: runtimeID, block: component)
+        for component: BlockIntent in world.query(BlockIntent.self) {
+            drawBlockIntent(context, block: component)
         }
     }
     
@@ -52,16 +52,16 @@ extension DiagramCanvas {
         context.save()
         let selection: Selection? = world.singleton()
         
-        for (runtimeID, component) in world.query(DiagramBlock.self) {
-            guard let objectID = world.entityToObject(runtimeID) else { continue }
+        for (entity, component) in world.query(DiagramBlock.self) {
+            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
 
             let isSelected = selection?.contains(objectID) ?? false
-            drawBlock(context, runtimeID: runtimeID, isSelected: isSelected, block: component)
+            drawBlock(context, entity: entity, isSelected: isSelected, block: component)
         }
         context.restore()
     }
 
-    func drawBlockIntent(_ context: DrawingContext, runtimeID: RuntimeID, block: BlockIntent) {
+    func drawBlockIntent(_ context: DrawingContext, block: BlockIntent) {
         let transform = toOverlayTransform.translated(block.position)
         context.save()
         context.setColor(style.intentShadowColor)
@@ -115,10 +115,10 @@ extension DiagramCanvas {
     }
     
     
-    func drawBlock(_ context: DrawingContext, runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
+    func drawBlock(_ context: DrawingContext, entity: RuntimeEntity, isSelected: Bool, block: DiagramBlock) {
         let blockPosition: Vector2D
         
-        if let preview: BlockPreview = world.component(for: runtimeID) {
+        if let preview: BlockPreview = entity.component() {
             blockPosition = preview.position
         }
         else {
@@ -139,7 +139,7 @@ extension DiagramCanvas {
                 context.strokePath(pictogram.mask, transform: blockTrans)
             }
             
-            if let highlight: TargetHighlight = world.component(for: runtimeID) {
+            if let highlight: TargetHighlight = entity.component() {
                 switch highlight {
                 case .accepting:
                     context.setColor(style.acceptingColor)
@@ -199,20 +199,19 @@ extension DiagramCanvas {
     func drawConnectors(_ context: DrawingContext) {
         context.save()
         let selection: Selection? = world.singleton()
-
-        for (runtimeID, component) in world.query(DiagramConnectorGeometry.self) {
-            if let objectID = world.entityToObject(runtimeID) {
+        for (entity, component) in world.query(DiagramConnectorGeometry.self) {
+            if let objectID = entity.objectID {
                 let isSelected = selection?.contains(objectID) ?? false
-                drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: isSelected, isIntent: false)
+                drawConnector(context, geometry: component, isSelected: isSelected, isIntent: false)
             }
-            else if world.hasComponent(ConnectorIntent.self, for: runtimeID) {
-                drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: false, isIntent: true)
+            else if entity.contains(ConnectorIntent.self) {
+                drawConnector(context, geometry: component, isSelected: false, isIntent: true)
             }
         }
         context.restore()
     }
     
-    func drawConnector(_ context: DrawingContext, runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
+    func drawConnector(_ context: DrawingContext, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
         let transform = toOverlayTransform
 
         // Open curves
@@ -291,8 +290,8 @@ extension DiagramCanvas {
 
     func drawStatusInfo(_ text: String) {
         // Draw view information in corner
-        let blockCount = world.query(DiagramBlock.self).count
-        let connectorCount = world.query(DiagramConnectorGeometry.self).count
+        let blockCount = Array<RuntimeEntity>(world.query(DiagramBlock.self)).count
+        let connectorCount = Array<RuntimeEntity>(world.query(DiagramConnectorGeometry.self)).count
         var infoText = "Blocks: \(blockCount) "
                         + "Conns: \(connectorCount) "
                         + "| Zoom: \(zoomLevel * 100) Offset: (\(viewOffset.x)x\(viewOffset.y)"

@@ -262,31 +262,41 @@ class DiagramCanvas: View {
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
         print("  → worldPos: \(worldTouchPosition)")
 
-        for (runtimeID, block) in world.query(DiagramBlock.self) {
+        // Blocks (collision shape) and Error indicators
+        for (entity, block) in world.query(DiagramBlock.self) {
             let blockShape = block.collisionShape.translated(block.position)
             if blockShape.collide(with: touchShape) {
-                let target: CanvasHitTarget = .object(runtimeID, .body)
+                let target: CanvasHitTarget = .object(entity.runtimeID, .body)
                 targets.append(target)
             }
+            
+//            if let objectID = world.entityToObject(runtimeID),
+//               objectHasIssues(objectID)
+//            {
+//                let indicatorPosition = block.position + errorIndicatorAnchorOffset
+//                if worldTouchPosition.distance(to: indicatorPosition) <
+//            }
         }
         
-        for (runtimeID, connector) in world.query(DiagramConnectorGeometry.self) {
+        // Connectors (distance to wire)
+        for (entity, connector) in world.query(DiagramConnectorGeometry.self) {
             // TODO: Have the wire tessellated already
             let wire = connector.wire.tessellate()
 
             for i in 0..<(wire.count-1) {
                 let segment = LineSegment(from: wire[i], to: wire[i + 1])
                 if segment.distance(to: worldTouchPosition) < Self.DefaultHitRadius {
-                    let target: CanvasHitTarget = .object(runtimeID, .body)
+                    let target: CanvasHitTarget = .object(entity.runtimeID, .body)
                     targets.append(target)
                 }
             }
         }
 
-        for (runtimeID, handle) in world.query(CanvasHandle.self) {
+        // Handles
+        for (entity, handle) in world.query(CanvasHandle.self) {
             let distance = worldTouchPosition.distance(to: handle.position)
             guard distance <= Self.DefaultHitRadius else { continue }
-            let target: CanvasHitTarget = .handle(runtimeID)
+            let target: CanvasHitTarget = .handle(entity.runtimeID)
             targets.append(target)
         }
         print("--- Targets: ", targets)
