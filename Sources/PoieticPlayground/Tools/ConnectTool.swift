@@ -182,7 +182,8 @@ class ConnectTool: CanvasTool {
                                     targetAllowed: Bool)
     {
         guard let world = session?.world,
-              let block: DiagramBlock = world.component(for:originID)
+              let originEntity = world.entity(originID),
+              let block: DiagramBlock = originEntity.component()
         else { return }
         print("Creating drag connector of type \(type), origin: \(originID)")
         // FIXME: XXXXXXX USE OBJECT PALETTE XXXXXXXXXX
@@ -216,11 +217,10 @@ class ConnectTool: CanvasTool {
         // TODO: Snap to target block
         print("Update drag connector...")
         guard let world = session?.world,
-              let canvas,
               let intendedConnector,
               let intent: ConnectorIntent = intendedConnector.component(),
-              let geometry: DiagramConnectorGeometry = intendedConnector.component(),
-              let block: DiagramBlock = world.component(for:intent.originID)
+              let originEntity = world.entity(intent.originID),
+              let block: DiagramBlock = originEntity.component()
         else { return }
         print("... drag origin: \(intent.originID)")
 

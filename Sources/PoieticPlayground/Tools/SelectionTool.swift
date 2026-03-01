@@ -208,40 +208,32 @@ class SelectionTool: CanvasTool {
         let worldDelta = Vector2D(screenDelta) / canvas.zoomLevel
 
         for objectID in selection {
-            guard let block: DiagramBlock = world.component(for: objectID) else { continue }
-            var preview: BlockPreview
-            if let component: BlockPreview = world.component(for: objectID) {
-                preview = component
-            }
-            else {
-                preview = BlockPreview(position: block.position)
-            }
+            guard let entity = world.entity(objectID),
+                  let block: DiagramBlock = entity.component()
+            else { continue }
+            var preview: BlockPreview = entity.component() ?? BlockPreview(position: block.position)
             preview.position += worldDelta
-            world.setComponent(preview, for: objectID)
+            entity.setComponent(preview)
             
             let deps = frame.dependentEdges(objectID)
             dependentEdges.formUnion(deps)
         }
         
         for objectID in selection {
-            guard let connector: DiagramConnector = world.component(for: objectID) else { continue }
-            guard !connector.midpoints.isEmpty else { continue }
-            var preview: ConnectorPreview
-            if let component: ConnectorPreview = world.component(for: objectID) {
-                preview = component
-            }
-            else {
-                preview = ConnectorPreview(midpoints: connector.midpoints)
-            }
+            guard let entity = world.entity(objectID),
+                  let connector: DiagramConnector = entity.component(),
+                  !connector.midpoints.isEmpty
+            else { continue }
+
+            var preview: ConnectorPreview = entity.component()
+                        ??  ConnectorPreview(midpoints: connector.midpoints)
             
             preview.midpoints = preview.midpoints.map { $0 + worldDelta }
-            world.setComponent(preview, for: objectID)
+            entity.setComponent(preview)
         }
         
         for id in dependentEdges {
-            guard let entID = world.objectToEntity(id) else { continue }
-            guard world.hasComponent(DiagramConnector.self, for: entID) else { continue }
-            
+            // FIXME: Implement this
         }
         session.requiresInteractivePreviewUpdate = true
     }
@@ -305,19 +297,18 @@ class SelectionTool: CanvasTool {
             let segment = LineSegment(from: originBlock.position, to: targetBlock.position)
             let midpoint = segment.midpoint
             
-            let handle = CanvasHandle(owner: entity.runtimeID,
-                                      position: midpoint,
-                                      kind: .midpoint(0))
-            let handleID: RuntimeID = world.spawn(handle)
-            world.setDependency(of: handleID, on: entity.runtimeID)
+            let component = CanvasHandle(owner: entity.runtimeID,
+                                         position: midpoint,
+                                         kind: .midpoint(0))
+            
+            let _: RuntimeEntity = world.spawn(component, OwnedBy(entity.runtimeID))
         }
         else {
             for (index, point) in midpoints.enumerated() {
-                let handle = CanvasHandle(owner: entity.runtimeID,
+                let component = CanvasHandle(owner: entity.runtimeID,
                                           position: point,
                                           kind: .midpoint(index))
-                let handleID: RuntimeID = world.spawn(handle)
-                world.setDependency(of: handleID, on: entity.runtimeID)
+                let _: RuntimeEntity = world.spawn(component, OwnedBy(entity.runtimeID))
             }
         }
     }

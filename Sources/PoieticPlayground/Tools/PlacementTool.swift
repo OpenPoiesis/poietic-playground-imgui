@@ -19,7 +19,7 @@ class PlacementTool: CanvasTool {
     
     var palette: ObjectPalette? = nil
 
-    var intentShadowID: RuntimeID? = nil
+    var intentShadow: RuntimeEntity? = nil
     
     override func activate() {
         guard let session,
@@ -65,17 +65,17 @@ class PlacementTool: CanvasTool {
         let world = session.world
         let pictogram = notation.pictogram(type.name)
 
-        if intentShadowID != nil {
+        if intentShadow != nil {
             removeIntentShadow()
         }
         let component = BlockIntent(type: type, position: position, pictogram: pictogram)
-        self.intentShadowID = world.spawn(component)
+        self.intentShadow = world.spawn(component)
     }
     
     func removeIntentShadow() {
-        guard let intentShadowID else { return }
-        session?.world.despawn(intentShadowID)
-        self.intentShadowID = nil
+        guard let intentShadow else { return }
+        session?.world.despawn(intentShadow)
+        self.intentShadow = nil
     }
     
     override func handleEvent(_ event: ToolEvent) {
@@ -88,23 +88,22 @@ class PlacementTool: CanvasTool {
         }
     }
     func hoverStart(_ event: ToolEvent) {
-        guard let world = session?.world,
-              let canvas,
+        guard let canvas,
               let typeName = palette?.selectedIdentifier
         else { return }
         removeIntentShadow()
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
         createIntentShadow(position: worldPos, typeName: typeName)
     }
+    
     func pointerMove(_ event: ToolEvent) {
-        guard let world = session?.world,
-              let canvas,
-              let intentShadowID
+        guard let canvas,
+              let intentShadow
         else { return }
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
-        if var component: BlockIntent = world.component(for: intentShadowID) {
+        if var component: BlockIntent = intentShadow.component() {
             component.position = worldPos
-            world.setComponent(component, for: intentShadowID)
+            intentShadow.setComponent(component)
         }
         else if let typeName = palette?.selectedIdentifier {
             createIntentShadow(position: worldPos, typeName: typeName)
@@ -116,8 +115,8 @@ class PlacementTool: CanvasTool {
     func pointerUp(_ event: ToolEvent) {
         guard let session,
               let canvas,
-              let intentShadowID,
-              let shadow: BlockIntent = world.component(for: intentShadowID)
+              let intentShadow,
+              let shadow: BlockIntent = intentShadow.component()
         else { return }
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
 
