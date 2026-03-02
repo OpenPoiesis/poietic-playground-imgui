@@ -122,7 +122,8 @@ class Application {
         self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
         self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
-        
+        self.session?.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
+
         self.session?.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
         self.session?.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
 

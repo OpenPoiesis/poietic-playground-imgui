@@ -39,20 +39,26 @@ class ControlBar: @MainActor Panel {
         
         if let infoObject = frame.first(type: .Simulation) {
             self.settings = SimulationSettings(fromObject: infoObject)
-            print("GOT SETTINGS: \(settings)")
         }
         else {
-            print("NEW SETTINGS: \(settings)")
             self.settings = SimulationSettings()
         }
-        
-        if currentStep >= settings.steps {
-            currentStep = Int32(settings.steps)
+        if let player = self.app?.player {
+            self.currentStep = Int32(player.currentStep)
+            self.currentTime = player.currentTime
         }
-        self.currentTime = Double(currentStep) * settings.timeDelta
-
+        else {
+            if currentStep >= settings.steps {
+                currentStep = Int32(settings.steps)
+            }
+            self.currentTime = Double(currentStep) * settings.timeDelta
+        }
     }
+
     func onSimulationPlayerStep(_ session: Session) {
+        guard let player = self.app?.player else { return }
+        self.currentStep = Int32(player.currentStep)
+        self.currentTime = player.currentTime
     }
     
     func update(_ timeDelta: Double) {
@@ -73,8 +79,13 @@ class ControlBar: @MainActor Panel {
         drawTimeDisplay()
 
         ImGui.PushItemWidth(ImGui.GetContentRegionAvail().x)
-        let flags: ImGuiInputTextFlags = 0
+
+//        let flags: ImGuiInputTextFlags = 0
+        let previousStep = currentStep
         ImGui.SliderInt("##current_step_slider", &currentStep, 0, Int32(settings.steps), "")
+        if currentStep != previousStep {
+            self.app?.player.setCurrentStep(Int(currentStep))
+        }
 
         ImGui.EndDisabled()
         ImGui.End()
@@ -122,6 +133,7 @@ class ControlBar: @MainActor Panel {
         
 
     }
+    
     func drawStepDisplay() {
         let player = self.app?.player
         
@@ -135,7 +147,13 @@ class ControlBar: @MainActor Panel {
         ImGui.BeginGroup()
         ImGui.PushFont(nil, titleFontSize)
         ImGui.SetNextItemWidth(Self.StepDisplayWidth)
+
+        let previousStep = currentStep
         ImGui.InputInt("##current_step", &currentStep, 0, 0, 0)
+        if currentStep != previousStep {
+            player?.setCurrentStep(Int(currentStep))
+        }
+
         ImGui.PopFont()
         ImGui.TextUnformatted("step")
         ImGui.EndGroup()
@@ -152,8 +170,14 @@ class ControlBar: @MainActor Panel {
         ImGui.BeginGroup()
         ImGui.PushFont(nil, titleFontSize)
         ImGui.SetNextItemWidth(Self.StepDisplayWidth)
+
+        let previousTime = currentTime
         ImGui.InputDouble("##current_time", &currentTime, 0, 0, "%0.2f")
-//        ImGui.InputText("##boo", buffer: currentStepBuffer, flags: inputFlags)
+
+        if currentTime != previousTime {
+            self.app?.player.setCurrentTime(currentTime)
+        }
+
         ImGui.PopFont()
         ImGui.TextUnformatted("time")
         ImGui.EndGroup()

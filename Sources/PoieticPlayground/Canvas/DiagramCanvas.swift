@@ -115,6 +115,10 @@ class DiagramCanvas: View {
         // TODO: Make only preview overlay dirty (once we have selection overlays)
         overlays.setAllNeedsRender()
     }
+    
+    func onSimulationPlayerStep(_ session: Session) {
+        indicatorOverlay.setNeedsRender()
+    }
 
     func bind(_ session: Session) {
         self.session = session
