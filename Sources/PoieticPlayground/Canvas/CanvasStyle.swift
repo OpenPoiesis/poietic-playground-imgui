@@ -34,6 +34,7 @@ class CanvasStyle {
     var primaryLabelStyle: LabelStyle = LabelStyle(color: .black, fontSize: 12.0)
     var secondaryLabelStyle: LabelStyle = LabelStyle(color: .screenBlue, fontSize: 11.0)
     var invalidLabelStyle: LabelStyle = LabelStyle(color: .screenRed)
+    var valueIndicatorStyle: LabelStyle = LabelStyle(color: .screenGreen, fontSize: 11.0)
 
     var intentShadowColor: Color = Color(gray: 0.5)
     /// Color or highlight tint for objects that are accepting a drag session.

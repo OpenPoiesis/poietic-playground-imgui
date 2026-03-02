@@ -52,6 +52,8 @@ class ControlBar: @MainActor Panel {
         self.currentTime = Double(currentStep) * settings.timeDelta
 
     }
+    func onSimulationPlayerStep(_ session: Session) {
+    }
     
     func update(_ timeDelta: Double) {
         // Nothing for now
@@ -83,26 +85,30 @@ class ControlBar: @MainActor Panel {
         ImGui.BeginGroup()
         var flag: Bool = true
         if controlButton("Run", iconKey: .run, isEnabled: &flag) {
-            
+            self.app?.player.run()
         }
         ImGui.SameLine()
         if controlButton("Stop", iconKey: .stop, isEnabled: &flag) {
-            
+            self.app?.player.stop()
         }
         ImGui.SameLine(0, Self.ButtonGroupOffset)
 //        ImGui.Separator()
 //        ImGui.SameLine()
 
+        if controlButton("Beginning", iconKey: .restart, isEnabled: &flag) {
+            self.app?.player.toFirstStep()
+        }
+        ImGui.SameLine()
         if controlButton("Previous", iconKey: .previousStep, isEnabled: &flag) {
-            
+            self.app?.player.previousStep()
         }
         ImGui.SameLine()
         if controlButton("Next", iconKey: .nextStep, isEnabled: &flag) {
-            
+            self.app?.player.nextStep()
         }
         ImGui.SameLine()
-        if controlButton("Last", iconKey: .lastStep, isEnabled: &flag) {
-            
+        if controlButton("End", iconKey: .lastStep, isEnabled: &flag) {
+            self.app?.player.toLastStep()
         }
         ImGui.SameLine()
         ImGui.SameLine(0, Self.ButtonGroupOffset)
@@ -117,6 +123,8 @@ class ControlBar: @MainActor Panel {
 
     }
     func drawStepDisplay() {
+        let player = self.app?.player
+        
         let inputFlags: ImGuiInputTextFlags = ImGuiInputTextFlags_None
                             | ImGuiInputTextFlags_CharsDecimal
                             | ImGuiInputTextFlags_CharsNoBlank
@@ -128,7 +136,6 @@ class ControlBar: @MainActor Panel {
         ImGui.PushFont(nil, titleFontSize)
         ImGui.SetNextItemWidth(Self.StepDisplayWidth)
         ImGui.InputInt("##current_step", &currentStep, 0, 0, 0)
-//        ImGui.InputText("##boo", buffer: currentStepBuffer, flags: inputFlags)
         ImGui.PopFont()
         ImGui.TextUnformatted("step")
         ImGui.EndGroup()

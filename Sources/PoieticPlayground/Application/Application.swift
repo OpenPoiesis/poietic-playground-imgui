@@ -28,7 +28,8 @@ class Application {
     
     // -- Document --
     var canvas: DiagramCanvas
-    
+    var player: ResultPlayer
+
     // -- Views and Controller-likes --
     let inspector: InspectorPanel
     var alertPanel = AlertPanel()
@@ -52,6 +53,7 @@ class Application {
         
         // Document
         self.session = nil
+        self.player = ResultPlayer()
         
         // User Interface
         self.inspector = InspectorPanel()
@@ -71,6 +73,7 @@ class Application {
         self.toolBar.currentTool = canvasTools[0]
         
         self.settingsPanel.bind(self)
+        self.controlBar.bind(self)
     }
     
     @MainActor func run() {
@@ -121,7 +124,11 @@ class Application {
         self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
         
         self.session?.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
 
+        self.session?.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(player.onSimulationFailed, on: .simulationFailed)
+//        self.session?.addObserver(player.onSimulationFinished, on: .simulationFinished)
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
         
         updateWorld(newSession)
@@ -135,6 +142,7 @@ class Application {
         }
         inspector.bind(session)
         issuesPanel.bind(session)
+        player.bind(session)
     }
     
     /// Set world singletons when the world changes.
@@ -198,6 +206,9 @@ class Application {
         alertPanel.update(timeDelta)
         issuesPanel.update(timeDelta)
         controlBar.update(timeDelta)
+        if player.isRunning {
+            player.update(timeDelta)
+        }
         
         // Run commands
         while !session.commandQueue.isEmpty {
@@ -213,6 +224,7 @@ class Application {
     }
     
     func updateWorld(_ session: Session) {
+        // TODO: This method does multiple things that need to be decoupled
         let world = session.world
         
         if let maybeNewFrame = session.design.currentFrame,
@@ -222,6 +234,14 @@ class Application {
             self.run(schedule: FrameChangeSchedule.self, session: session)
             session.updateSelectionOverview()
             session.trigger(.designFrameChanged)
+            session.trigger(.selectionChanged)
+
+            if self.run(schedule: SimulationSchedule.self, session: session) {
+                session.trigger(.simulationFinished)
+            }
+            else {
+                session.trigger(.simulationFailed)
+            }
             // TODO: Remove temporary components here (such as previews)
         }
         
@@ -249,6 +269,7 @@ class Application {
             self.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
             return
         }
+        
         if let session {
             updateWorld(session)
         }

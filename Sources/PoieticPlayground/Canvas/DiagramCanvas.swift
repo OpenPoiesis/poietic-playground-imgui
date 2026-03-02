@@ -41,7 +41,8 @@ class DiagramCanvas: View {
     // TODO: Not fully implemented, only one overlay at the moment
     var overlays: OverlayStack
     var mainOverlay: Overlay
-    
+    var indicatorOverlay: Overlay
+
     weak var session: Session?
     internal var world: World {
         guard let session else { fatalError("DiagramCanvas used before binding")}
@@ -87,6 +88,9 @@ class DiagramCanvas: View {
         
         self.mainOverlay = Overlay(name: "main")
         self.overlays.add(self.mainOverlay)
+
+        self.indicatorOverlay = Overlay(name: "indicator")
+        self.overlays.add(self.indicatorOverlay)
         
         self.editorManager = InlineEditorManager()
         
@@ -204,6 +208,12 @@ class DiagramCanvas: View {
             // TODO: Handle exception
             try! mainOverlay.render { context in
                 drawMainOverlay(context)
+            }
+        }
+        if indicatorOverlay.needsRender {
+            // TODO: Handle exception
+            try! indicatorOverlay.render { context in
+                drawIndicatorOverlay(context)
             }
         }
     }

@@ -4,11 +4,15 @@
 //
 //  Created by Stefan Urbanek on 05/02/2026.
 //
-import CIimgui
-import Diagramming
-import PoieticCore
 
+// TODO: [IMPORTANT] This whole file contains early prototype of all canvas drawing and needs to be split.
+
+import CIimgui
 import Ccairo
+import PoieticCore
+import PoieticFlows
+import Diagramming
+import Foundation
 
 /// Name of a pictogram for error indicators.
 let ErrorPictogramName: String = "Error"
@@ -27,8 +31,12 @@ extension DiagramCanvas {
         drawConnectors(context)
         drawIntents(context)
         drawHandles(context)
-        drawIssueIndicators(context)
     }
+    func drawIndicatorOverlay(_ context: DrawingContext) {
+        drawIssueIndicators(context)
+        drawValueIndicators(context)
+    }
+    
     func drawHandles(_ context: DrawingContext) {
         context.save()
         let radius = Self.HandleSize / 2
@@ -193,7 +201,6 @@ extension DiagramCanvas {
             context.setColor(color)
             context.fillRect(origin: swatchOrigin, size: Self.ColorSwatchSize)
         }
-        
     }
     
     func drawConnectors(_ context: DrawingContext) {
@@ -287,29 +294,50 @@ extension DiagramCanvas {
         context.stroke()
         context.restore()
     }
+    
+    func drawValueIndicators(_ context: DrawingContext) {
+        // TODO: Implement proper "indicator trait"
+        context.save()
+        
+        for (entity, component) in world.query(DiagramBlock.self) {
+            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
 
-    func drawStatusInfo(_ text: String) {
-        // Draw view information in corner
-        let blockCount = Array<RuntimeEntity>(world.query(DiagramBlock.self)).count
-        let connectorCount = Array<RuntimeEntity>(world.query(DiagramConnectorGeometry.self)).count
-        var infoText = "Blocks: \(blockCount) "
-                        + "Conns: \(connectorCount) "
-                        + "| Zoom: \(zoomLevel * 100) Offset: (\(viewOffset.x)x\(viewOffset.y)"
-        infoText += " \(text)"
-        let padding: Float = 10.0
-        let textSize = ImGui.CalcTextSize(infoText, nil, true, 0)
+            drawValueIndicator(context, entity: entity, block: component)
+        }
+        context.restore()
+
+    }
+    func drawValueIndicator(_ context: DrawingContext, entity: RuntimeEntity, block: DiagramBlock) {
+        // TODO: Make relevant data per-entity components
+        // Assumption: result reflects plan
+        guard let result: SimulationResult = world.singleton(),
+              let plan: SimulationPlan = world.singleton(),
+              let objectID: ObjectID = entity.objectID,
+              let simObject = plan.simulationObject(objectID)
+        else { return }
         
-        let drawList = ImGui.GetWindowDrawList()
-        let bgColor = ImGui.ColorConvertFloat4ToU32(ImVec4(0.0, 0.0, 0.0, 0.5))
-        let textColor = ImGui.ColorConvertFloat4ToU32(ImVec4(1.0, 1.0, 1.0, 1.0))
+        let step: Int
+        if let time: SimulationReplayTime = world.singleton() {
+            step = time.step
+        }
+        else {
+            step = max(0, Int(plan.simulationSettings.steps) - 1)
+        }
         
-        let bgPos1 = ImVec2(canvasPos.x + canvasSize.x - textSize.x - padding * 2,
-                           canvasPos.y + canvasSize.y - textSize.y - padding * 2)
-        let bgPos2 = ImVec2(canvasPos.x + canvasSize.x,
-                           canvasPos.y + canvasSize.y)
+        guard let state = result[step] else { return }
+        let value: Variant = state[simObject.variableIndex]
+        guard let doubleValue = try? value.doubleValue() else { return }
+        let indicatorLabel = doubleValue.formatted(.number.precision(.significantDigits(1...4)))
         
-        drawList?.pointee.AddRectFilled(bgPos1, bgPos2, bgColor, 5.0, 0)
-        drawList?.pointee.AddText(ImVec2(bgPos1.x + padding, bgPos1.y + padding),
-                                 textColor, infoText, nil)
+        let trans = toOverlayTransform.translated(block.position)
+        let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
+        
+        context.setFontSize(style.valueIndicatorStyle.fontSize)
+        let te = context.textExtents(indicatorLabel)
+        let position = Vector2D(anchor.x - (te.width / 2) - te.x_bearing,
+                                anchor.y - (te.height) - te.y_bearing)
+
+        context.setColor(style.valueIndicatorStyle.color)
+        context.showText(indicatorLabel, at: position)
     }
 }
