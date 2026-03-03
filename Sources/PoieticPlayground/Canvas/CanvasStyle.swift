@@ -21,6 +21,18 @@ class LabelStyle {
     }
 }
 
+class ShapeStyle {
+    let outline: Color?
+    let fill: Color?
+    let lineWidth: Double
+
+    internal init(outline: Color? = nil, fill: Color? = nil, lineWidth: Double = 1.0) {
+        self.outline = outline
+        self.fill = fill
+        self.lineWidth = lineWidth
+    }
+}
+
 class CanvasStyle {
     var background: Color = Color(red: 0.97, green: 0.96, blue: 0.94)
     var gridColor = Color(red: 0.3, green: 0.3, blue: 0.3, alpha: 0.2)
@@ -61,9 +73,22 @@ class CanvasStyle {
     var errorIndicatorColor: Color = Color.white
     var errorIndicatorBackground: Color = Color(red: 0.9, green: 0.2, blue: 0.1, alpha: 0.8)
 
-    init() {
-        
-    }
+    // Indicator
+    /// Style used to draw the indicator background, before the actual indicator content.
+    var indicatorBackgroundStyle: ShapeStyle = ShapeStyle(outline: .black, fill: .white)
+    /// Style used to draw the indicator bar when the value is within bounds and when the negative
+    /// style is not set.
+    var indicatorNormalStyle: ShapeStyle = ShapeStyle(outline: .black, fill: .screenGreen)
+    /// If set, then the style is used to draw the value when the value is less than origin.
+    var indicatorNegativeStyle: ShapeStyle = ShapeStyle(outline: .black, fill: .screenYellow)
+    /// Value used to draw the indicator when the value is greater than max value.
+    var indicatorOverflowStyle: ShapeStyle = ShapeStyle(outline: .black, fill: .screenRed)
+    /// Value used to draw the indicator when the value is less than min value.
+    var indicatorUnderflowStyle: ShapeStyle = ShapeStyle(outline: .black, fill: .screenMagenta)
+    /// Style of the indicator when the value is not set.
+    var indicatorEmptyStyle: ShapeStyle = ShapeStyle(outline: Color(gray: 0.8), fill: Color(gray: 0.5))
+
+    init() { /* Empty init */ }
     
     func adaptableColor(_ name: String, default: Color) -> Color {
         return adaptableColors[name, default: `default`]

@@ -340,4 +340,71 @@ extension DiagramCanvas {
         context.setColor(style.valueIndicatorStyle.color)
         context.showText(indicatorLabel, at: position)
     }
+    
+    func drawValueIndicatorBar(_ context: DrawingContext,
+                               frame: Rect2D,
+                               value: Double?,
+                               bounds: ValueBounds,
+                               orientation: Orientation) {
+        let ValueIndicatorBarPadding: Double = 2.0
+//        let fullRect = Rect2D(position: -rect.size / 2, size: rect.size)
+        let rect = frame.grown(by: -ValueIndicatorBarPadding)
+        let size = rect.size // Adjusted size by padding
+        
+        context.drawRect(frame, style: style.indicatorBackgroundStyle)
+
+        guard let value else {
+            context.drawRect(rect, style: style.indicatorEmptyStyle)
+            return
+        }
+        
+        let boundedValue: Double = bounds.clip(value)
+
+        let shapeStyle = switch bounds.state(of: value) {
+        case .overflow: style.indicatorOverflowStyle
+        case .underflow: style.indicatorUnderflowStyle
+        case .negative: style.indicatorNegativeStyle
+        case .positive: style.indicatorNormalStyle
+        }
+
+        guard bounds.range.magnitude > Double.standardEpsilon else {
+            context.drawRect(rect, style: shapeStyle)
+            return
+        }
+
+        let valueBar: Rect2D
+        let line: LineSegment
+        
+        switch orientation {
+        case .horizontal:
+            let scaledOrigin = bounds.normalizedBaseline * size.x
+            let scaledValue = bounds.normalized(value) * size.x
+
+            valueBar = Rect2D(x: rect.origin.x + scaledOrigin,
+                              y: rect.origin.y,
+                              width: scaledValue - scaledOrigin,
+                              height: size.y)
+            
+            line = LineSegment(
+                from: Vector2D(x: rect.origin.x + scaledOrigin, y: rect.origin.y),
+                to: Vector2D(x: rect.origin.x + scaledOrigin, y: rect.origin.y + size.y)
+            )
+
+        case .vertical:
+            let scaledOrigin = bounds.normalizedBaseline * size.y
+            let scaledValue = bounds.normalized(value) * size.y
+
+            valueBar = Rect2D(x: rect.origin.x,
+                              y: rect.origin.y + scaledOrigin,
+                              width: size.x,
+                              height: scaledValue - scaledOrigin)
+
+            line = LineSegment(
+                from: Vector2D(x: rect.origin.x, y: rect.origin.y + scaledOrigin),
+                to: Vector2D(x: rect.origin.x + size.x, y: rect.origin.y + scaledOrigin)
+            )
+        }
+        context.drawRect(valueBar, style: shapeStyle)
+        context.addLine(from: line.start, to: line.end)
+    }
 }
