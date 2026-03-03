@@ -6,10 +6,9 @@
 //
 
 import PoieticCore
+import Foundation
 
-// TODO: Allow tool switching
 class Session {
-    // FIXME: [IMPORTANT] trigger selectionChanged on design change (undo/redo)
     enum Event {
         /// Triggered on each ``Session/changeSelection(_:)``.
         case selectionChanged
@@ -19,6 +18,13 @@ class Session {
         ///
         case designFrameChanged
         case previewChanged
+        
+        case simulationFinished
+        case simulationFailed
+
+//        case simulationPlayerStarted
+        case simulationPlayerStep
+//        case simulationPlayerStopped
     }
 
     typealias EventObserver = ((Session) -> Void)
@@ -26,6 +32,8 @@ class Session {
     var observers: [Event:[EventObserver]]
     
     let design: Design
+    var designURL: URL? = nil
+    
     private var transaction: TransientFrame?
     var hasTransaction: Bool { transaction != nil }
     var commandQueue: [any Command]

@@ -98,6 +98,20 @@ struct DrawingContext {
         cairo_fill(context)
     }
     
+    func drawRect(_ rect: Rect2D, style: ShapeStyle) {
+        cairo_save(context)
+        setLineWidth(style.lineWidth)
+        if let color = style.fill {
+            setColor(color)
+            fillRect(origin: rect.origin, size: rect.size)
+        }
+        if let color = style.outline {
+            setColor(color)
+            strokeRect(origin: rect.origin, size: rect.size)
+        }
+        cairo_restore(context)
+    }
+    
     func save() {
         cairo_save(context)
     }

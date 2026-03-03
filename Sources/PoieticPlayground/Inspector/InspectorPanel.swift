@@ -98,11 +98,15 @@ class InspectorPanel: Panel {
 
     
     var allSections: [InspectorSection] = []
+    var designSections: [InspectorSection] = []
     var activeSections: [InspectorSection] = []
 
     init() {
         allSections.append(NameInspectorSection())
         allSections.append(FormulaInspectorSection())
+        
+        designSections.append(DesignInfoInspectorSection())
+        designSections.append(SimulationInspectorSection())
     }
     
     func bind(_ session: Session) {
@@ -110,6 +114,10 @@ class InspectorPanel: Panel {
     }
     
     func selectionChanged(_ session: Session) {
+        guard session.selectionOverview.containedCount > 0 else {
+            inspectDesign(session)
+            return
+        }
         print("Inspector: Selection changed")
         let overview = session.selectionOverview
         var attributes: Set<String> = []
@@ -131,6 +139,16 @@ class InspectorPanel: Panel {
         
         for section in activeSections {
             section.selectionChanged(selection: session.selection, overview: overview)
+        }
+    }
+    
+    func inspectDesign(_ session: Session) {
+        activeSections.removeAll()
+        activeSections += self.designSections
+        
+        for section in activeSections {
+            guard let section = section as? DesignInspectorSection else { continue }
+            section.inspectDesign(session)
         }
     }
 
@@ -191,31 +209,38 @@ class InspectorPanel: Panel {
         let title: String
         let typeName: String
         
-        
-        if overview.distinctTypes.count == 0 {
-            typeName = "–"
-        }
-        else if overview.distinctTypes.count == 1 {
-            typeName = overview.distinctTypes.first!.name
-        }
-        else {
-            typeName = "multiple types"
-        }
-
-        if overview.distinctNames.count == 0 {
-            if overview.containedCount == 0 {
-                title = "(no name)"
+        if session.selectionOverview.containedCount > 0 {
+            if overview.distinctTypes.count == 0 {
+                typeName = "–"
+            }
+            else if overview.distinctTypes.count == 1 {
+                typeName = overview.distinctTypes.first!.name
             }
             else {
-                title = "(empty selection)"
+                typeName = "multiple types"
+            }
+
+            if overview.distinctNames.count == 0 {
+                if overview.containedCount == 0 {
+                    title = "(no name)"
+                }
+                else {
+                    title = "(empty selection)"
+                }
+            }
+            else if overview.distinctNames.count == 1 {
+                title = overview.distinctNames.first!
+            }
+            else {
+                title = String(overview.containedCount) + " of " + typeName
             }
         }
-        else if overview.distinctNames.count == 1 {
-            title = overview.distinctNames.first!
-        }
         else {
-            title = String(overview.containedCount) + " of " + typeName
+            title = "Design"
+            typeName = session.design.metamodel.name ?? ""
         }
+        
+        
 
         ImGui.PushFont(nil, titleFontSize)
         ImGui.TextUnformatted(title)

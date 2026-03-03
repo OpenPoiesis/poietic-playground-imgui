@@ -29,9 +29,16 @@ extension Application {
     func openDesign(url: URL) throws (DesignStoreError) {
         let store = DesignStore(url: url)
         let design = try store.load(metamodel: StockFlowMetamodel)
-        self.newSession(design)
+        self.newSession(design, designURL: url)
     }
     
+    func saveDesign(url: URL) throws (DesignStoreError) {
+        guard let session else { return }
+        self.log("Saving design to: \(url.standardizedFileURL)")
+        let store = DesignStore(url: url)
+        try store.save(design: session.design)
+    }
+
     func selectAll() {
         guard let session,
               let frame = session.world.frame

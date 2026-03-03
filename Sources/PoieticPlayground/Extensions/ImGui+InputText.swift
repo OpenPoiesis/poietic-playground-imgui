@@ -116,4 +116,15 @@ extension ImGui {
         let ccharPointer = UnsafeMutablePointer<CChar>(OpaquePointer(buffer.bufferPointer))
         return ImGui.InputText(label, ccharPointer, buffer.bufferCapacity, Int32(actualFlags), ImGuiInputTextSwiftCallback, userData)
     }
+    
+    @discardableResult
+    static func InputTextMultiline(_ label: String, buffer: InputTextBuffer, size: ImVec2 = ImVec2(), flags: ImGuiInputTextFlags = 0) -> Bool {
+        let actualFlags = flags | ImGuiInputTextFlags_CallbackResize
+        
+        let unmanaged = Unmanaged.passUnretained(buffer)
+        let userData = unmanaged.toOpaque()
+        let ccharPointer = UnsafeMutablePointer<CChar>(OpaquePointer(buffer.bufferPointer))
+        return ImGui.InputTextMultiline(label, ccharPointer, buffer.bufferCapacity, size, Int32(actualFlags), ImGuiInputTextSwiftCallback, userData)
+    }
+
 }

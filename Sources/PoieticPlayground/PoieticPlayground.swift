@@ -16,7 +16,7 @@ struct PoieticPlayground {
             fatalError("Initialisation failed: \(error)")
         }
         // Initialise Application Context (Globals)
-        let style = InterfaceStyle()
+        let style = InterfaceStyle(scheme: .light)
         InterfaceStyle.current = style
         let manager = ResourceManager(ResourceManager.DefaultResourcesPath, backend: backend)
         ResourceManager.registerShared(manager)
@@ -46,7 +46,7 @@ struct PoieticPlayground {
         let io = ImGui.GetIO()
         io.pointee.ConfigFlags |= Int32(bitPattern: ImGuiConfigFlags_NavEnableKeyboard.rawValue)
 
-        ImGui.StyleColorsDark()
+        ImGui.StyleColorsLight()
 
         let style = ImGui.GetStyle()
         style.pointee.ScaleAllSizes(scale)

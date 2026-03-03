@@ -10,7 +10,7 @@ import PoieticFlows
 import CIimgui
 import Csdl3
 import Diagramming
-
+import Foundation
 
 @MainActor
 class Application {
@@ -28,17 +28,19 @@ class Application {
     
     // -- Document --
     var canvas: DiagramCanvas
-    
+    var player: ResultPlayer
+
     // -- Views and Controller-likes --
-    var inspector: InspectorPanel
+    let inspector: InspectorPanel
     var alertPanel = AlertPanel()
-    var settingsPanel: SettingsPanel
+    let settingsPanel: SettingsPanel
     
-    var issuesPanel: IssuesPanel
+    let issuesPanel: IssuesPanel
     
     var canvasTools: [CanvasTool]
     var currentTool: CanvasTool? { toolBar.currentTool }
-    var toolBar: ToolBar
+    let toolBar: ToolBar
+    let controlBar: ControlBar
     
     // ## GUI
     //
@@ -51,10 +53,12 @@ class Application {
         
         // Document
         self.session = nil
+        self.player = ResultPlayer()
         
         // User Interface
         self.inspector = InspectorPanel()
         self.toolBar = ToolBar()
+        self.controlBar = ControlBar()
         self.canvas = DiagramCanvas()
         self.settingsPanel = SettingsPanel()
         self.issuesPanel = IssuesPanel()
@@ -69,6 +73,7 @@ class Application {
         self.toolBar.currentTool = canvasTools[0]
         
         self.settingsPanel.bind(self)
+        self.controlBar.bind(self)
     }
     
     @MainActor func run() {
@@ -99,21 +104,32 @@ class Application {
     
     /// Set a new design document and propagate the change through the application.
     ///
-    func newSession(_ design: Design) {
+    func newSession(_ design: Design, designURL: URL? = nil) {
         self.log("New session.")
+        if let designURL {
+            self.log("Design URL: \(designURL.standardizedFileURL)")
+        }
         let world = World(design: design)
         setupWorld(world)
         let newSession = Session(design: design, world: world)
+        newSession.designURL = designURL
         self.session = newSession
         bindToSession(newSession)
         
-        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
         self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
+        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
         
-        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
-        
+        self.session?.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
+
+        self.session?.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
+
+        self.session?.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)
+        self.session?.addObserver(player.onSimulationFailed, on: .simulationFailed)
+//        self.session?.addObserver(player.onSimulationFinished, on: .simulationFinished)
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
         
         updateWorld(newSession)
@@ -127,6 +143,7 @@ class Application {
         }
         inspector.bind(session)
         issuesPanel.bind(session)
+        player.bind(session)
     }
     
     /// Set world singletons when the world changes.
@@ -189,6 +206,10 @@ class Application {
         toolBar.update(timeDelta)
         alertPanel.update(timeDelta)
         issuesPanel.update(timeDelta)
+        controlBar.update(timeDelta)
+        if player.isRunning {
+            player.update(timeDelta)
+        }
         
         // Run commands
         while !session.commandQueue.isEmpty {
@@ -204,6 +225,7 @@ class Application {
     }
     
     func updateWorld(_ session: Session) {
+        // TODO: This method does multiple things that need to be decoupled
         let world = session.world
         
         if let maybeNewFrame = session.design.currentFrame,
@@ -213,6 +235,14 @@ class Application {
             self.run(schedule: FrameChangeSchedule.self, session: session)
             session.updateSelectionOverview()
             session.trigger(.designFrameChanged)
+            session.trigger(.selectionChanged)
+
+            if self.run(schedule: SimulationSchedule.self, session: session) {
+                session.trigger(.simulationFinished)
+            }
+            else {
+                session.trigger(.simulationFailed)
+            }
             // TODO: Remove temporary components here (such as previews)
         }
         
@@ -240,6 +270,7 @@ class Application {
             self.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
             return
         }
+        
         if let session {
             updateWorld(session)
         }
@@ -254,6 +285,7 @@ class Application {
         canvas.draw()
         alertPanel.draw()
         issuesPanel.draw()
+        controlBar.draw()
     }
     
     func processUnhandledInput() {

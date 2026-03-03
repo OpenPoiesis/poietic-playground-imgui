@@ -41,7 +41,8 @@ class DiagramCanvas: View {
     // TODO: Not fully implemented, only one overlay at the moment
     var overlays: OverlayStack
     var mainOverlay: Overlay
-    
+    var indicatorOverlay: Overlay
+
     weak var session: Session?
     internal var world: World {
         guard let session else { fatalError("DiagramCanvas used before binding")}
@@ -87,11 +88,18 @@ class DiagramCanvas: View {
         
         self.mainOverlay = Overlay(name: "main")
         self.overlays.add(self.mainOverlay)
+
+        self.indicatorOverlay = Overlay(name: "indicator")
+        self.overlays.add(self.indicatorOverlay)
         
         self.editorManager = InlineEditorManager()
         
         self.editorManager.register(name: "name", editor: NameInlineEditor())
         self.editorManager.register(name: "formula", editor: FormulaInlineEditor())
+        self.editorManager.register(name: "delay",
+                                    editor: NumericValueInlineEditor(attribute: "delay_duration", iconKey: .timeWindow))
+        self.editorManager.register(name: "smooth",
+                                    editor: NumericValueInlineEditor(attribute: "window_time", iconKey: .timeWindow))
     }
     
     func onSelectionChanged(_ session: Session) {
@@ -106,6 +114,10 @@ class DiagramCanvas: View {
     func onInteractivePreviewChanged(_ session: Session) {
         // TODO: Make only preview overlay dirty (once we have selection overlays)
         overlays.setAllNeedsRender()
+    }
+    
+    func onSimulationPlayerStep(_ session: Session) {
+        indicatorOverlay.setNeedsRender()
     }
 
     func bind(_ session: Session) {
@@ -202,6 +214,12 @@ class DiagramCanvas: View {
                 drawMainOverlay(context)
             }
         }
+        if indicatorOverlay.needsRender {
+            // TODO: Handle exception
+            try! indicatorOverlay.render { context in
+                drawIndicatorOverlay(context)
+            }
+        }
     }
 
     private func drawOverlayTextures() {
@@ -258,31 +276,41 @@ class DiagramCanvas: View {
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
         print("  → worldPos: \(worldTouchPosition)")
 
-        for (runtimeID, block) in world.query(DiagramBlock.self) {
+        // Blocks (collision shape) and Error indicators
+        for (entity, block) in world.query(DiagramBlock.self) {
             let blockShape = block.collisionShape.translated(block.position)
             if blockShape.collide(with: touchShape) {
-                let target: CanvasHitTarget = .object(runtimeID, .body)
+                let target: CanvasHitTarget = .object(entity.runtimeID, .body)
                 targets.append(target)
             }
+            
+//            if let objectID = world.entityToObject(runtimeID),
+//               objectHasIssues(objectID)
+//            {
+//                let indicatorPosition = block.position + errorIndicatorAnchorOffset
+//                if worldTouchPosition.distance(to: indicatorPosition) <
+//            }
         }
         
-        for (runtimeID, connector) in world.query(DiagramConnectorGeometry.self) {
+        // Connectors (distance to wire)
+        for (entity, connector) in world.query(DiagramConnectorGeometry.self) {
             // TODO: Have the wire tessellated already
             let wire = connector.wire.tessellate()
 
             for i in 0..<(wire.count-1) {
                 let segment = LineSegment(from: wire[i], to: wire[i + 1])
                 if segment.distance(to: worldTouchPosition) < Self.DefaultHitRadius {
-                    let target: CanvasHitTarget = .object(runtimeID, .body)
+                    let target: CanvasHitTarget = .object(entity.runtimeID, .body)
                     targets.append(target)
                 }
             }
         }
 
-        for (runtimeID, handle) in world.query(CanvasHandle.self) {
+        // Handles
+        for (entity, handle) in world.query(CanvasHandle.self) {
             let distance = worldTouchPosition.distance(to: handle.position)
             guard distance <= Self.DefaultHitRadius else { continue }
-            let target: CanvasHitTarget = .handle(runtimeID)
+            let target: CanvasHitTarget = .handle(entity.runtimeID)
             targets.append(target)
         }
         print("--- Targets: ", targets)
@@ -298,5 +326,27 @@ class DiagramCanvas: View {
         else { return }
         
         self.editorManager.openEditor(editorName, for: entity)
+    }
+
+    func openSecondaryInlineEditorForSelection() {
+        guard let session,
+              let objectID = session.selection.selectionOfOne(),
+              let entity = session.world.entity(objectID),
+              let object = entity.designObject
+        else { return }
+       
+        if object.type.hasTrait(.Formula) {
+            self.editorManager.openEditor("formula", for: entity)
+        }
+        else if object.type.hasTrait(.Delay) {
+            self.editorManager.openEditor("delay", for: entity)
+        }
+        else if object.type.hasTrait(.Smooth) {
+            self.editorManager.openEditor("smooth", for: entity)
+        }
+        else if object.type.hasTrait(.GraphicalFunction) {
+            // TODO: Implement graphical function editor
+            self.editorManager.openEditor("graphical_function", for: entity)
+        }
     }
 }

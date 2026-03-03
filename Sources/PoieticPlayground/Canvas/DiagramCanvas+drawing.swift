@@ -4,11 +4,18 @@
 //
 //  Created by Stefan Urbanek on 05/02/2026.
 //
-import CIimgui
-import Diagramming
-import PoieticCore
 
+// TODO: [IMPORTANT] This whole file contains early prototype of all canvas drawing and needs to be split.
+
+import CIimgui
 import Ccairo
+import PoieticCore
+import PoieticFlows
+import Diagramming
+import Foundation
+
+/// Name of a pictogram for error indicators.
+let ErrorPictogramName: String = "Error"
 
 extension DiagramCanvas {
     static let HandleSize: Double = 15.0
@@ -25,6 +32,10 @@ extension DiagramCanvas {
         drawIntents(context)
         drawHandles(context)
     }
+    func drawIndicatorOverlay(_ context: DrawingContext) {
+        drawIssueIndicators(context)
+        drawValueIndicators(context)
+    }
     
     func drawHandles(_ context: DrawingContext) {
         context.save()
@@ -40,8 +51,8 @@ extension DiagramCanvas {
     }
     
     func drawIntents(_ context: DrawingContext) {
-        for (runtimeID, component) in world.query(BlockIntent.self) {
-            drawBlockIntent(context, runtimeID: runtimeID, block: component)
+        for component: BlockIntent in world.query(BlockIntent.self) {
+            drawBlockIntent(context, block: component)
         }
     }
     
@@ -49,16 +60,16 @@ extension DiagramCanvas {
         context.save()
         let selection: Selection? = world.singleton()
         
-        for (runtimeID, component) in world.query(DiagramBlock.self) {
-            guard let objectID = world.entityToObject(runtimeID) else { continue }
+        for (entity, component) in world.query(DiagramBlock.self) {
+            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
 
             let isSelected = selection?.contains(objectID) ?? false
-            drawBlock(context, runtimeID: runtimeID, isSelected: isSelected, block: component)
+            drawBlock(context, entity: entity, isSelected: isSelected, block: component)
         }
         context.restore()
     }
 
-    func drawBlockIntent(_ context: DrawingContext, runtimeID: RuntimeID, block: BlockIntent) {
+    func drawBlockIntent(_ context: DrawingContext, block: BlockIntent) {
         let transform = toOverlayTransform.translated(block.position)
         context.save()
         context.setColor(style.intentShadowColor)
@@ -67,10 +78,55 @@ extension DiagramCanvas {
         context.restore()
     }
 
-    func drawBlock(_ context: DrawingContext, runtimeID: RuntimeID, isSelected: Bool, block: DiagramBlock) {
+    func drawIssueIndicators(_ context: DrawingContext) {
+        guard let session,
+              let notation: Notation = session.world.singleton()
+        else { return }
+        
+        let errorPictogram = notation.pictogram(ErrorPictogramName)
+        
+        for (objectID, _) in session.world.issues {
+            // TODO: Add number of issues
+            guard let entity = session.world.entity(objectID) else { continue }
+            
+            if let block: DiagramBlock = entity.component() {
+                let position: Vector2D
+                if let preview: BlockPreview = entity.component() {
+                    position = preview.position + block.errorIndicatorAnchorOffset
+                }
+                else {
+                    position = block.position + block.errorIndicatorAnchorOffset
+                }
+                drawIndicator(context,
+                              pictogram: errorPictogram,
+                              at: position)
+            }
+        }
+    }
+
+    func drawIndicator(_ context: DrawingContext, pictogram: Pictogram, at anchor: Vector2D) {
+        let height = pictogram.maskBoundingBox.height
+        let position = Vector2D(anchor.x, anchor.y - (height / 2))
+        let trans = toOverlayTransform.translated(position)
+        
+        context.setColor(style.errorIndicatorBackground)
+        context.addPath(pictogram.mask, transform: trans)
+        context.fill()
+
+        context.setColor(style.errorIndicatorColor)
+        context.addPath(pictogram.path, transform: trans)
+        context.stroke()
+
+        context.addPath(pictogram.mask, transform: trans)
+        context.stroke()
+
+    }
+    
+    
+    func drawBlock(_ context: DrawingContext, entity: RuntimeEntity, isSelected: Bool, block: DiagramBlock) {
         let blockPosition: Vector2D
         
-        if let preview: BlockPreview = world.component(for: runtimeID) {
+        if let preview: BlockPreview = entity.component() {
             blockPosition = preview.position
         }
         else {
@@ -91,7 +147,7 @@ extension DiagramCanvas {
                 context.strokePath(pictogram.mask, transform: blockTrans)
             }
             
-            if let highlight: TargetHighlight = world.component(for: runtimeID) {
+            if let highlight: TargetHighlight = entity.component() {
                 switch highlight {
                 case .accepting:
                     context.setColor(style.acceptingColor)
@@ -145,26 +201,24 @@ extension DiagramCanvas {
             context.setColor(color)
             context.fillRect(origin: swatchOrigin, size: Self.ColorSwatchSize)
         }
-        
     }
     
     func drawConnectors(_ context: DrawingContext) {
         context.save()
         let selection: Selection? = world.singleton()
-
-        for (runtimeID, component) in world.query(DiagramConnectorGeometry.self) {
-            if let objectID = world.entityToObject(runtimeID) {
+        for (entity, component) in world.query(DiagramConnectorGeometry.self) {
+            if let objectID = entity.objectID {
                 let isSelected = selection?.contains(objectID) ?? false
-                drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: isSelected, isIntent: false)
+                drawConnector(context, geometry: component, isSelected: isSelected, isIntent: false)
             }
-            else if world.hasComponent(ConnectorIntent.self, for: runtimeID) {
-                drawConnector(context, runtimeID: runtimeID, geometry: component, isSelected: false, isIntent: true)
+            else if entity.contains(ConnectorIntent.self) {
+                drawConnector(context, geometry: component, isSelected: false, isIntent: true)
             }
         }
         context.restore()
     }
     
-    func drawConnector(_ context: DrawingContext, runtimeID: RuntimeID, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
+    func drawConnector(_ context: DrawingContext, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
         let transform = toOverlayTransform
 
         // Open curves
@@ -240,29 +294,117 @@ extension DiagramCanvas {
         context.stroke()
         context.restore()
     }
+    
+    func drawValueIndicators(_ context: DrawingContext) {
+        // TODO: Implement proper "indicator trait"
+        context.save()
+        
+        for (entity, component) in world.query(DiagramBlock.self) {
+            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
 
-    func drawStatusInfo(_ text: String) {
-        // Draw view information in corner
-        let blockCount = world.query(DiagramBlock.self).count
-        let connectorCount = world.query(DiagramConnectorGeometry.self).count
-        var infoText = "Blocks: \(blockCount) "
-                        + "Conns: \(connectorCount) "
-                        + "| Zoom: \(zoomLevel * 100) Offset: (\(viewOffset.x)x\(viewOffset.y)"
-        infoText += " \(text)"
-        let padding: Float = 10.0
-        let textSize = ImGui.CalcTextSize(infoText, nil, true, 0)
+            drawValueIndicator(context, entity: entity, block: component)
+        }
+        context.restore()
+
+    }
+    func drawValueIndicator(_ context: DrawingContext, entity: RuntimeEntity, block: DiagramBlock) {
+        // TODO: Make relevant data per-entity components
+        // Assumption: result reflects plan
+        guard let result: SimulationResult = world.singleton(),
+              let plan: SimulationPlan = world.singleton(),
+              let objectID: ObjectID = entity.objectID,
+              let simObject = plan.simulationObject(objectID)
+        else { return }
         
-        let drawList = ImGui.GetWindowDrawList()
-        let bgColor = ImGui.ColorConvertFloat4ToU32(ImVec4(0.0, 0.0, 0.0, 0.5))
-        let textColor = ImGui.ColorConvertFloat4ToU32(ImVec4(1.0, 1.0, 1.0, 1.0))
+        let step: Int
+        if let time: SimulationReplayTime = world.singleton() {
+            step = time.step
+        }
+        else {
+            step = max(0, Int(plan.simulationSettings.steps) - 1)
+        }
         
-        let bgPos1 = ImVec2(canvasPos.x + canvasSize.x - textSize.x - padding * 2,
-                           canvasPos.y + canvasSize.y - textSize.y - padding * 2)
-        let bgPos2 = ImVec2(canvasPos.x + canvasSize.x,
-                           canvasPos.y + canvasSize.y)
+        guard let state = result[step] else { return }
+        let value: Variant = state[simObject.variableIndex]
+        guard let doubleValue = try? value.doubleValue() else { return }
+        let indicatorLabel = doubleValue.formatted(.number.precision(.significantDigits(1...4)))
         
-        drawList?.pointee.AddRectFilled(bgPos1, bgPos2, bgColor, 5.0, 0)
-        drawList?.pointee.AddText(ImVec2(bgPos1.x + padding, bgPos1.y + padding),
-                                 textColor, infoText, nil)
+        let trans = toOverlayTransform.translated(block.position)
+        let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
+        
+        context.setFontSize(style.valueIndicatorStyle.fontSize)
+        let te = context.textExtents(indicatorLabel)
+        let position = Vector2D(anchor.x - (te.width / 2) - te.x_bearing,
+                                anchor.y - (te.height) - te.y_bearing)
+
+        context.setColor(style.valueIndicatorStyle.color)
+        context.showText(indicatorLabel, at: position)
+    }
+    
+    func drawValueIndicatorBar(_ context: DrawingContext,
+                               frame: Rect2D,
+                               value: Double?,
+                               bounds: ValueBounds,
+                               orientation: Orientation) {
+        let ValueIndicatorBarPadding: Double = 2.0
+//        let fullRect = Rect2D(position: -rect.size / 2, size: rect.size)
+        let rect = frame.grown(by: -ValueIndicatorBarPadding)
+        let size = rect.size // Adjusted size by padding
+        
+        context.drawRect(frame, style: style.indicatorBackgroundStyle)
+
+        guard let value else {
+            context.drawRect(rect, style: style.indicatorEmptyStyle)
+            return
+        }
+        
+        let boundedValue: Double = bounds.clip(value)
+
+        let shapeStyle = switch bounds.state(of: value) {
+        case .overflow: style.indicatorOverflowStyle
+        case .underflow: style.indicatorUnderflowStyle
+        case .negative: style.indicatorNegativeStyle
+        case .positive: style.indicatorNormalStyle
+        }
+
+        guard bounds.range.magnitude > Double.standardEpsilon else {
+            context.drawRect(rect, style: shapeStyle)
+            return
+        }
+
+        let valueBar: Rect2D
+        let line: LineSegment
+        
+        switch orientation {
+        case .horizontal:
+            let scaledOrigin = bounds.normalizedBaseline * size.x
+            let scaledValue = bounds.normalized(value) * size.x
+
+            valueBar = Rect2D(x: rect.origin.x + scaledOrigin,
+                              y: rect.origin.y,
+                              width: scaledValue - scaledOrigin,
+                              height: size.y)
+            
+            line = LineSegment(
+                from: Vector2D(x: rect.origin.x + scaledOrigin, y: rect.origin.y),
+                to: Vector2D(x: rect.origin.x + scaledOrigin, y: rect.origin.y + size.y)
+            )
+
+        case .vertical:
+            let scaledOrigin = bounds.normalizedBaseline * size.y
+            let scaledValue = bounds.normalized(value) * size.y
+
+            valueBar = Rect2D(x: rect.origin.x,
+                              y: rect.origin.y + scaledOrigin,
+                              width: size.x,
+                              height: scaledValue - scaledOrigin)
+
+            line = LineSegment(
+                from: Vector2D(x: rect.origin.x, y: rect.origin.y + scaledOrigin),
+                to: Vector2D(x: rect.origin.x + size.x, y: rect.origin.y + scaledOrigin)
+            )
+        }
+        context.drawRect(valueBar, style: shapeStyle)
+        context.addLine(from: line.start, to: line.end)
     }
 }

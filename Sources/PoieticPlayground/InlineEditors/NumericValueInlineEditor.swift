@@ -1,5 +1,5 @@
 //
-//  FormulaInlineEditor.swift
+//  NumericValueInlineEditor.swift
 //  PoieticPlayground
 //
 //  Created by Stefan Urbanek on 25/02/2026.
@@ -10,21 +10,32 @@ import CIimgui
 import PoieticCore
 import Diagramming
 
-class FormulaInlineEditor: InlineEditor {
-    static let PopupID = "##formula_inline_editor"
+class NumericValueInlineEditor: InlineEditor {
+    static let PopupID = "##numeric_value_inline_editor"
     var worldPosition: Vector2D = .zero
 
     var currentEntity: RuntimeEntity?
     var currentObjectID: ObjectID?
     
-    var formulaIcon: TextureHandle?
-    var formulaBuffer: InputTextBuffer?
+    var iconKey: IconKey
+    var attributeName: String
+
+    var icon: TextureHandle?
+    var value: Double
+    var initialValue: Double
 
     private var grabFocus: Bool = false
     
+    init(attribute: String, iconKey: IconKey) {
+        self.attributeName = attribute
+        self.iconKey = iconKey
+        self.value = 0
+        self.initialValue = 0
+    }
+    
     override func open(for entity: RuntimeEntity) -> Bool {
         guard let object = entity.designObject,
-              object.type.hasTrait(.Formula),
+              let attribute = object.type.attribute(self.attributeName),
               let block: DiagramBlock = entity.component()
         else { return false }
 
@@ -35,11 +46,12 @@ class FormulaInlineEditor: InlineEditor {
         
         self.worldPosition = block.labelAnchorPosition
         
-        let text = object["formula"] ?? ""
-        self.formulaBuffer = InputTextBuffer(text)
+        let defaultValue = (try? attribute.defaultValue?.doubleValue()) ?? 0
+        self.value = object[attributeName] ?? defaultValue
+        self.initialValue = self.value
         
         let style = InterfaceStyle.current
-        self.formulaIcon = style.texture(forIcon: .formula)
+        self.icon = style.texture(forIcon: self.iconKey)
         
         return true
     }
@@ -48,7 +60,6 @@ class FormulaInlineEditor: InlineEditor {
         guard currentObjectID != nil,
               let currentEntity,
               let block: DiagramBlock = currentEntity.component(),
-              let formulaBuffer,
               let canvas
         else { return false } // Cancelled
         
@@ -72,8 +83,8 @@ class FormulaInlineEditor: InlineEditor {
                 grabFocus = false
             }
 
-            if let formulaIcon {
-                ImGui.Image(formulaIcon.imTextureRef, ImVec2(20, 20), ImVec2(0,0), ImVec2(1,1))
+            if let icon {
+                ImGui.Image(icon.imTextureRef, ImVec2(20, 20), ImVec2(0,0), ImVec2(1,1))
                 ImGui.SameLine()
             }
             if grabFocus {
@@ -81,11 +92,15 @@ class FormulaInlineEditor: InlineEditor {
             }
             
             let inputFlags: ImGuiInputTextFlags =
-                                ImGuiInputTextFlags_EnterReturnsTrue
+                                ImGuiInputTextFlags_None
                                 | ImGuiInputTextFlags_AutoSelectAll
             
-            let enterPressed = ImGui.InputText("##formula", buffer: formulaBuffer, flags: inputFlags)
-            let isDeactivated = !ImGui.IsItemActive() && !grabFocus
+            let valueChanged = ImGui.InputDouble("##value", &self.value,
+                                                 /* step:*/ 0.0,
+                                                 /* step_fast:*/ 0.0,
+                                                 /* format:*/ "%.4f",
+                                                 /* flags:*/ inputFlags)
+
             let escapePressed = ImGui.IsKeyPressed(ImGuiKey(ImGuiKey_Escape.rawValue), false)
             
             if escapePressed {
@@ -93,7 +108,7 @@ class FormulaInlineEditor: InlineEditor {
                 ImGui.CloseCurrentPopup()
                 return true
             }
-            else if enterPressed || isDeactivated {
+            else if ImGui.IsItemDeactivated() {
                 accept()
                 ImGui.CloseCurrentPopup()
                 return true
@@ -106,7 +121,7 @@ class FormulaInlineEditor: InlineEditor {
     override func close() {
         self.currentEntity = nil
         self.currentObjectID = nil
-        self.formulaBuffer = nil
+        self.value = 0
     }
 
     func cancel() {
@@ -114,7 +129,7 @@ class FormulaInlineEditor: InlineEditor {
     }
 
     func accept() {
-        guard let formulaBuffer,
+        guard value != initialValue,
               let session,
               let currentObjectID
         else { return }
@@ -124,6 +139,6 @@ class FormulaInlineEditor: InlineEditor {
         
         let object = trans.mutate(currentObjectID)
         
-        object["formula"] = Variant(formulaBuffer.string)
+        object[attributeName] = Variant(self.value)
     }
 }
