@@ -268,9 +268,22 @@ class DiagramCanvas: View {
     }
     
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
+        // TODO: Rework this as described below
+        /*
+         - Two kinds of hit targets: CollisionHitTarget, WireHitTarget
+         - Use CollisionCanvasHitTarget component for collision-shape based hit targets
+         - Use WireCanvasHitTarget component for connectors or potentially other wire-based targets
+         - either must implement containsTouch(worldPosition:Vector2D, radius:Double) -> Bool
+         - then content will be:
+            - for direct object hit: entity owning the component
+            - for object part (labels): OwnedBy target + part
+            - for indicator: same as for part
+            - for owned handle: (owner, handle)
+            - for free-standing handle: (handle ID, handle component)
+         */
         var targets: [CanvasHitTarget] = []
 
-        // TODO: This is expensive"
+        // TODO: This is expensive
         print("HitTarget - screenPos: \(screenPosition), canvasPos: \(canvasPos)")
         let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
@@ -283,13 +296,6 @@ class DiagramCanvas: View {
                 let target: CanvasHitTarget = .object(entity.runtimeID, .body)
                 targets.append(target)
             }
-            
-//            if let objectID = world.entityToObject(runtimeID),
-//               objectHasIssues(objectID)
-//            {
-//                let indicatorPosition = block.position + errorIndicatorAnchorOffset
-//                if worldTouchPosition.distance(to: indicatorPosition) <
-//            }
         }
         
         // Connectors (distance to wire)
@@ -306,6 +312,16 @@ class DiagramCanvas: View {
             }
         }
 
+        // Issue indicators
+        for (entity, indicator) in world.query(IssueIndicator.self) {
+            guard let owner: OwnedBy = entity.component() else { continue }
+            let shape = indicator.collisionShape
+            print("--- TEST indicator shape: \(shape)")
+            if shape.collide(with: touchShape) {
+                let target: CanvasHitTarget = .object(owner.target, .issueIndicator)
+                targets.append(target)
+            }
+        }
         // Handles
         for (entity, handle) in world.query(CanvasHandle.self) {
             let distance = worldTouchPosition.distance(to: handle.position)

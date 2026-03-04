@@ -34,6 +34,7 @@ extension Application {
                 + [
 //                    FrameChangeSystem,
                     // From Diagramming
+                    ErrorIndicatorSystem.self,
                     BlockCreationSystem.self,
                     TraitConnectorCreationSystem.self,
                     ConnectorGeometrySystem.self,
@@ -48,6 +49,8 @@ extension Application {
         world.addSchedule(Schedule(
             label: InteractivePreviewSchedule.self,
             systems: [
+                // TODO: Remove error indicator system once we have relative placement
+                ErrorIndicatorSystem.self,
                 // From Diagramming
                 ConnectorGeometrySystem.self,
             ]

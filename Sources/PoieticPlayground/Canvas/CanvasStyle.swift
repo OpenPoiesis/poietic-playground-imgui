@@ -71,7 +71,7 @@ class CanvasStyle {
 //    var errorIndicatorBackground: Color = Color.white.withTransparency(0.5)
 //    var errorIndicatorColor: Color = Color(red: 0.7, green: 0.2, blue: 0.2)
     var errorIndicatorColor: Color = Color.white
-    var errorIndicatorBackground: Color = Color(red: 0.9, green: 0.2, blue: 0.1, alpha: 0.8)
+    var errorIndicatorBackground: Color = Color(red: 1.0, green: 0.4, blue: 0.4, alpha: 0.8)
 
     // Indicator
     /// Style used to draw the indicator background, before the actual indicator content.
@@ -96,4 +96,33 @@ class CanvasStyle {
     func lineWidth(_ name: String, defaultWidth: Float = 1.0) -> Float {
         return lineWidths[name, default: defaultWidth]
     }
+    
+#if false
+    enum ColorKey: CaseIterable {
+        case background
+        case stroke
+        case grid
+        case pictogram
+        case intentShadow
+        case accepting
+        case notAllowed
+        case defaultConnector
+        case defaultConnectorFill
+        case selectionOutline
+        case selectionFill
+        case handle
+        case errorIndicator
+        case errorIndicatorBackground
+    }
+    enum MetricKey: CaseIterable {
+        case pictogramLineWidth
+        case defaultConnectorLineWidth
+        
+        case handleSize
+        case primaryLabelPadding
+        case secondaryLabelPadding
+        case colorSwatchSize
+    }
+#endif
+    
 }

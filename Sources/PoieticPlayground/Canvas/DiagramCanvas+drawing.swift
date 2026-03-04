@@ -14,9 +14,6 @@ import PoieticFlows
 import Diagramming
 import Foundation
 
-/// Name of a pictogram for error indicators.
-let ErrorPictogramName: String = "Error"
-
 extension DiagramCanvas {
     static let HandleSize: Double = 15.0
     static let PrimaryLabelPadding: Double = 0.0
@@ -33,8 +30,8 @@ extension DiagramCanvas {
         drawHandles(context)
     }
     func drawIndicatorOverlay(_ context: DrawingContext) {
-        drawIssueIndicators(context)
         drawValueIndicators(context)
+        drawIssueIndicators(context)
     }
     
     func drawHandles(_ context: DrawingContext) {
@@ -79,36 +76,17 @@ extension DiagramCanvas {
     }
 
     func drawIssueIndicators(_ context: DrawingContext) {
-        guard let session,
-              let notation: Notation = session.world.singleton()
-        else { return }
-        
-        let errorPictogram = notation.pictogram(ErrorPictogramName)
-        
-        for (objectID, _) in session.world.issues {
-            // TODO: Add number of issues
-            guard let entity = session.world.entity(objectID) else { continue }
-            
-            if let block: DiagramBlock = entity.component() {
-                let position: Vector2D
-                if let preview: BlockPreview = entity.component() {
-                    position = preview.position + block.errorIndicatorAnchorOffset
-                }
-                else {
-                    position = block.position + block.errorIndicatorAnchorOffset
-                }
-                drawIndicator(context,
-                              pictogram: errorPictogram,
-                              at: position)
-            }
+        for (_, indicator) in world.query(IssueIndicator.self) {
+            drawIssueIndicator(context, indicator: indicator)
         }
     }
 
-    func drawIndicator(_ context: DrawingContext, pictogram: Pictogram, at anchor: Vector2D) {
-        let height = pictogram.maskBoundingBox.height
-        let position = Vector2D(anchor.x, anchor.y - (height / 2))
-        let trans = toOverlayTransform.translated(position)
+    func drawIssueIndicator(_ context: DrawingContext, indicator: IssueIndicator) {
+        // TODO: pass parent as argument to get errorIndicatorAnchorOffset (once hierarchical drawing is available)
+        let pictogram = indicator.pictogram
+        let trans = toOverlayTransform.translated(indicator.position)
         
+        context.setLineWidth(2.0)
         context.setColor(style.errorIndicatorBackground)
         context.addPath(pictogram.mask, transform: trans)
         context.fill()
@@ -117,12 +95,10 @@ extension DiagramCanvas {
         context.addPath(pictogram.path, transform: trans)
         context.stroke()
 
-        context.addPath(pictogram.mask, transform: trans)
-        context.stroke()
-
+//        context.addPath(pictogram.mask, transform: trans)
+//        context.stroke()
     }
-    
-    
+
     func drawBlock(_ context: DrawingContext, entity: RuntimeEntity, isSelected: Bool, block: DiagramBlock) {
         let blockPosition: Vector2D
         
