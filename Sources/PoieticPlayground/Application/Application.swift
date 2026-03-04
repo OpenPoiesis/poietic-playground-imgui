@@ -232,6 +232,7 @@ class Application {
            maybeNewFrame !== world.frame
         {
             world.setFrame(maybeNewFrame)
+            // TODO: [IMPORTANT] Remove components with frame lifetime (backing does not exist yet)
             self.run(schedule: FrameChangeSchedule.self, session: session)
             session.updateSelectionOverview()
             session.trigger(.designFrameChanged)

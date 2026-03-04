@@ -57,6 +57,7 @@ extension Application {
             label: SimulationSchedule.self,
             systems: [
                 StockFlowSimulationSystem.self,
+                ResultProcessingSystem.self,
             ]
         ))
 

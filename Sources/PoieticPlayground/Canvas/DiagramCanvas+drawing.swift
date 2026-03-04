@@ -324,13 +324,24 @@ extension DiagramCanvas {
             step = max(0, Int(plan.simulationSettings.steps) - 1)
         }
         
+        // TODO: [ECS] Make this a pre-computed component
         guard let state = result[step] else { return }
         let value: Variant = state[simObject.variableIndex]
         guard let doubleValue = try? value.doubleValue() else { return }
+        
+        
         let indicatorLabel = doubleValue.formatted(.number.precision(.significantDigits(1...4)))
         
         let trans = toOverlayTransform.translated(block.position)
         let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
+        
+        let frame = Rect2D(center: anchor, size: Vector2D(100, 20))
+        let bounds = ValueBounds(min: 0, max: 100, baseline: 0)
+        drawValueIndicatorBar(context,
+                              frame: frame,
+                              value: doubleValue,
+                              bounds: bounds,
+                              orientation: .horizontal)
         
         context.setFontSize(style.valueIndicatorStyle.fontSize)
         let te = context.textExtents(indicatorLabel)
@@ -358,8 +369,6 @@ extension DiagramCanvas {
             return
         }
         
-        let boundedValue: Double = bounds.clip(value)
-
         let shapeStyle = switch bounds.state(of: value) {
         case .overflow: style.indicatorOverflowStyle
         case .underflow: style.indicatorUnderflowStyle
