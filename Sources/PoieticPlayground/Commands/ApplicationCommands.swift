@@ -7,6 +7,7 @@
 
 import PoieticCore
 import PoieticFlows
+import Diagramming
 import Foundation
 import CIimgui
 
@@ -20,5 +21,41 @@ struct SwitchToolCommand: Command {
     
     func run(_ context: CommandContext) throws (CommandError) {
         context.app.toolBar.setTool(name)
+    }
+}
+
+struct OpenIssuesCommand: Command {
+    var name: String { "open-issues" }
+
+    /// Object to open issues for. If nil - open for all.
+    let objectID: ObjectID?
+    
+    init(_ objectID: ObjectID? = nil) {
+        self.objectID = objectID
+    }
+    
+    func run(_ context: CommandContext) throws (CommandError) {
+        context.app.issuesPanel.isVisible = true
+    }
+}
+
+struct CenterCanvasOnObjectCommand: Command {
+    // TODO: Make it work with other objects, Works only with blocks for now
+    var name: String { "center-canvas-on-object" }
+
+    let objectID: ObjectID
+    let zoomLevel: Double?
+    
+    init(_ objectID: ObjectID, zoomLevel: Double? = nil) {
+        self.objectID = objectID
+        self.zoomLevel = zoomLevel
+    }
+    
+    func run(_ context: CommandContext) throws (CommandError) {
+        print("CENTER ON: \(objectID), zoom: \(zoomLevel)")
+        guard let entity = context.world.entity(objectID),
+              let block: DiagramBlock = entity.component()
+        else {return }
+        context.app.canvas.centerView(at: block.position)
     }
 }

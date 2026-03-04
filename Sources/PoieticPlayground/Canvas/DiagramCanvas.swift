@@ -267,6 +267,12 @@ class DiagramCanvas: View {
         overlays.setAllNeedsRender()
     }
     
+    func centerView(at worldPoint: Vector2D, zoom: Double? = nil) {
+        let useZoom = zoom ?? self.zoomLevel
+        let canvasCenter = Vector2D(canvasSize) / 2.0
+        let offset = worldPoint - (canvasCenter / useZoom)
+        setView(offset: offset, zoom: useZoom)
+    }
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
         // TODO: Rework this as described below
         /*
@@ -284,10 +290,8 @@ class DiagramCanvas: View {
         var targets: [CanvasHitTarget] = []
 
         // TODO: This is expensive
-        print("HitTarget - screenPos: \(screenPosition), canvasPos: \(canvasPos)")
         let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
-        print("  → worldPos: \(worldTouchPosition)")
 
         // Blocks (collision shape) and Error indicators
         for (entity, block) in world.query(DiagramBlock.self) {
@@ -316,7 +320,6 @@ class DiagramCanvas: View {
         for (entity, indicator) in world.query(IssueIndicator.self) {
             guard let owner: OwnedBy = entity.component() else { continue }
             let shape = indicator.collisionShape
-            print("--- TEST indicator shape: \(shape)")
             if shape.collide(with: touchShape) {
                 let target: CanvasHitTarget = .object(owner.target, .issueIndicator)
                 targets.append(target)
@@ -329,7 +332,6 @@ class DiagramCanvas: View {
             let target: CanvasHitTarget = .handle(entity.runtimeID)
             targets.append(target)
         }
-        print("--- Targets: ", targets)
 
         return targets.last
     }
