@@ -119,12 +119,42 @@ extension Application {
     
     func processUnhandledInput() {
         let io = ImGui.GetIO().pointee
-        
-        if let currentTool {
-            let events = canvas.recognizeEvents(io)
-            for event in events {
-                currentTool.handleEvent(event)
+       
+        let events = canvas.recognizeEvents(io)
+
+        for event in events {
+            var result: CanvasTool.EngagementResult = .pass
+            var toolUsed: CanvasTool? = nil
+            
+            // 1. Determine which tool handles the event
+            if let engagedTool = toolBar.engagedTool {
+                // Engaged tool has priority - it gets ALL events
+                result = engagedTool.handleEvent(event)
+                toolUsed = engagedTool
+            }
+            else if let currentTool = toolBar.currentTool {
+                // No engaged tool - try current tool first
+                result = currentTool.handleEvent(event)
+                toolUsed = currentTool
+                
+                // If current tool passed and we have a fallback, try fallback
+                if result == .pass,
+                   let fallbackTool = toolBar.secondaryTool
+                {
+                    result = fallbackTool.handleEvent(event)
+                    toolUsed = fallbackTool
+                }
+            }
+            
+            // 2. Update engagement state based on result
+            switch result {
+            case .engaged:
+                toolBar.engagedTool = toolUsed
+                
+            case .consumed, .pass:
+                toolBar.engagedTool = nil
             }
         }
     }
+    
 }

@@ -45,6 +45,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     // View
     ShortcutAction("toggle_inspector", key: ImGuiMod_Ctrl | ImGuiKey_I),
     ShortcutAction("toggle_issues_panel", key: ImGuiMod_Ctrl | ImGuiKey_5),
+    ShortcutAction("reset_zoom", key: ImGuiMod_Ctrl | ImGuiKey_0),
 
     // Tools
     ShortcutAction("switch_selection_tool", key: ImGuiKey_1),
@@ -109,7 +110,9 @@ extension Application {
             self.inspector.isVisible = !self.inspector.isVisible
         case "toggle_issues_panel":
             self.issuesPanel.isVisible = !self.issuesPanel.isVisible
-            
+        case "reset_zoom":
+            session?.queueCommand(ResetZoomCommand())
+
         // -- Inspector --
         case "overview_inspector":
             self.inspector.selectTab(.overview)

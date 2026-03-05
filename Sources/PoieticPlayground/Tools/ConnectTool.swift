@@ -70,17 +70,18 @@ class ConnectTool: CanvasTool {
         return [ObjectType.Parameter, ObjectType.Flow]
     }
     
-    override func handleEvent(_ event: ToolEvent) {
+    override func handleEvent(_ event: ToolEvent) -> EngagementResult {
         switch event.type {
-        case .dragStart: self.dragStart(event)
-        case .dragMove: self.dragMove(event)
-        case .dragEnd: self.dragEnd(event)
-        case .dragCancel: self.dragCancel(event)
-        default: break
+        case .dragStart: return self.dragStart(event)
+        case .dragMove: return self.dragMove(event)
+        case .dragEnd: return self.dragEnd(event)
+        case .dragCancel: return self.dragCancel(event)
+        default: return .pass
         }
     }
 
-    func dragStart(_ event: ToolEvent) {
+    func dragStart(_ event: ToolEvent) -> EngagementResult{
+        guard event.triggerButton == .left else { return .pass }
         guard let canvas,
               let session,
               let target = canvas.hitTarget(screenPosition: event.screenPos),
@@ -91,7 +92,7 @@ class ConnectTool: CanvasTool {
               let object = world.frame?[objectID]
         else {
             state = .idle
-            return
+            return .pass
         }
         let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
         createDragConnector(type: type,
@@ -100,14 +101,15 @@ class ConnectTool: CanvasTool {
                             targetID: nil,
                             targetAllowed: true)
         self.state = .connecting
+        return .engaged
     }
     
-    func dragMove(_ event: ToolEvent) {
+    func dragMove(_ event: ToolEvent) -> EngagementResult {
         guard let canvas,
               state == .connecting,
               let intendedConnector,
               let intent: ConnectorIntent = intendedConnector.component()
-        else { return }
+        else { return .pass}
         
         let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
         let targetID: RuntimeID?
@@ -128,9 +130,10 @@ class ConnectTool: CanvasTool {
         updateDragConnector(targetPoint: worldPosition,
                             targetID: targetID,
                             targetAllowed: targetAllowed)
+        return .engaged
     }
 
-    func dragEnd(_ event: ToolEvent) {
+    func dragEnd(_ event: ToolEvent) -> EngagementResult {
         defer {
             self.state = .idle
             removeDragConnector()
@@ -142,18 +145,20 @@ class ConnectTool: CanvasTool {
               let target = canvas.hitTarget(screenPosition: event.screenPos),
               case .object(let runtimeID, _) = target,
               let targetObjectID = canvas.world.entityToObject(runtimeID)
-        else { return }
+        else { return .pass }
         
         if canConnect(type: intent.type, from: intent.originID, to: runtimeID) {
             createConnection(type: intent.type, from: intent.originID, to: runtimeID)
         }
-
         
         print("Drag concluded with: \(target)")
+        return .consumed
     }
-    func dragCancel(_ event: ToolEvent) {
+    
+    func dragCancel(_ event: ToolEvent) -> EngagementResult {
         self.state = .idle
         removeDragConnector()
+        return .consumed
     }
 
     func canConnect(type: ObjectType, from originID: RuntimeID, to targetID: RuntimeID) -> Bool {

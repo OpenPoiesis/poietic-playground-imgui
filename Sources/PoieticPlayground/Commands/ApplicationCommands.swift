@@ -59,3 +59,14 @@ struct CenterCanvasOnObjectCommand: Command {
         context.app.canvas.centerView(at: block.position)
     }
 }
+
+struct ResetZoomCommand: Command {
+    var name: String { "reset-zoom" }
+    
+    func run(_ context: CommandContext) throws (CommandError) {
+        let canvas = context.app.canvas
+        let worldSize: Vector2D = canvas.screenToWorld(canvas.canvasSize)
+        let center = canvas.viewOffset + (worldSize / 2)
+        context.app.canvas.centerView(at: center, zoom: 1.0)
+    }
+}

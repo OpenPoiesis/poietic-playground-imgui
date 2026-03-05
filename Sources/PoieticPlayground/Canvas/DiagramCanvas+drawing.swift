@@ -88,8 +88,8 @@ extension DiagramCanvas {
     func drawIssueIndicator(_ context: DrawingContext, indicator: IssueIndicator) {
         // TODO: pass parent as argument to get errorIndicatorAnchorOffset (once hierarchical drawing is available)
         let pictogram = indicator.pictogram
-        let trans = toOverlayTransform.translated(indicator.position)
-        
+        let trans = AffineTransform(translation: toOverlayTransform.apply(to: indicator.position))
+
         context.setLineWidth(2.0)
         context.setColor(style.errorIndicatorBackground)
         context.addPath(pictogram.mask, transform: trans)
@@ -113,12 +113,13 @@ extension DiagramCanvas {
             blockPosition = block.position
         }
         
-        let blockTrans = toOverlayTransform.translated(blockPosition)
-        let blockSurfacePos = toOverlayTransform.apply(to: blockPosition)
         var swatchCenter: Vector2D
         var labelCenter: Vector2D
-        
+        let blockOverlayPos = toOverlayTransform.apply(to: blockPosition)
+        let blockTrans = AffineTransform(translation: blockOverlayPos)
+
         if let pictogram = block.pictogram {
+            let pictogram = pictogram.scaled(self.zoomLevel)
 //            context.setColor(style.pictogramMaskColor)
 //            context.fillPath(pictogram.mask, transform: blockTrans)
             
@@ -146,10 +147,10 @@ extension DiagramCanvas {
             context.strokePath(pictogram.path, transform: blockTrans)
             
             let screenBBMin = toOverlayTransform.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
-            labelCenter = Vector2D(blockSurfacePos.x, screenBBMin.y)
+            labelCenter = Vector2D(blockOverlayPos.x, screenBBMin.y)
         }
         else {
-            labelCenter = blockSurfacePos
+            labelCenter = blockOverlayPos
         }
 
         swatchCenter = labelCenter
@@ -317,9 +318,11 @@ extension DiagramCanvas {
         
         let indicatorLabel = doubleValue.formatted(.number.precision(.significantDigits(1...4)))
         
-        let trans = toOverlayTransform.translated(blockPosition)
-        let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
-        
+//        let trans = toOverlayTransform.translated(blockPosition)
+//        let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
+        let anchorWorldPos = blockPosition + block.valueIndicatorAnchorOffset
+        let anchor = toOverlayTransform.apply(to: anchorWorldPos)
+
         let frame = Rect2D(center: anchor, size: Vector2D(100, 20))
         let bounds = ValueBounds(min: 0, max: 100, baseline: 0)
         drawValueIndicatorBar(context,
