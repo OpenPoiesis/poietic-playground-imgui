@@ -15,11 +15,9 @@ extension Application {
         if let designURL {
             self.log("Design URL: \(designURL.standardizedFileURL)")
         }
-        let world = World(design: design)
-        setupWorld(world)
-        let newSession = Session(design: design, world: world)
-        newSession.designURL = designURL
-        updateWorld(newSession, force: true)
+        
+        let newSession = Session(design: design, url: designURL)
+        newSession.updateWorld(force: true)
 
         self.session = newSession
         bindToSession(newSession)

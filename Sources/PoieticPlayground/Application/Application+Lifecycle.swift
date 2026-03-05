@@ -26,14 +26,13 @@ extension Application {
             self.newDesign()
         }
         
-        setupEventSchedules()
         mainLoop()
     }
 
     func mainLoop() {
         let backend = GraphicsBackend.shared
-        
         var lastTime = ImGui.GetTime()
+        
         loop: while !quitRequested {
             switch backend.pollEvent() {
             case .quit: break loop
@@ -45,13 +44,11 @@ extension Application {
             ImGui_ImplSDL3_NewFrame()
             ImGui.NewFrame()
             
-            self.processInput()
-            
             let newTime = ImGui.GetTime()
             let timeDelta = newTime - lastTime
             lastTime = newTime
             
-            
+            self.processInput()
             self.update(timeDelta)
             self.draw()
             self.processUnhandledInput()
@@ -78,27 +75,32 @@ extension Application {
             logError("No session!")
             return
         }
-        //        canvas.update(timeDelta)
+        // Update UI components
         inspector.update(timeDelta)
         toolBar.update(timeDelta)
         alertPanel.update(timeDelta)
         issuesPanel.update(timeDelta)
         controlBar.update(timeDelta)
+
         if player.isRunning {
             player.update(timeDelta)
         }
         
-        // Run commands
+        // Run the Command Queue
         while !session.commandQueue.isEmpty {
             let command = session.commandQueue.removeFirst()
             self.runCommand(command, session: session)
         }
         
-        if let trans = session.consumeTransaction() {
-            accept(trans)
+        do {
+            try session.consumeAndAcceptTransaction()
         }
-        
-        updateWorld(session)
+        catch {
+            // This is not user's fault and never should be.
+            // The application failed to make sure structural integrity is assured
+            Application.shared.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
+            return
+        }
     }
     
     func draw() {

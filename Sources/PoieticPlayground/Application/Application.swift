@@ -23,6 +23,16 @@ import Foundation
 /// - Glue between Document and UI
 @MainActor
 class Application {
+    static var shared: Application {
+        guard let app = self._shared else { fatalError("Shared application is not set-up") }
+        return app
+    }
+    internal static var _shared: Application? = nil {
+        willSet(app) {
+            precondition(_shared != nil)
+        }
+    }
+    
     // Dumping ground of globals (for now)
     //    static let NewDesignTemplatePath = "designs/new_canvas.json"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
@@ -78,72 +88,7 @@ class Application {
             ConnectTool(),
             PanTool(),
         ]
-    }
-    
-    /// Set world singletons when the world changes.
-    func setupWorld(_ world: World) {
-        Self.setupSchedules(world)
-        world.setSingleton(notation)
-    }
-    
-    func updateWorld(_ session: Session, force: Bool = false) {
-        // TODO: This method does multiple things that need to be decoupled
-        let world = session.world
-        
-        if session.design.currentFrame !== world.frame || force {
-            if let frame = session.design.currentFrame {
-                world.setFrame(frame)
-            }
-            // TODO: [IMPORTANT] Remove components with frame lifetime (backing does not exist yet)
-            self.run(schedule: FrameChangeSchedule.self, session: session)
-            session.updateSelectionOverview()
-            session.trigger(.designFrameChanged)
-            session.trigger(.selectionChanged)
-
-            if self.run(schedule: SimulationSchedule.self, session: session) {
-                session.trigger(.simulationFinished)
-            }
-            else {
-                session.trigger(.simulationFailed)
-            }
-            // TODO: Remove temporary components here (such as previews)
-        }
-
-        if session.requiresInteractivePreviewUpdate {
-            self.run(schedule: InteractivePreviewSchedule.self, session: session)
-            session.requiresInteractivePreviewUpdate = false
-            session.trigger(.previewChanged)
-        }
-    }
-    
-    func accept(_ trans: TransientFrame) {
-        self.log("Accept? Has changes: \(trans.hasChanges)")
-        guard trans.hasChanges else {
-            trans.design.discard(trans)
-            return
-        }
-        self.log("Accepting frame changes")
-
-        do {
-            try trans.design.accept(trans, appendHistory: true)
-            self.log("Transaction accepted. Current frame: \(trans.id), frame count: \(trans.design.frames.count)")
-        }
-        catch {
-            // This is not user's fault and never should be.
-            // The application failed to make sure structural integrity is assured
-            self.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
-            return
-        }
-        
-        if let session {
-            updateWorld(session)
-        }
-    }
-    
-    func alert(title: String, message: String) {
-        self.alertPanel.title = title
-        self.alertPanel.message = message
-        self.alertPanel.isVisible = true
+        Self._shared = self
     }
     
     func applicationSessionDebugWindow() {
@@ -160,6 +105,12 @@ class Application {
             ImGui.TextUnformatted("Interactive preview update: \(session.requiresInteractivePreviewUpdate)")
         }
         ImGui.End()
+    }
+    
+    func alert(title: String, message: String) {
+        self.alertPanel.title = title
+        self.alertPanel.message = message
+        self.alertPanel.isVisible = true
     }
     
     func log(_ message: String) {
