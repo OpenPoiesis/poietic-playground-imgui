@@ -89,23 +89,16 @@ class Application {
         }
         catch {
             self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
-            self.newEmptySession()
+            self.newDesign()
         }
         
         setupEventSchedules()
         mainLoop()
     }
     
-    
-    func newEmptySession() {
-        let design = Design(metamodel: StockFlowMetamodel)
-        newSession(design)
-    }
-    
     /// Set a new design document and propagate the change through the application.
     ///
     func newSession(_ design: Design, designURL: URL? = nil) {
-        self.log("New session.")
         if let designURL {
             self.log("Design URL: \(designURL.standardizedFileURL)")
         }
@@ -132,7 +125,7 @@ class Application {
 //        self.session?.addObserver(player.onSimulationFinished, on: .simulationFinished)
         // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
         
-        updateWorld(newSession)
+        updateWorld(newSession, force: true)
     }
     
     func bindToSession(_ session: Session) {
@@ -224,14 +217,14 @@ class Application {
         updateWorld(session)
     }
     
-    func updateWorld(_ session: Session) {
+    func updateWorld(_ session: Session, force: Bool = false) {
         // TODO: This method does multiple things that need to be decoupled
         let world = session.world
         
-        if let maybeNewFrame = session.design.currentFrame,
-           maybeNewFrame !== world.frame
-        {
-            world.setFrame(maybeNewFrame)
+        if session.design.currentFrame !== world.frame || force {
+            if let frame = session.design.currentFrame {
+                world.setFrame(frame)
+            }
             // TODO: [IMPORTANT] Remove components with frame lifetime (backing does not exist yet)
             self.run(schedule: FrameChangeSchedule.self, session: session)
             session.updateSelectionOverview()
@@ -246,7 +239,7 @@ class Application {
             }
             // TODO: Remove temporary components here (such as previews)
         }
-        
+
         if session.requiresInteractivePreviewUpdate {
             self.run(schedule: InteractivePreviewSchedule.self, session: session)
             session.requiresInteractivePreviewUpdate = false
@@ -260,7 +253,8 @@ class Application {
             trans.design.discard(trans)
             return
         }
-        
+        self.log("Accepting frame changes")
+
         do {
             try trans.design.accept(trans, appendHistory: true)
             self.log("Transaction accepted. Current frame: \(trans.id), frame count: \(trans.design.frames.count)")

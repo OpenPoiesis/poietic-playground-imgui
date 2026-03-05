@@ -92,6 +92,11 @@ class SelectionTool: CanvasTool {
                 createHandles(for: runtimeID)
             }
             state = .objectHit
+        case .object(let runtimeID, .issueIndicator):
+            self.removeHandles()
+            state = .idle
+            guard let objectID = world.entityToObject(runtimeID) else { break }
+            self.session?.queueCommand(OpenIssuesCommand(objectID))
         case .object(let runtimeID, let part):
             self.removeHandles()
             state = .objectPartHit(runtimeID, part)
@@ -164,7 +169,7 @@ class SelectionTool: CanvasTool {
 
         case .idle, .objectHit, .objectSelect, .handleEngaged: break
 
-        case .objectPartHit(_, _):
+        case .objectPartHit:
             break
 //            guard let hitTarget,
 //                  let block = hitTarget.object as? DiagramCanvasBlock,

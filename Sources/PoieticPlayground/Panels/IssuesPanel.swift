@@ -46,6 +46,11 @@ class IssuesPanel: Panel {
             if let issues = session?.world.issues {
                 drawIssues(issues)
             }
+            else {
+                ImGui.TableNextRow()
+                ImGui.TableNextColumn()
+                ImGui.TextUnformatted("No issues")
+            }
             
             ImGui.EndTable()
         }

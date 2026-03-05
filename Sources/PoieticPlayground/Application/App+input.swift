@@ -37,6 +37,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     ShortcutAction("select_all", key: ImGuiMod_Ctrl | ImGuiKey_A),
 
     // File
+    ShortcutAction("new", key: ImGuiMod_Ctrl | ImGuiKey_N),
     ShortcutAction("open", key: ImGuiMod_Ctrl | ImGuiKey_O),
     ShortcutAction("save", key: ImGuiMod_Ctrl | ImGuiKey_S),
     ShortcutAction("save_as", key: ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S),
@@ -91,6 +92,7 @@ extension Application {
         case "settings": self.openSettings()
         case "quit": self.quitRequested = true
         // -- File --
+        case "new": session?.queueCommand(NewDesignCommand())
         case "save": session?.queueCommand(SaveDesignCommand())
 
         // -- Edit --

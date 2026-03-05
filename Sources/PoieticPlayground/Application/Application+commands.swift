@@ -26,6 +26,13 @@ extension Application {
         }
     }
     
+    func newDesign() {
+        let design = Design(metamodel: StockFlowMetamodel)
+        // Create a new frame, so we can undo first action (can't undo to no-frame)
+        let frame = design.createFrame()
+        try! design.accept(frame) // We can force, because empty frame must be always valid.
+        self.newSession(design)
+    }
     func openDesign(url: URL) throws (DesignStoreError) {
         let store = DesignStore(url: url)
         let design = try store.load(metamodel: StockFlowMetamodel)
