@@ -30,8 +30,12 @@ extension DiagramCanvas {
         drawHandles(context)
     }
     func drawIndicatorOverlay(_ context: DrawingContext) {
-        drawValueIndicators(context)
-        drawIssueIndicators(context)
+        if world.hasIssues {
+            drawIssueIndicators(context)
+        }
+        else {
+            drawValueIndicators(context)
+        }
     }
     
     func drawHandles(_ context: DrawingContext) {
@@ -115,7 +119,9 @@ extension DiagramCanvas {
         var labelCenter: Vector2D
         
         if let pictogram = block.pictogram {
-
+//            context.setColor(style.pictogramMaskColor)
+//            context.fillPath(pictogram.mask, transform: blockTrans)
+            
             if isSelected {
                 context.setColor(style.selectionFillColor)
                 context.fillPath(pictogram.mask, transform: blockTrans)
@@ -292,6 +298,9 @@ extension DiagramCanvas {
               let simObject = plan.simulationObject(objectID)
         else { return }
         
+        let preview: BlockPreview? = entity.component()
+        let blockPosition = preview?.position ?? block.position
+        
         let step: Int
         if let time: SimulationReplayTime = world.singleton() {
             step = time.step
@@ -308,7 +317,7 @@ extension DiagramCanvas {
         
         let indicatorLabel = doubleValue.formatted(.number.precision(.significantDigits(1...4)))
         
-        let trans = toOverlayTransform.translated(block.position)
+        let trans = toOverlayTransform.translated(blockPosition)
         let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
         
         let frame = Rect2D(center: anchor, size: Vector2D(100, 20))

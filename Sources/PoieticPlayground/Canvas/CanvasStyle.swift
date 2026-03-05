@@ -41,6 +41,7 @@ class CanvasStyle {
     
     // Block
     var lineWidths: [String:Float] = [:]
+    var pictogramMaskColor: Color = .white.withTransparency(0.2)
     var pictogramColor: Color = DefaultPictogramColor
 
     var primaryLabelStyle: LabelStyle = LabelStyle(color: .black, fontSize: 12.0)
