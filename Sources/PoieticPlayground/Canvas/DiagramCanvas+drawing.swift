@@ -219,7 +219,7 @@ extension DiagramCanvas {
         context.stroke()
         // Filled curves
         if let path = geometry.fillPath {
-            context.setColor(style.defaultConnectorColor)
+            context.setColor(style.defaultConnectorFillColor)
             // TODO: ImGui can not draw correctly concave polygons (they are expensive)
             context.fillPath(path, transform: transform)
         }

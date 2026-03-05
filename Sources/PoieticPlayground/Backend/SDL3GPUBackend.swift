@@ -176,7 +176,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     }
 
     // MARK: - Texture
-    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32)
+    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32, format: TexturePixelFormat)
     throws (GraphicsBackendError) -> TextureHandle
     {
         let texture = try allocateGPUTexture(width: width, height: height)
@@ -185,7 +185,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
             if !success { SDL_ReleaseGPUTexture(device, texture) }
         }
 
-        try uploadPixels(pixels, width: width, height: height, to: texture)
+        try uploadPixels(pixels, width: width, height: height, to: texture, format: format)
         assert(MemoryLayout<ImTextureID>.size == MemoryLayout<OpaquePointer>.size)
 
         let textureID = unsafeBitCast(texture, to: ImTextureID.self)
@@ -223,10 +223,12 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     private func uploadPixels(_ pixels: UnsafeRawPointer,
                               width: UInt32,
                               height: UInt32,
-                              to texture: OpaquePointer)
+                              to texture: OpaquePointer,
+                              format: TexturePixelFormat)
     throws (GraphicsBackendError)
     {
-        let byteCount = width * height * 4
+        let pixelCount = width * height
+        let byteCount = pixelCount * UInt32(format.size)
 
         var transferInfo = SDL_GPUTransferBufferCreateInfo()
         transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD
@@ -240,7 +242,16 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         guard let mapped = SDL_MapGPUTransferBuffer(device, transferBuffer, true) else {
             throw GraphicsBackendError("SDL_MapGPUTransferBuffer failed", backendError: Self.getError())
         }
-        mapped.copyMemory(from: pixels, byteCount: Int(byteCount))
+        
+        switch format {
+        case .RGBA:
+            mapped.copyMemory(from: pixels, byteCount: Int(byteCount))
+        case .RGBAPreMultiplied:
+            convertPremultipliedToStraight(from: pixels,
+                                           to: mapped,
+                                           pixelCount: Int(pixelCount))
+        }
+
         SDL_UnmapGPUTransferBuffer(device, transferBuffer)
 
         guard let cmd = SDL_AcquireGPUCommandBuffer(device) else {
@@ -275,3 +286,4 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         SDL_GetDisplayContentScale(display ?? SDL_GetPrimaryDisplay())
     }
 }
+

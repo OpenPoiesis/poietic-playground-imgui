@@ -154,7 +154,8 @@ class Overlay {
         }
         
         do {
-            texture = try backend.createTexture(pixels: data, width: w, height: h)
+//            texture = try backend.createTexture(pixels: data, width: w, height: h, format: .RGBA)
+             texture = try backend.createTexture(pixels: data, width: w, height: h, format: .RGBAPreMultiplied)
             self.state = .clean
         }
         catch {
@@ -203,3 +204,5 @@ class OverlayStack {
         layers.forEach { $0.setNeedsRender() }
     }
 }
+
+

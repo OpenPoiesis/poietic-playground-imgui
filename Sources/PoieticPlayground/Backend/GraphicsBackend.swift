@@ -20,6 +20,18 @@ struct GraphicsBackendError: Error, CustomStringConvertible {
     }
 }
 
+enum TexturePixelFormat {
+    case RGBA
+    case RGBAPreMultiplied
+    
+    /// Number of bytes per pixel
+    var size: Int {
+        switch self {
+        case .RGBA, .RGBAPreMultiplied: 4
+        }
+    }
+}
+
 protocol GraphicsBackendProtocol: AnyObject {
     var displayScale: Float { get }
     
@@ -33,7 +45,7 @@ protocol GraphicsBackendProtocol: AnyObject {
     func render()
     
     // Textures
-    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32) throws (GraphicsBackendError)-> TextureHandle
+    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32, format: TexturePixelFormat) throws (GraphicsBackendError)-> TextureHandle
     func destroyTexture(_ handle: TextureHandle)
 }
 
