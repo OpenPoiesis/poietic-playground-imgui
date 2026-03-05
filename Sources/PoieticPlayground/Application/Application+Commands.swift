@@ -11,6 +11,27 @@ import PoieticFlows
 import CIimgui
 
 extension Application {
+    func runCommand(_ command: any Command, session: Session) {
+        let context = CommandContext(app: self, session: session)
+        do {
+            self.log("Running command '\(command.name)'")
+            try command.run(context)
+        }
+        catch {
+            self.logError("Command '\(command.name)' failed: \(error.message)")
+            if let underlyingError = error.underlyingError {
+                self.logError("Underlying error: \(String(describing: underlyingError))")
+            }
+            let title: String
+            switch error.severity {
+            case .error: title = "Fatal Error"
+            case .fatal: title = "Error"
+            }
+            
+            self.alert(title: title, message: error.message)
+        }
+    }
+
     func openSettings() {
         settingsPanel.isVisible = true
     }

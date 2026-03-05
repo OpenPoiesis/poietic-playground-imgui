@@ -12,6 +12,15 @@ import Csdl3
 import Diagramming
 import Foundation
 
+/// Main orchestrator
+///
+/// Responsibilities:
+///
+/// - Lifecycle and main loop orchestration
+/// - UI panel ownership and binding orchestration
+/// - Input routing (shortcuts → actions → commands)
+/// - Resource management
+/// - Glue between Document and UI
 @MainActor
 class Application {
     // Dumping ground of globals (for now)
@@ -69,152 +78,12 @@ class Application {
             ConnectTool(),
             PanTool(),
         ]
-        
-        self.toolBar.currentTool = canvasTools[0]
-        
-        self.settingsPanel.bind(self)
-        self.controlBar.bind(self)
-    }
-    
-    @MainActor func run() {
-        loadResources()
-        
-        self.toolBar.bind(self)
-        
-        
-        // New template design
-        let templateURL = ResourceManager.shared.resourceURL(Self.NewDesignTemplatePath)
-        do {
-            try self.openDesign(url: templateURL)
-        }
-        catch {
-            self.alert(title: "Error", message: "Unable to open template design '\(templateURL)'. Reason: \(error)")
-            self.newDesign()
-        }
-        
-        setupEventSchedules()
-        mainLoop()
-    }
-    
-    /// Set a new design document and propagate the change through the application.
-    ///
-    func newSession(_ design: Design, designURL: URL? = nil) {
-        if let designURL {
-            self.log("Design URL: \(designURL.standardizedFileURL)")
-        }
-        let world = World(design: design)
-        setupWorld(world)
-        let newSession = Session(design: design, world: world)
-        newSession.designURL = designURL
-        self.session = newSession
-        bindToSession(newSession)
-        
-        self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
-        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
-        
-        self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
-        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
-        self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
-        self.session?.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
-
-        self.session?.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
-        self.session?.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
-
-        self.session?.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)
-        self.session?.addObserver(player.onSimulationFailed, on: .simulationFailed)
-//        self.session?.addObserver(player.onSimulationFinished, on: .simulationFinished)
-        // self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
-        
-        updateWorld(newSession, force: true)
-    }
-    
-    func bindToSession(_ session: Session) {
-        canvas.bind(session)
-        
-        for tool in canvasTools {
-            tool.bind(canvas: canvas, session: session)
-        }
-        inspector.bind(session)
-        issuesPanel.bind(session)
-        player.bind(session)
     }
     
     /// Set world singletons when the world changes.
     func setupWorld(_ world: World) {
         Self.setupSchedules(world)
         world.setSingleton(notation)
-    }
-    
-    @MainActor func mainLoop() {
-        let backend = GraphicsBackend.shared
-        
-        var lastTime = ImGui.GetTime()
-        loop: while !quitRequested {
-            switch backend.pollEvent() {
-            case .quit: break loop
-            case .skip: continue
-            case .none: break
-            }
-            
-            ImGui_ImplSDLGPU3_NewFrame()
-            ImGui_ImplSDL3_NewFrame()
-            ImGui.NewFrame()
-            
-            self.processInput()
-            
-            let newTime = ImGui.GetTime()
-            let timeDelta = newTime - lastTime
-            lastTime = newTime
-            
-            
-            self.update(timeDelta)
-            self.draw()
-            self.processUnhandledInput()
-            
-            // BEGIN Debug
-            applicationSessionDebugWindow()
-            ImGui.ShowDebugLogWindow()
-            ImGui.ShowIDStackToolWindow()
-            ImGui.ShowDemoWindow()
-            // END Debug
-            
-            ImGui.Render()
-            backend.render()
-        }
-    }
-    
-    func processInput() {
-        if let actionName = globalShortcutAction() {
-            self.handleAction(actionName)
-        }
-    }
-    
-    func update(_ timeDelta: Double) {
-        guard let session else {
-            logError("No session!")
-            return
-        }
-        //        canvas.update(timeDelta)
-        inspector.update(timeDelta)
-        toolBar.update(timeDelta)
-        alertPanel.update(timeDelta)
-        issuesPanel.update(timeDelta)
-        controlBar.update(timeDelta)
-        if player.isRunning {
-            player.update(timeDelta)
-        }
-        
-        // Run commands
-        while !session.commandQueue.isEmpty {
-            let command = session.commandQueue.removeFirst()
-            self.runCommand(command, session: session)
-        }
-        
-        if let trans = session.consumeTransaction() {
-            accept(trans)
-        }
-        
-        updateWorld(session)
     }
     
     func updateWorld(_ session: Session, force: Bool = false) {
@@ -271,29 +140,6 @@ class Application {
         }
     }
     
-    @MainActor
-    func draw() {
-        mainMenu()
-        settingsPanel.draw()
-        inspector.draw()
-        toolBar.draw()
-        canvas.draw()
-        alertPanel.draw()
-        issuesPanel.draw()
-        controlBar.draw()
-    }
-    
-    func processUnhandledInput() {
-        let io = ImGui.GetIO().pointee
-        
-        if let currentTool {
-            let events = canvas.recognizeEvents(io)
-            for event in events {
-                currentTool.handleEvent(event)
-            }
-        }
-    }
-    
     func alert(title: String, message: String) {
         self.alertPanel.title = title
         self.alertPanel.message = message
@@ -314,27 +160,6 @@ class Application {
             ImGui.TextUnformatted("Interactive preview update: \(session.requiresInteractivePreviewUpdate)")
         }
         ImGui.End()
-    }
-    
-    func runCommand(_ command: any Command, session: Session) {
-        let context = CommandContext(app: self, session: session)
-        do {
-            self.log("Running command '\(command.name)'")
-            try command.run(context)
-        }
-        catch {
-            self.logError("Command '\(command.name)' failed: \(error.message)")
-            if let underlyingError = error.underlyingError {
-                self.logError("Underlying error: \(String(describing: underlyingError))")
-            }
-            let title: String
-            switch error.severity {
-            case .error: title = "Fatal Error"
-            case .fatal: title = "Error"
-            }
-            
-            self.alert(title: title, message: error.message)
-        }
     }
     
     func log(_ message: String) {

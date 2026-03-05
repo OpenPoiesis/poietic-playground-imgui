@@ -1,5 +1,5 @@
 //
-//  ApplicationState.swift
+//  Session.swift
 //  PoieticPlayground
 //
 //  Created by Stefan Urbanek on 05/02/2026.
@@ -8,6 +8,16 @@
 import PoieticCore
 import Foundation
 
+/// Represents and controls the design document.
+///
+/// Responsibilities:
+/// - Owns Design – the user created content, the model (Design)
+/// - Owns World – derived and simulation data
+/// - Manages file I/O
+/// - Manages transactions, command queue
+/// - Selection state
+/// - Observer/event system
+///
 class Session {
     enum Event {
         /// Triggered on each ``Session/changeSelection(_:)``.
