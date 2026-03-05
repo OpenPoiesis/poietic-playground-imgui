@@ -7,6 +7,7 @@
 
 import PoieticCore
 import Foundation
+import Diagramming
 
 /// Represents and controls the design document.
 ///
@@ -56,7 +57,7 @@ class Session {
     /// The flag is reset each application frame.
     var requiresInteractivePreviewUpdate: Bool
 
-    init(design: Design, url: URL? = nil) {
+    init(design: Design, url: URL? = nil, notation: Notation? = nil) {
         self.observers = [:]
         
         self.design = design
@@ -71,7 +72,7 @@ class Session {
         // Flags
         self.requiresInteractivePreviewUpdate = false
         
-        setupWorld()
+        setupWorld(notation: notation)
     }
    
     func addObserver(_ observer: @escaping EventObserver, on event: Event) {
@@ -123,5 +124,14 @@ extension Session {
     }
     func logError(_ message: String) {
         print("ERROR: ", message)
+    }
+}
+
+// FIXME: Make a proper alert mechanism. This is a quick hack to silence the compiler after refactoring.
+extension Session {
+    func queueAlert(title: String, message: String) {
+        Task { @MainActor in
+            await Application.shared.queueAlert(title: title, message: message)
+        }
     }
 }

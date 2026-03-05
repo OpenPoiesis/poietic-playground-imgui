@@ -6,17 +6,27 @@
 //
 
 import PoieticCore
+import Diagramming
 
 extension Session {
+    func update(_ timeDelta: Double) {
+        self.updateWorld()
+    }
+    
     /// Set world singletons when the world changes.
-    func setupWorld() {
+    func setupWorld(notation: Notation? = nil) {
         Self.setupSchedules(world)
-        world.setSingleton(notation)
+        
+        if let notation {
+            world.setSingleton(notation)
+        }
+        else {
+            world.setSingleton(Notation.DefaultNotation)
+        }
     }
     
     func updateWorld(force: Bool = false) {
         // TODO: This method does multiple things that need to be decoupled
-        
         if design.currentFrame !== world.frame || force {
             if let frame = design.currentFrame {
                 world.setFrame(frame)
@@ -59,7 +69,7 @@ extension Session {
             try world.run(schedule: schedule)
         }
         catch {
-            self.alert(title: "Internal System Error", message: String(describing: error))
+            self.queueAlert(title: "Internal System Error", message: String(describing: error))
             self.logError("Internal system error:" + String(describing: error))
             return false
         }

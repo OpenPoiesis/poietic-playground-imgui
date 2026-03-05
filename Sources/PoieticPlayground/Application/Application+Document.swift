@@ -16,7 +16,7 @@ extension Application {
             self.log("Design URL: \(designURL.standardizedFileURL)")
         }
         
-        let newSession = Session(design: design, url: designURL)
+        let newSession = Session(design: design, url: designURL, notation: notation)
         newSession.updateWorld(force: true)
 
         self.session = newSession

@@ -75,6 +75,7 @@ extension Application {
             logError("No session!")
             return
         }
+        
         // Update UI components
         inspector.update(timeDelta)
         toolBar.update(timeDelta)
@@ -101,6 +102,8 @@ extension Application {
             Application.shared.alert(title: "Frame validation error (report to developers)", message: String(describing: error))
             return
         }
+        
+        session.update(timeDelta)
     }
     
     func draw() {

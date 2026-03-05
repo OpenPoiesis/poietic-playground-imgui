@@ -23,15 +23,12 @@ import Foundation
 /// - Glue between Document and UI
 @MainActor
 class Application {
+    // TODO: Temporary for prototyping
     static var shared: Application {
         guard let app = self._shared else { fatalError("Shared application is not set-up") }
         return app
     }
-    internal static var _shared: Application? = nil {
-        willSet(app) {
-            precondition(_shared != nil)
-        }
-    }
+    internal static var _shared: Application? = nil
     
     // Dumping ground of globals (for now)
     //    static let NewDesignTemplatePath = "designs/new_canvas.json"
@@ -113,6 +110,11 @@ class Application {
         self.alertPanel.isVisible = true
     }
     
+    // FIXME: Make a proper alert mechanism. This is a quick hack to silence the compiler after refactoring. (see callers of this)
+    func queueAlert(title: String, message: String) async {
+        alert(title: title, message: message)
+    }
+
     func log(_ message: String) {
         print("INFO: ", message)
     }
