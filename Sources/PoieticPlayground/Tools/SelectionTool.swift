@@ -57,18 +57,15 @@ class SelectionTool: CanvasTool {
         
         // TODO: Close inline popup
         
-        guard let target = canvas.hitTarget(screenPosition: event.screenPos) else {
+        let target = canvas.hitTarget(screenPosition: event.screenPos)
+        let selection = session.selection
+
+        switch target {
+        case .none:
             session.changeSelection(.removeAll)
             state = .objectSelect
             self.removeHandles()
             return .consumed
-        }
-        
-        print("Hit target: \(target)")
-
-        let selection = session.selection
-
-        switch target {
         case .object(let runtimeID, .body):
             // TODO: Defer opening of context menu on inputEnded or move context menu out of the tool
             guard let objectID = world.entityToObject(runtimeID)

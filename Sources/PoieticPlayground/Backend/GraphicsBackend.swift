@@ -20,18 +20,6 @@ struct GraphicsBackendError: Error, CustomStringConvertible {
     }
 }
 
-enum TexturePixelFormat {
-    case RGBA
-    case RGBAPreMultiplied
-    
-    /// Number of bytes per pixel
-    var size: Int {
-        switch self {
-        case .RGBA, .RGBAPreMultiplied: 4
-        }
-    }
-}
-
 protocol GraphicsBackendProtocol: AnyObject {
     var displayScale: Float { get }
     

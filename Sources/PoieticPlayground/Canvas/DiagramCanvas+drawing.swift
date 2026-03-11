@@ -14,6 +14,43 @@ import PoieticFlows
 import Diagramming
 import Foundation
 
+enum DetailLevel {
+    case overview    // Visible at very low zoom (0.1x - 0.5x)
+    case standard    // Visible at normal zoom (0.5x - 2.0x)
+    case detailed    // Visible at high zoom (2.0x - 10.0x)
+    case debug       // Only at very high zoom (10.0x+)
+    
+    var range: ClosedRange<Double> {
+        switch self {
+        case .overview: 0.1...0.5
+        case .standard: 0.5...2.0
+        case .detailed: 2.0...10.0
+        case .debug: 10.0...100.0
+        }
+    }
+    
+    var minZoom: Float {
+        switch self {
+        case .overview: return 0.1
+        case .standard: return 0.5
+        case .detailed: return 2.0
+        case .debug: return 10.0
+        }
+    }
+    
+    var maxZoom: Float {
+        switch self {
+        case .overview: return 0.5
+        case .standard: return 2.0
+        case .detailed: return 10.0
+        case .debug: return 100.0
+        }
+    }
+}
+
+
+let DetailZoomLevel = 1.2
+
 extension DiagramCanvas {
     static let HandleSize: Double = 15.0
     static let PrimaryLabelPadding: Double = 0.0
@@ -71,7 +108,7 @@ extension DiagramCanvas {
     }
 
     func drawBlockIntent(_ context: DrawingContext, block: BlockIntent) {
-        let transform = toOverlayTransform.translated(block.position)
+        let transform = AffineTransform(translation: toOverlayTransform.apply(to: block.position))
         context.save()
         context.setColor(style.intentShadowColor)
         context.addPath(block.pictogram.path, transform: transform)
@@ -146,9 +183,9 @@ extension DiagramCanvas {
             context.setColor(style.pictogramColor)
             context.strokePath(pictogram.path, transform: blockTrans)
             
-            let screenBBMin = toOverlayTransform.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
-            labelCenter = Vector2D(blockOverlayPos.x, screenBBMin.y)
-        }
+            let scaledBBTopLeft = pictogram.pathBoundingBox.topLeft
+            let labelY = blockOverlayPos.y + scaledBBTopLeft.y
+            labelCenter = Vector2D(blockOverlayPos.x, labelY)        }
         else {
             labelCenter = blockOverlayPos
         }
@@ -169,7 +206,7 @@ extension DiagramCanvas {
             swatchCenter = Vector2D(position.x - Self.ColorSwatchSize.x, position.y - te.height/2)
         }
 
-        if let label = block.secondaryLabel {
+        if let label = block.secondaryLabel, zoomLevel >= DetailZoomLevel {
             context.setFontSize(style.secondaryLabelStyle.fontSize)
             let size = context.textSize(label)
             let position = Vector2D(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
