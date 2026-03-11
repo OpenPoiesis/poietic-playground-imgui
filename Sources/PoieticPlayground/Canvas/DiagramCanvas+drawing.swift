@@ -371,9 +371,9 @@ extension DiagramCanvas {
         context.setFontSize(style.valueIndicatorStyle.fontSize)
         let te = context.textExtents(indicatorLabel)
         let position = Vector2D(anchor.x - (te.width / 2) - te.x_bearing,
-                                anchor.y - (te.height) - te.y_bearing)
-
-        context.setColor(style.valueIndicatorStyle.color)
+                                anchor.y - (te.height / 2) - te.y_bearing)
+        
+        context.setColor(style.indicatorLineColor)
         context.showText(indicatorLabel, at: position)
     }
     
@@ -439,6 +439,7 @@ extension DiagramCanvas {
             )
         }
         context.drawRect(valueBar, style: shapeStyle)
-        context.addLine(from: line.start, to: line.end)
+//        context.addLine(from: line.start, to: line.end)
+//        context.stroke()
     }
 }

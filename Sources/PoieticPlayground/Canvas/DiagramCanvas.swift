@@ -209,14 +209,12 @@ class DiagramCanvas: View {
     
     func drawOverlays() {
         if mainOverlay.needsRender {
-            print("Drawing main overlay")
             // TODO: Handle exception
             try! mainOverlay.render { context in
                 drawMainOverlay(context)
             }
         }
         if indicatorOverlay.needsRender {
-            print("Drawing indicator overlay")
             // TODO: Handle exception
             try! indicatorOverlay.render { context in
                 drawIndicatorOverlay(context)

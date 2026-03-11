@@ -52,7 +52,7 @@ class CanvasStyle {
     var primaryLabelStyle: LabelStyle = LabelStyle(color: Color(red: 0.22, green: 0.20, blue: 0.18), fontSize: 12.0)
     var secondaryLabelStyle: LabelStyle = LabelStyle(color: .screenBlue, fontSize: 11.0)
     var invalidLabelStyle: LabelStyle = LabelStyle(color: .screenRed)
-    var valueIndicatorStyle: LabelStyle = LabelStyle(color: .screenGreen, fontSize: 11.0)
+    var valueIndicatorStyle: LabelStyle = LabelStyle(color: Color(gray: 0.5), fontSize: 11.0)
 
     var intentShadowColor: Color = Color(red: 0.25, green: 0.35, blue: 0.55, alpha: 0.3)
     /// Color or highlight tint for objects that are accepting a drag session.
@@ -93,6 +93,7 @@ class CanvasStyle {
     var indicatorUnderflowStyle: ShapeStyle = ShapeStyle(outline: nil, fill: Color(red:0.25, green:0.48, blue:0.72))
     /// Style of the indicator when the value is not set.
     var indicatorEmptyStyle: ShapeStyle = ShapeStyle(outline: nil, fill: Color(red: 0.72, green: 0.70, blue: 0.67))
+    var indicatorLineColor: Color = .black
 
     init() { /* Empty init */ }
     
