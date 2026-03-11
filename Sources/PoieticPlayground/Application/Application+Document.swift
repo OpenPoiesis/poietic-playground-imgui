@@ -21,22 +21,24 @@ extension Application {
 
         self.session = newSession
         bindToSession(newSession)
+        
+        newSession.trigger(.designFrameChanged)
     }
     
     func connectObservers(_ session: Session) {
-        self.session?.addObserver(inspector.selectionChanged, on: .designFrameChanged)
-        self.session?.addObserver(inspector.selectionChanged, on: .selectionChanged)
+        session.addObserver(inspector.selectionChanged, on: .designFrameChanged)
+        session.addObserver(inspector.selectionChanged, on: .selectionChanged)
         
-        self.session?.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
-        self.session?.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
-        self.session?.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
-        self.session?.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
+        session.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
+        session.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
+        session.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
+        session.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
 
-        self.session?.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
-        self.session?.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
+        session.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
+        session.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
 
-        self.session?.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)
-        self.session?.addObserver(player.onSimulationFailed, on: .simulationFailed)
+        session.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)
+        session.addObserver(player.onSimulationFailed, on: .simulationFailed)
 //        self.session?.addObserver(player.onSimulationFinished, on: .simulationFinished)
 //        self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
     }
