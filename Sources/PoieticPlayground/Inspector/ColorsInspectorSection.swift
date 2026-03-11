@@ -54,7 +54,7 @@ class ColorInspectorSection: InspectorSection {
         if ImGui.BeginTable("ColorPalette", 6, tableFlags, ImVec2()) {
             for (index, colorKey) in AdaptableColorKey.allCases.enumerated() {
                 let isSelected = (colorKey == selectedColorKey)
-                let color = DefaultAdaptableColors[colorKey.rawValue] ?? .white
+                let color = DefaultAdaptableColors[colorKey] ?? .white
                 
                 ImGui.TableNextColumn()
                 

@@ -216,7 +216,7 @@ extension DiagramCanvas {
         }
 
         if let colorName = block.accentColorName {
-            let color = style.adaptableColor(colorName, default: .white)
+            let color = style.adaptableColor(colorName, default: .black)
             let swatchOrigin = swatchCenter - (Self.ColorSwatchSize / 2.0)
             context.setColor(color)
             context.fillRect(origin: swatchOrigin, size: Self.ColorSwatchSize)

@@ -5,6 +5,7 @@
 //  Created by Stefan Urbanek on 06/02/2026.
 //
 
+import PoieticCore
 
 class LabelStyle {
     let color: Color
@@ -42,7 +43,7 @@ class CanvasStyle {
     var background: Color = Color(red: 0.97, green: 0.96, blue: 0.93)
     var gridColor = Color(red: 0.3, green: 0.3, blue: 0.3, alpha: 0.2)
 
-    var adaptableColors: [String:Color] = DefaultAdaptableColors
+    var adaptableColors: [AdaptableColorKey:Color] = DefaultAdaptableColors
     
     // Block
     var lineWidths: [String:Float] = [:]
@@ -97,8 +98,11 @@ class CanvasStyle {
 
     init() { /* Empty init */ }
     
-    func adaptableColor(_ name: String, default: Color) -> Color {
-        return adaptableColors[name, default: `default`]
+    func adaptableColor(_ name: String, default defaultColor: Color) -> Color {
+        guard let key = AdaptableColorKey(rawValue: name) else {
+            return defaultColor
+        }
+        return adaptableColors[key, default: defaultColor]
     }
     func lineWidth(_ name: String, defaultWidth: Float = 1.0) -> Float {
         return lineWidths[name, default: defaultWidth]
