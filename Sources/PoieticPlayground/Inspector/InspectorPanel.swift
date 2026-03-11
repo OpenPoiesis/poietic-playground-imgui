@@ -104,7 +104,8 @@ class InspectorPanel: Panel {
     init() {
         allSections.append(NameInspectorSection())
         allSections.append(FormulaInspectorSection())
-        
+        allSections.append(ColorInspectorSection())
+
         designSections.append(DesignInfoInspectorSection())
         designSections.append(SimulationInspectorSection())
     }
