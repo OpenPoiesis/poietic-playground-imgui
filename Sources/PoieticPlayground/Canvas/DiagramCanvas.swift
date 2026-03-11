@@ -224,18 +224,20 @@ class DiagramCanvas: View {
 
     private func drawOverlayTextures() {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
-        // Fallback if no textures
         guard !overlays.textures().isEmpty else {
             drawTextureError()
             return
         }
+        let backend = GraphicsBackend.shared
 
-        for texture in overlays.textures() {
-            drawList.pointee.AddImage(
-                texture.imTextureRef,
-                canvasPos, canvasPos + canvasSize,
-                ImVec2(0, 0), ImVec2(1, 1), 0xFFFFFFFF
-            )
+        backend.withBlendMode(.premultiplied, drawList: drawList) {
+            for texture in overlays.textures() {
+                drawList.pointee.AddImage(
+                    texture.imTextureRef,
+                    canvasPos, canvasPos + canvasSize,
+                    ImVec2(0, 0), ImVec2(1, 1), 0xFFFFFFFF
+                )
+            }
         }
     }
     
@@ -267,14 +269,31 @@ class DiagramCanvas: View {
         overlays.setAllNeedsRender()
     }
     
+    func centerView(at worldPoint: Vector2D, zoom: Double? = nil) {
+        let useZoom = zoom ?? self.zoomLevel
+        let canvasCenter = Vector2D(canvasSize) / 2.0
+        let offset = worldPoint - (canvasCenter / useZoom)
+        setView(offset: offset, zoom: useZoom)
+    }
     func hitTarget(screenPosition: ImVec2) -> CanvasHitTarget? {
+        // TODO: Rework this as described below
+        /*
+         - Two kinds of hit targets: CollisionHitTarget, WireHitTarget
+         - Use CollisionCanvasHitTarget component for collision-shape based hit targets
+         - Use WireCanvasHitTarget component for connectors or potentially other wire-based targets
+         - either must implement containsTouch(worldPosition:Vector2D, radius:Double) -> Bool
+         - then content will be:
+            - for direct object hit: entity owning the component
+            - for object part (labels): OwnedBy target + part
+            - for indicator: same as for part
+            - for owned handle: (owner, handle)
+            - for free-standing handle: (handle ID, handle component)
+         */
         var targets: [CanvasHitTarget] = []
 
-        // TODO: This is expensive"
-        print("HitTarget - screenPos: \(screenPosition), canvasPos: \(canvasPos)")
+        // TODO: This is expensive
         let worldTouchPosition: Vector2D = screenToWorld(screenPosition)
         let touchShape = CollisionShape(position: worldTouchPosition, shape: .circle(Self.DefaultHitRadius))
-        print("  → worldPos: \(worldTouchPosition)")
 
         // Blocks (collision shape) and Error indicators
         for (entity, block) in world.query(DiagramBlock.self) {
@@ -283,13 +302,6 @@ class DiagramCanvas: View {
                 let target: CanvasHitTarget = .object(entity.runtimeID, .body)
                 targets.append(target)
             }
-            
-//            if let objectID = world.entityToObject(runtimeID),
-//               objectHasIssues(objectID)
-//            {
-//                let indicatorPosition = block.position + errorIndicatorAnchorOffset
-//                if worldTouchPosition.distance(to: indicatorPosition) <
-//            }
         }
         
         // Connectors (distance to wire)
@@ -306,6 +318,15 @@ class DiagramCanvas: View {
             }
         }
 
+        // Issue indicators
+        for (entity, indicator) in world.query(IssueIndicator.self) {
+            guard let owner: OwnedBy = entity.component() else { continue }
+            let shape = indicator.collisionShape
+            if shape.collide(with: touchShape) {
+                let target: CanvasHitTarget = .object(owner.target, .issueIndicator)
+                targets.append(target)
+            }
+        }
         // Handles
         for (entity, handle) in world.query(CanvasHandle.self) {
             let distance = worldTouchPosition.distance(to: handle.position)
@@ -313,7 +334,6 @@ class DiagramCanvas: View {
             let target: CanvasHitTarget = .handle(entity.runtimeID)
             targets.append(target)
         }
-        print("--- Targets: ", targets)
 
         return targets.last
     }

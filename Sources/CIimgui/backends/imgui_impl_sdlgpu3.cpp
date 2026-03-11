@@ -61,6 +61,7 @@ struct ImGui_ImplSDLGPU3_Data
     SDL_GPUShader*               VertexShader           = nullptr;
     SDL_GPUShader*               FragmentShader         = nullptr;
     SDL_GPUGraphicsPipeline*     Pipeline               = nullptr;
+    SDL_GPUGraphicsPipeline*     PipelineSecondary      = nullptr;
     SDL_GPUSampler*              TexSamplerLinear       = nullptr;
     SDL_GPUSampler*              TexSamplerNearest      = nullptr;
     SDL_GPUTransferBuffer*       TexTransferBuffer      = nullptr;
@@ -239,8 +240,11 @@ void ImGui_ImplSDLGPU3_RenderDrawData(ImDrawData* draw_data, SDL_GPUCommandBuffe
     render_state.Device = bd->InitInfo.Device;
     render_state.SamplerLinear = render_state.SamplerCurrent = bd->TexSamplerLinear;
     render_state.SamplerNearest = bd->TexSamplerNearest;
+    render_state.PipelinePrimary = bd->Pipeline;
+    render_state.PipelineSecondary = bd->PipelineSecondary;
+    render_state.RenderPass = render_pass;
     platform_io.Renderer_RenderState = &render_state;
-
+    
     ImGui_ImplSDLGPU3_SetupRenderState(draw_data, &render_state, pipeline, command_buffer, render_pass, fd, fb_width, fb_height);
 
     // Render command lists
@@ -488,7 +492,8 @@ static void ImGui_ImplSDLGPU3_CreateShaders()
     IM_ASSERT(bd->FragmentShader != nullptr && "Failed to create fragment shader, call SDL_GetError() for more information");
 }
 
-static void ImGui_ImplSDLGPU3_CreateGraphicsPipeline()
+static SDL_GPUGraphicsPipeline* ImGui_ImplSDLGPU3_CreateGraphicsPipelineEx(
+    SDL_GPUColorTargetBlendState* custom_blend)
 {
     ImGui_ImplSDLGPU3_Data* bd = ImGui_ImplSDLGPU3_GetBackendData();
     ImGui_ImplSDLGPU3_InitInfo* v = &bd->InitInfo;
@@ -539,15 +544,21 @@ static void ImGui_ImplSDLGPU3_CreateGraphicsPipeline()
     depth_stencil_state.enable_stencil_test = false;
 
     SDL_GPUColorTargetBlendState blend_state = {};
-    blend_state.enable_blend = true;
-    blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
-    blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
-    blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-    blend_state.color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A;
-
+    if (custom_blend == NULL)
+    {
+        blend_state.enable_blend = true;
+        blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+        blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
+        blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
+        blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
+        blend_state.color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A;
+    }
+    else {
+        blend_state = *custom_blend;
+    }
+    
     SDL_GPUColorTargetDescription color_target_desc[1];
     color_target_desc[0].format = v->ColorTargetFormat;
     color_target_desc[0].blend_state = blend_state;
@@ -566,10 +577,18 @@ static void ImGui_ImplSDLGPU3_CreateGraphicsPipeline()
     pipeline_info.multisample_state = multisample_state;
     pipeline_info.depth_stencil_state = depth_stencil_state;
     pipeline_info.target_info = target_info;
+    
+    SDL_GPUGraphicsPipeline *pipeline = SDL_CreateGPUGraphicsPipeline(v->Device, &pipeline_info);
+    return pipeline;
+}
 
-    bd->Pipeline = SDL_CreateGPUGraphicsPipeline(v->Device, &pipeline_info);
+static void ImGui_ImplSDLGPU3_CreateGraphicsPipeline()
+{
+    ImGui_ImplSDLGPU3_Data* bd = ImGui_ImplSDLGPU3_GetBackendData();
+    bd->Pipeline = ImGui_ImplSDLGPU3_CreateGraphicsPipelineEx(nullptr);
     IM_ASSERT(bd->Pipeline != nullptr && "Failed to create graphics pipeline, call SDL_GetError() for more information");
 }
+
 
 void ImGui_ImplSDLGPU3_CreateDeviceObjects()
 {
@@ -605,6 +624,11 @@ void ImGui_ImplSDLGPU3_CreateDeviceObjects()
     }
 
     ImGui_ImplSDLGPU3_CreateGraphicsPipeline();
+    if (v->SecondaryBlendState)
+    {
+        bd->PipelineSecondary = ImGui_ImplSDLGPU3_CreateGraphicsPipelineEx(v->SecondaryBlendState);
+        IM_ASSERT(bd->PipelineSecondary != nullptr && "Failed to create secondary graphics pipeline, call SDL_GetError() for more information");
+    }
 }
 
 void ImGui_ImplSDLGPU3_DestroyFrameData()
@@ -639,6 +663,7 @@ void ImGui_ImplSDLGPU3_DestroyDeviceObjects()
     if (bd->TexSamplerLinear)   { SDL_ReleaseGPUSampler(v->Device, bd->TexSamplerLinear); bd->TexSamplerLinear = nullptr; }
     if (bd->TexSamplerNearest)  { SDL_ReleaseGPUSampler(v->Device, bd->TexSamplerNearest); bd->TexSamplerNearest = nullptr; }
     if (bd->Pipeline)           { SDL_ReleaseGPUGraphicsPipeline(v->Device, bd->Pipeline); bd->Pipeline = nullptr; }
+    if (bd->PipelineSecondary)  { SDL_ReleaseGPUGraphicsPipeline(v->Device, bd->PipelineSecondary); bd->PipelineSecondary = nullptr; }
 }
 
 bool ImGui_ImplSDLGPU3_Init(ImGui_ImplSDLGPU3_InitInfo* info)
@@ -682,7 +707,7 @@ void ImGui_ImplSDLGPU3_NewFrame()
 {
     ImGui_ImplSDLGPU3_Data* bd = ImGui_ImplSDLGPU3_GetBackendData();
     IM_ASSERT(bd != nullptr && "Context or backend not initialized! Did you call ImGui_ImplSDLGPU3_Init()?");
-
+    
     if (!bd->TexSamplerLinear)
         ImGui_ImplSDLGPU3_CreateDeviceObjects();
 }

@@ -37,6 +37,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     ShortcutAction("select_all", key: ImGuiMod_Ctrl | ImGuiKey_A),
 
     // File
+    ShortcutAction("new", key: ImGuiMod_Ctrl | ImGuiKey_N),
     ShortcutAction("open", key: ImGuiMod_Ctrl | ImGuiKey_O),
     ShortcutAction("save", key: ImGuiMod_Ctrl | ImGuiKey_S),
     ShortcutAction("save_as", key: ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S),
@@ -44,6 +45,7 @@ let GlobalShortcuts: [ShortcutAction] = [
     // View
     ShortcutAction("toggle_inspector", key: ImGuiMod_Ctrl | ImGuiKey_I),
     ShortcutAction("toggle_issues_panel", key: ImGuiMod_Ctrl | ImGuiKey_5),
+    ShortcutAction("reset_zoom", key: ImGuiMod_Ctrl | ImGuiKey_0),
 
     // Tools
     ShortcutAction("switch_selection_tool", key: ImGuiKey_1),
@@ -91,6 +93,7 @@ extension Application {
         case "settings": self.openSettings()
         case "quit": self.quitRequested = true
         // -- File --
+        case "new": session?.queueCommand(NewDesignCommand())
         case "save": session?.queueCommand(SaveDesignCommand())
 
         // -- Edit --
@@ -107,7 +110,9 @@ extension Application {
             self.inspector.isVisible = !self.inspector.isVisible
         case "toggle_issues_panel":
             self.issuesPanel.isVisible = !self.issuesPanel.isVisible
-            
+        case "reset_zoom":
+            session?.queueCommand(ResetZoomCommand())
+
         // -- Inspector --
         case "overview_inspector":
             self.inspector.selectTab(.overview)

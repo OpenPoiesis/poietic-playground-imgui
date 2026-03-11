@@ -11,6 +11,27 @@ import PoieticFlows
 import CIimgui
 
 extension Application {
+    func runCommand(_ command: any Command, session: Session) {
+        let context = CommandContext(app: self, session: session)
+        do {
+            self.log("Running command '\(command.name)'")
+            try command.run(context)
+        }
+        catch {
+            self.logError("Command '\(command.name)' failed: \(error.message)")
+            if let underlyingError = error.underlyingError {
+                self.logError("Underlying error: \(String(describing: underlyingError))")
+            }
+            let title: String
+            switch error.severity {
+            case .error: title = "Fatal Error"
+            case .fatal: title = "Error"
+            }
+            
+            self.alert(title: title, message: error.message)
+        }
+    }
+
     func openSettings() {
         settingsPanel.isVisible = true
     }
@@ -26,6 +47,13 @@ extension Application {
         }
     }
     
+    func newDesign() {
+        let design = Design(metamodel: StockFlowMetamodel)
+        // Create a new frame, so we can undo first action (can't undo to no-frame)
+        let frame = design.createFrame()
+        try! design.accept(frame) // We can force, because empty frame must be always valid.
+        self.newSession(design)
+    }
     func openDesign(url: URL) throws (DesignStoreError) {
         let store = DesignStore(url: url)
         let design = try store.load(metamodel: StockFlowMetamodel)

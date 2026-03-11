@@ -10,7 +10,33 @@ import CIimgui
 
 private let ClearColor = ImVec4(0.45, 0.55, 0.60, 1.00)
 
+// TODO: Split to GraphicsBackend and PlatformBackend
+
 final class SDL3GPUBackend: GraphicsBackendProtocol {
+    // NOTE: See also ImGui_ImplSDLGPU3_CreateGraphicsPipelineEx(...)
+    /// Blend state for secondary pipeline to render RGBA textures with pre-multiplied alpha.
+    ///
+    /// Cairo textures have pre-multiplied alpha, but default SDL GPU pipeline assumes straight
+    /// alpha. We need to switch the pipeline with a callback before AddImage(...).
+    ///
+    /// - SeeAlso: ``switchToPremultipliedBlendCallback(ptr:cmd:)``, ``TextureHandle/format``,
+    ///   ``Overlay/uploadToGPU()``
+    ///
+    /// - SeeAlso: `ImGui_ImplSDLGPU3_CreateGraphicsPipelineEx` in `imgui_impl_sdlgpu3.cpp`
+    ///
+    nonisolated(unsafe) static var PremultipliedBlendState: SDL_GPUColorTargetBlendState = SDL_GPUColorTargetBlendState(
+        src_color_blendfactor: SDL_GPU_BLENDFACTOR_ONE, // <- This is for pre-multiplied alpha
+        dst_color_blendfactor: SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+        color_blend_op: SDL_GPU_BLENDOP_ADD,
+        src_alpha_blendfactor: SDL_GPU_BLENDFACTOR_ONE,
+        dst_alpha_blendfactor: SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+        alpha_blend_op: SDL_GPU_BLENDOP_ADD,
+        color_write_mask: UInt8(SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A),
+        enable_blend: true,
+        enable_color_write_mask: false,
+        padding1: 0, padding2: 0
+    )
+
     private static let SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR
     private static let PresentMode = SDL_GPU_PRESENTMODE_VSYNC
 
@@ -29,12 +55,14 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
             throw GraphicsBackendError("ImGui_ImplSDL3_InitForSDLGPU failed", backendError: Self.getError())
         }
 
+        
         var initInfo = ImGui_ImplSDLGPU3_InitInfo(
             Device: device,
             ColorTargetFormat: SDL_GetGPUSwapchainTextureFormat(device, window),
             MSAASamples: SDL_GPU_SAMPLECOUNT_1,
             SwapchainComposition: Self.SwapchainComposition,
-            PresentMode: Self.PresentMode
+            PresentMode: Self.PresentMode,
+            SecondaryBlendState: &Self.PremultipliedBlendState
         )
         guard ImGui_ImplSDLGPU3_Init(&initInfo) else {
             throw GraphicsBackendError("ImGui_ImplSDLGPU3_Init failed", backendError: Self.getError())
@@ -108,7 +136,23 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         SDL_SubmitGPUCommandBuffer(commandBuffer)
 
     }
-    
+
+    func withBlendMode<T>(_ mode: TextureBlendMode,
+                         drawList: UnsafeMutablePointer<ImDrawList>,
+                          _ block: () -> T) -> T
+    {
+        let result: T
+        switch mode {
+        case .premultiplied:
+            drawList.pointee.AddCallback(switchToPremultipliedBlendCallback, nil)
+            result = block()
+            drawList.pointee.AddCallback(ImGui.ImDrawCallback_ResetRenderState_D, nil)
+        case .straight:
+            result = block()
+        }
+        return result
+    }
+
     // MARK: - Startup/Shutdown
     
     func waitIdle() {
@@ -200,7 +244,6 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     }
 
     // MARK: - Private
-
     private func allocateGPUTexture(width: UInt32, height: UInt32)
     throws (GraphicsBackendError) -> OpaquePointer
     {
@@ -226,7 +269,8 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
                               to texture: OpaquePointer)
     throws (GraphicsBackendError)
     {
-        let byteCount = width * height * 4
+        let pixelCount = width * height
+        let byteCount = pixelCount * 4
 
         var transferInfo = SDL_GPUTransferBufferCreateInfo()
         transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD
@@ -240,7 +284,9 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         guard let mapped = SDL_MapGPUTransferBuffer(device, transferBuffer, true) else {
             throw GraphicsBackendError("SDL_MapGPUTransferBuffer failed", backendError: Self.getError())
         }
+        
         mapped.copyMemory(from: pixels, byteCount: Int(byteCount))
+
         SDL_UnmapGPUTransferBuffer(device, transferBuffer)
 
         guard let cmd = SDL_AcquireGPUCommandBuffer(device) else {
@@ -265,13 +311,38 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         SDL_EndGPUCopyPass(copyPass)
         SDL_SubmitGPUCommandBuffer(cmd)
     }
-
     
     // MARK: - Misc
     static func getError() -> String {
         return String(cString: SDL_GetError())
     }
+    
     static func displayScale(_ display: UInt32? = nil) -> Float {
         SDL_GetDisplayContentScale(display ?? SDL_GetPrimaryDisplay())
     }
+}
+
+// FIXME: [IMPORTANT] This is bypassing backend. Used currently in DiagramCanvas.drawOverlayTextures
+/// Callback for AddImage(...) to switch pipeline for textures with pre-multiplied alpha.
+///
+/// Requires pipeline reset with:
+///
+/// ```swift
+/// let drawList = ImGui.GetWindowDrawList()
+/// drawList.pointee.AddCallback(ImGui.ImDrawCallback_ResetRenderState_D, nil)
+/// ```
+func switchToPremultipliedBlendCallback(ptr: UnsafePointer<ImDrawList>?,
+                                        cmd: UnsafePointer<ImDrawCmd>?)
+{
+    let io = ImGui.GetPlatformIO()
+    
+    guard let renderStatePtr = io.pointee.Renderer_RenderState else {
+        print("ERROR: Renderer_RenderState is nil!")
+        return
+    }
+    let state = renderStatePtr.assumingMemoryBound(to: ImGui_ImplSDLGPU3_RenderState.self)
+    let renderPass = state.pointee.RenderPass
+    let pipeline = state.pointee.PipelineSecondary
+    
+    SDL_BindGPUGraphicsPipeline(renderPass, pipeline)
 }

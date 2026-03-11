@@ -22,7 +22,7 @@ enum CanvasHitTarget {
         case body
         case primaryLabel
         case secondaryLabel
-        case errorIndicator
+        case issueIndicator
     }
 
     /// Canvas object or its part was hit, typically a design object.

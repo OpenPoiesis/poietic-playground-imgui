@@ -6,21 +6,21 @@
 //
 
 import CIimgui
+import PoieticCore
 
-
-let DefaultAdaptableColors: [String:Color] = [
-    "purple": Color(red: 0.61176, green: 0.15294, blue: 0.6902),
-    "red": Color(red: 0.95686, green: 0.26275, blue: 0.21176),
-    "pink": Color(red: 0.91373, green: 0.11765, blue: 0.38824),
-    "brown": Color(red: 0.47451, green: 0.33333, blue: 0.28235),
-    "orange": Color(red: 1, green: 0.59608, blue: 0),
-    "yellow": Color(red: 1, green: 0.92157, blue: 0.23137),
-    "lime": Color(red: 0.76471, green: 0.96863, blue: 0.2549),
-    "green": Color(red: 0.29804, green: 0.68627, blue: 0.31373),
-    "cyan": Color(red: 0, green: 0.73725, blue: 0.83137),
-    "teal": Color(red: 0, green: 0.58824, blue: 0.53333),
-    "blue": Color(red: 0.12941, green: 0.58824, blue: 0.95294),
-    "indigo": Color(red: 0.24706, green: 0.31765, blue: 0.7098),
+let DefaultAdaptableColors: [AdaptableColorKey:Color] = [
+    .purple: Color(red: 0.61176, green: 0.15294, blue: 0.6902),
+    .red: Color(red: 0.95686, green: 0.26275, blue: 0.21176),
+    .pink: Color(red: 0.91373, green: 0.11765, blue: 0.38824),
+    .brown: Color(red: 0.47451, green: 0.33333, blue: 0.28235),
+    .orange: Color(red: 1, green: 0.59608, blue: 0),
+    .yellow: Color(red: 1, green: 0.92157, blue: 0.23137),
+    .lime: Color(red: 0.76471, green: 0.96863, blue: 0.2549),
+    .green: Color(red: 0.29804, green: 0.68627, blue: 0.31373),
+    .cyan: Color(red: 0, green: 0.73725, blue: 0.83137),
+    .teal: Color(red: 0, green: 0.58824, blue: 0.53333),
+    .blue: Color(red: 0.12941, green: 0.58824, blue: 0.95294),
+    .indigo: Color(red: 0.24706, green: 0.31765, blue: 0.7098),
 ]
 
 /// Screen colour representation.

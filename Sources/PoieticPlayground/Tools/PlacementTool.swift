@@ -78,28 +78,29 @@ class PlacementTool: CanvasTool {
         self.intentShadow = nil
     }
     
-    override func handleEvent(_ event: ToolEvent) {
+    override func handleEvent(_ event: ToolEvent) -> EngagementResult {
         switch event.type {
-        case .hoverStart: self.hoverStart(event)
-        case .pointerMove: self.pointerMove(event)
-        case .hoverEnd: self.hoverEnd(event)
-        case .pointerUp: self.pointerUp(event)
-        default: break
+        case .hoverStart: return self.hoverStart(event)
+        case .pointerMove: return self.pointerMove(event)
+        case .hoverEnd: return self.hoverEnd(event)
+        case .pointerUp: return self.pointerUp(event)
+        default: return .pass
         }
     }
-    func hoverStart(_ event: ToolEvent) {
+    func hoverStart(_ event: ToolEvent) -> EngagementResult {
         guard let canvas,
               let typeName = palette?.selectedIdentifier
-        else { return }
+        else { return .pass }
         removeIntentShadow()
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
         createIntentShadow(position: worldPos, typeName: typeName)
+        return .pass
     }
     
-    func pointerMove(_ event: ToolEvent) {
+    func pointerMove(_ event: ToolEvent) -> EngagementResult {
         guard let canvas,
               let intentShadow
-        else { return }
+        else { return .pass }
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
         if var component: BlockIntent = intentShadow.component() {
             component.position = worldPos
@@ -108,16 +109,19 @@ class PlacementTool: CanvasTool {
         else if let typeName = palette?.selectedIdentifier {
             createIntentShadow(position: worldPos, typeName: typeName)
         }
+        return .pass
     }
-    func hoverEnd(_ event: ToolEvent) {
+    
+    func hoverEnd(_ event: ToolEvent) -> EngagementResult {
         removeIntentShadow()
+        return .pass
     }
-    func pointerUp(_ event: ToolEvent) {
+    func pointerUp(_ event: ToolEvent)  -> EngagementResult {
         guard let session,
               let canvas,
               let intentShadow,
               let shadow: BlockIntent = intentShadow.component()
-        else { return }
+        else { return .pass }
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
 
         print("Placing \(shadow.type.name) at \(worldPos)")
@@ -125,6 +129,7 @@ class PlacementTool: CanvasTool {
             session.queueCommand(SwitchToolCommand("selection"))
             session.changeSelection(.replaceAllWithOne(objectID))
         }
+        return .consumed
     }
     
     func placeObject(type: ObjectType, at position: Vector2D) -> ObjectID? {

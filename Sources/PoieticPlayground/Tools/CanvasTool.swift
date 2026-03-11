@@ -30,6 +30,14 @@ import PoieticCore
 ///
 @MainActor
 class CanvasTool {
+    enum EngagementResult {
+        /// Tool is not concerned about the event, try fallback in tool chain.
+        case pass
+        /// Tool has processed the event and has finished.
+        case consumed
+        /// Tool has processed the event and will handle all future events until finished or cancelled.
+        case engaged
+    }
     
     /// Canvas the tool is bound to.
     ///
@@ -84,10 +92,9 @@ class CanvasTool {
     /// Function called when tool operation was cancelled.
     func cancel() { /* Implementation in subclasses */ }
 
-    // func renderOverlay()
     // func getCursorType()
    
-    func handleEvent(_ event: ToolEvent) {
-//        print("Tool event: \(event)")
+    func handleEvent(_ event: ToolEvent) -> EngagementResult {
+        return .pass
     }
 }

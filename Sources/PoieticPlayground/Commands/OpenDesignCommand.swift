@@ -11,6 +11,14 @@ import Foundation
 
 let DefaultDesignPath = "Unnamed.poietic"
 
+class NewDesignCommand: Command {
+    var name: String { "new-design" }
+
+    func run(_ context: CommandContext) throws (CommandError) {
+        context.app.newDesign()
+    }
+}
+
 class OpenDesignCommand: Command {
     var name: String { "open-design" }
     let url: URL

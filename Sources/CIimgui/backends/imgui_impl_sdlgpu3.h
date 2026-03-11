@@ -30,11 +30,12 @@
 // - Remember to set ColorTargetFormat to the correct format. If you're rendering to the swapchain, call SDL_GetGPUSwapchainTextureFormat() to query the right value
 struct ImGui_ImplSDLGPU3_InitInfo
 {
-    SDL_GPUDevice*              Device                  = nullptr;
-    SDL_GPUTextureFormat        ColorTargetFormat       = SDL_GPU_TEXTUREFORMAT_INVALID;
-    SDL_GPUSampleCount          MSAASamples             = SDL_GPU_SAMPLECOUNT_1;
-    SDL_GPUSwapchainComposition SwapchainComposition    = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;     // Only used in multi-viewports mode.
-    SDL_GPUPresentMode          PresentMode             = SDL_GPU_PRESENTMODE_VSYNC;            // Only used in multi-viewports mode.
+    SDL_GPUDevice*                Device                  = nullptr;
+    SDL_GPUTextureFormat          ColorTargetFormat       = SDL_GPU_TEXTUREFORMAT_INVALID;
+    SDL_GPUSampleCount            MSAASamples             = SDL_GPU_SAMPLECOUNT_1;
+    SDL_GPUSwapchainComposition   SwapchainComposition    = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;     // Only used in multi-viewports mode.
+    SDL_GPUPresentMode            PresentMode             = SDL_GPU_PRESENTMODE_VSYNC;            // Only used in multi-viewports mode.
+    SDL_GPUColorTargetBlendState *SecondaryBlendState     = nullptr;
 };
 
 // Follow "Getting Started" link and check examples/ folder to learn about using backends!
@@ -56,10 +57,13 @@ IMGUI_IMPL_API void     ImGui_ImplSDLGPU3_UpdateTexture(ImTextureData* tex);
 // (Please open an issue if you feel you need access to more data)
 struct ImGui_ImplSDLGPU3_RenderState
 {
-    SDL_GPUDevice*      Device;
-    SDL_GPUSampler*     SamplerLinear;      // Bilinear filtering sampler
-    SDL_GPUSampler*     SamplerNearest;     // Nearest/point filtering sampler
-    SDL_GPUSampler*     SamplerCurrent;     // Current sampler (may be changed by callback)
+    SDL_GPUDevice*              Device;
+    SDL_GPUSampler*             SamplerLinear;      // Bilinear filtering sampler
+    SDL_GPUSampler*             SamplerNearest;     // Nearest/point filtering sampler
+    SDL_GPUSampler*             SamplerCurrent;     // Current sampler (may be changed by callback)
+    SDL_GPUGraphicsPipeline*    PipelinePrimary;    // Default pipeline used mostly for UI
+    SDL_GPUGraphicsPipeline*    PipelineSecondary;  // Optional alternative pipeline for custom rendering, for example for Canvas with different blend modes
+    SDL_GPURenderPass*          RenderPass;         // Current render pass to be used for pipeline switching
 };
 
 #endif // #ifndef IMGUI_DISABLE

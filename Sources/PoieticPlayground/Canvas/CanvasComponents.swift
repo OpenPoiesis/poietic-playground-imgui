@@ -40,6 +40,7 @@ struct CanvasHandle: Component {
         case midpoint(Int)
         // TODO: case connect(ObjectType)
     }
+    // TODO: Use OwnedBy
     /// Runtime entity owning the handle, typically an entity corresponding to a design object.
     let owner: RuntimeID
     let kind: Kind

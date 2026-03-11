@@ -14,8 +14,42 @@ import PoieticFlows
 import Diagramming
 import Foundation
 
-/// Name of a pictogram for error indicators.
-let ErrorPictogramName: String = "Error"
+enum DetailLevel {
+    case overview    // Visible at very low zoom (0.1x - 0.5x)
+    case standard    // Visible at normal zoom (0.5x - 2.0x)
+    case detailed    // Visible at high zoom (2.0x - 10.0x)
+    case debug       // Only at very high zoom (10.0x+)
+    
+    var range: ClosedRange<Double> {
+        switch self {
+        case .overview: 0.1...0.5
+        case .standard: 0.5...2.0
+        case .detailed: 2.0...10.0
+        case .debug: 10.0...100.0
+        }
+    }
+    
+    var minZoom: Float {
+        switch self {
+        case .overview: return 0.1
+        case .standard: return 0.5
+        case .detailed: return 2.0
+        case .debug: return 10.0
+        }
+    }
+    
+    var maxZoom: Float {
+        switch self {
+        case .overview: return 0.5
+        case .standard: return 2.0
+        case .detailed: return 10.0
+        case .debug: return 100.0
+        }
+    }
+}
+
+
+let DetailZoomLevel = 1.2
 
 extension DiagramCanvas {
     static let HandleSize: Double = 15.0
@@ -33,8 +67,12 @@ extension DiagramCanvas {
         drawHandles(context)
     }
     func drawIndicatorOverlay(_ context: DrawingContext) {
-        drawIssueIndicators(context)
-        drawValueIndicators(context)
+        if world.hasIssues {
+            drawIssueIndicators(context)
+        }
+        else {
+            drawValueIndicators(context)
+        }
     }
     
     func drawHandles(_ context: DrawingContext) {
@@ -70,7 +108,7 @@ extension DiagramCanvas {
     }
 
     func drawBlockIntent(_ context: DrawingContext, block: BlockIntent) {
-        let transform = toOverlayTransform.translated(block.position)
+        let transform = AffineTransform(translation: toOverlayTransform.apply(to: block.position))
         context.save()
         context.setColor(style.intentShadowColor)
         context.addPath(block.pictogram.path, transform: transform)
@@ -79,36 +117,17 @@ extension DiagramCanvas {
     }
 
     func drawIssueIndicators(_ context: DrawingContext) {
-        guard let session,
-              let notation: Notation = session.world.singleton()
-        else { return }
-        
-        let errorPictogram = notation.pictogram(ErrorPictogramName)
-        
-        for (objectID, _) in session.world.issues {
-            // TODO: Add number of issues
-            guard let entity = session.world.entity(objectID) else { continue }
-            
-            if let block: DiagramBlock = entity.component() {
-                let position: Vector2D
-                if let preview: BlockPreview = entity.component() {
-                    position = preview.position + block.errorIndicatorAnchorOffset
-                }
-                else {
-                    position = block.position + block.errorIndicatorAnchorOffset
-                }
-                drawIndicator(context,
-                              pictogram: errorPictogram,
-                              at: position)
-            }
+        for (_, indicator) in world.query(IssueIndicator.self) {
+            drawIssueIndicator(context, indicator: indicator)
         }
     }
 
-    func drawIndicator(_ context: DrawingContext, pictogram: Pictogram, at anchor: Vector2D) {
-        let height = pictogram.maskBoundingBox.height
-        let position = Vector2D(anchor.x, anchor.y - (height / 2))
-        let trans = toOverlayTransform.translated(position)
-        
+    func drawIssueIndicator(_ context: DrawingContext, indicator: IssueIndicator) {
+        // TODO: pass parent as argument to get errorIndicatorAnchorOffset (once hierarchical drawing is available)
+        let pictogram = indicator.pictogram
+        let trans = AffineTransform(translation: toOverlayTransform.apply(to: indicator.position))
+
+        context.setLineWidth(2.0)
         context.setColor(style.errorIndicatorBackground)
         context.addPath(pictogram.mask, transform: trans)
         context.fill()
@@ -117,12 +136,10 @@ extension DiagramCanvas {
         context.addPath(pictogram.path, transform: trans)
         context.stroke()
 
-        context.addPath(pictogram.mask, transform: trans)
-        context.stroke()
-
+//        context.addPath(pictogram.mask, transform: trans)
+//        context.stroke()
     }
-    
-    
+
     func drawBlock(_ context: DrawingContext, entity: RuntimeEntity, isSelected: Bool, block: DiagramBlock) {
         let blockPosition: Vector2D
         
@@ -133,13 +150,16 @@ extension DiagramCanvas {
             blockPosition = block.position
         }
         
-        let blockTrans = toOverlayTransform.translated(blockPosition)
-        let blockSurfacePos = toOverlayTransform.apply(to: blockPosition)
         var swatchCenter: Vector2D
         var labelCenter: Vector2D
-        
-        if let pictogram = block.pictogram {
+        let blockOverlayPos = toOverlayTransform.apply(to: blockPosition)
+        let blockTrans = AffineTransform(translation: blockOverlayPos)
 
+        if let pictogram = block.pictogram {
+            let pictogram = pictogram.scaled(self.zoomLevel)
+//            context.setColor(style.pictogramMaskColor)
+//            context.fillPath(pictogram.mask, transform: blockTrans)
+            
             if isSelected {
                 context.setColor(style.selectionFillColor)
                 context.fillPath(pictogram.mask, transform: blockTrans)
@@ -163,11 +183,11 @@ extension DiagramCanvas {
             context.setColor(style.pictogramColor)
             context.strokePath(pictogram.path, transform: blockTrans)
             
-            let screenBBMin = toOverlayTransform.apply(to: pictogram.pathBoundingBox.topLeft + blockPosition)
-            labelCenter = Vector2D(blockSurfacePos.x, screenBBMin.y)
-        }
+            let scaledBBTopLeft = pictogram.pathBoundingBox.topLeft
+            let labelY = blockOverlayPos.y + scaledBBTopLeft.y
+            labelCenter = Vector2D(blockOverlayPos.x, labelY)        }
         else {
-            labelCenter = blockSurfacePos
+            labelCenter = blockOverlayPos
         }
 
         swatchCenter = labelCenter
@@ -186,7 +206,7 @@ extension DiagramCanvas {
             swatchCenter = Vector2D(position.x - Self.ColorSwatchSize.x, position.y - te.height/2)
         }
 
-        if let label = block.secondaryLabel {
+        if let label = block.secondaryLabel, zoomLevel >= DetailZoomLevel {
             context.setFontSize(style.secondaryLabelStyle.fontSize)
             let size = context.textSize(label)
             let position = Vector2D(labelCenter.x - (size.x / 2), labelCenter.y + size.y)
@@ -196,7 +216,7 @@ extension DiagramCanvas {
         }
 
         if let colorName = block.accentColorName {
-            let color = style.adaptableColor(colorName, default: .white)
+            let color = style.adaptableColor(colorName, default: .black)
             let swatchOrigin = swatchCenter - (Self.ColorSwatchSize / 2.0)
             context.setColor(color)
             context.fillRect(origin: swatchOrigin, size: Self.ColorSwatchSize)
@@ -237,7 +257,7 @@ extension DiagramCanvas {
         context.stroke()
         // Filled curves
         if let path = geometry.fillPath {
-            context.setColor(style.defaultConnectorColor)
+            context.setColor(style.defaultConnectorFillColor)
             // TODO: ImGui can not draw correctly concave polygons (they are expensive)
             context.fillPath(path, transform: transform)
         }
@@ -316,6 +336,9 @@ extension DiagramCanvas {
               let simObject = plan.simulationObject(objectID)
         else { return }
         
+        let preview: BlockPreview? = entity.component()
+        let blockPosition = preview?.position ?? block.position
+        
         let step: Int
         if let time: SimulationReplayTime = world.singleton() {
             step = time.step
@@ -324,20 +347,33 @@ extension DiagramCanvas {
             step = max(0, Int(plan.simulationSettings.steps) - 1)
         }
         
+        // TODO: [ECS] Make this a pre-computed component
         guard let state = result[step] else { return }
         let value: Variant = state[simObject.variableIndex]
         guard let doubleValue = try? value.doubleValue() else { return }
+        
+        
         let indicatorLabel = doubleValue.formatted(.number.precision(.significantDigits(1...4)))
         
-        let trans = toOverlayTransform.translated(block.position)
-        let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
+//        let trans = toOverlayTransform.translated(blockPosition)
+//        let anchor = trans.apply(to: block.valueIndicatorAnchorOffset)
+        let anchorWorldPos = blockPosition + block.valueIndicatorAnchorOffset
+        let anchor = toOverlayTransform.apply(to: anchorWorldPos)
+
+        let frame = Rect2D(center: anchor, size: Vector2D(100, 20))
+        let bounds = ValueBounds(min: 0, max: 100, baseline: 0)
+        drawValueIndicatorBar(context,
+                              frame: frame,
+                              value: doubleValue,
+                              bounds: bounds,
+                              orientation: .horizontal)
         
         context.setFontSize(style.valueIndicatorStyle.fontSize)
         let te = context.textExtents(indicatorLabel)
         let position = Vector2D(anchor.x - (te.width / 2) - te.x_bearing,
-                                anchor.y - (te.height) - te.y_bearing)
-
-        context.setColor(style.valueIndicatorStyle.color)
+                                anchor.y - (te.height / 2) - te.y_bearing)
+        
+        context.setColor(style.indicatorLineColor)
         context.showText(indicatorLabel, at: position)
     }
     
@@ -358,8 +394,6 @@ extension DiagramCanvas {
             return
         }
         
-        let boundedValue: Double = bounds.clip(value)
-
         let shapeStyle = switch bounds.state(of: value) {
         case .overflow: style.indicatorOverflowStyle
         case .underflow: style.indicatorUnderflowStyle
@@ -405,6 +439,7 @@ extension DiagramCanvas {
             )
         }
         context.drawRect(valueBar, style: shapeStyle)
-        context.addLine(from: line.start, to: line.end)
+//        context.addLine(from: line.start, to: line.end)
+//        context.stroke()
     }
 }

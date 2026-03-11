@@ -37,41 +37,39 @@ class SelectionTool: CanvasTool {
     
     // MARK: - Events
 
-    override func handleEvent(_ event: ToolEvent) {
+    override func handleEvent(_ event: ToolEvent) -> EngagementResult {
         switch event.type {
-        case .pointerDown: self.pointerDown(event)
-        case .dragStart: self.dragStart(event)
-        case .dragMove: self.dragMove(event)
-        case .dragEnd: self.dragEnd(event)
-        case .dragCancel: self.dragCancel(event)
-        default: break
+        case .pointerDown: return self.pointerDown(event)
+        case .dragStart: return self.dragStart(event)
+        case .dragMove: return self.dragMove(event)
+        case .dragEnd: return self.dragEnd(event)
+        case .dragCancel: return self.dragCancel(event)
+        default: return .pass
         }
     }
     
-    func pointerDown(_ event: ToolEvent) {
+    func pointerDown(_ event: ToolEvent) -> EngagementResult {
         guard let canvas,
-              let session
-        else { return }
+              let session,
+              event.triggerButton == .left
+        else { return .pass }
         dragStartScreenPos = event.screenPos
         
         // TODO: Close inline popup
         
-        guard let target = canvas.hitTarget(screenPosition: event.screenPos) else {
-            session.changeSelection(.removeAll)
-            state = .objectSelect
-            self.removeHandles()
-            return
-        }
-        
-        print("Hit target: \(target)")
-
+        let target = canvas.hitTarget(screenPosition: event.screenPos)
         let selection = session.selection
 
         switch target {
+        case .none:
+            session.changeSelection(.removeAll)
+            state = .objectSelect
+            self.removeHandles()
+            return .consumed
         case .object(let runtimeID, .body):
             // TODO: Defer opening of context menu on inputEnded or move context menu out of the tool
             guard let objectID = world.entityToObject(runtimeID)
-            else { return } // Not a design object
+            else { return .consumed } // Not a design object
             
             if event.modifiers.contains(.shift) {
                 session.changeSelection(.toggle(objectID))
@@ -92,20 +90,29 @@ class SelectionTool: CanvasTool {
                 createHandles(for: runtimeID)
             }
             state = .objectHit
+        case .object(let runtimeID, .issueIndicator):
+            self.removeHandles()
+            state = .idle
+            guard let objectID = world.entityToObject(runtimeID) else { break }
+            self.session?.queueCommand(OpenIssuesCommand(objectID))
         case .object(let runtimeID, let part):
             self.removeHandles()
             state = .objectPartHit(runtimeID, part)
         case .handle(let runtimeID):
             state = .handleEngaged(runtimeID)
         }
+        
+        switch state {
+        case .idle: return .consumed
+        default: return .engaged
+        }
 
     }
-    func dragStart(_ event: ToolEvent) {
+    func dragStart(_ event: ToolEvent) -> EngagementResult {
 //        TODO: popupManager?.closeInlinePopup()
-
         switch state {
-        case .idle: break
-        case .objectSelect: break
+        case .idle, .objectSelect:
+            return .pass
         case .objectHit, .objectMove, .objectPartHit:
 //            Input.setDefaultCursorShape(.drag)
             previewSelectionMove(screenDelta: event.delta)
@@ -118,8 +125,9 @@ class SelectionTool: CanvasTool {
             state = .handleMove(runtimeID)
         }
         print("Drag started: \(state)")
+        return .engaged
     }
-    func dragMove(_ event: ToolEvent) {
+    func dragMove(_ event: ToolEvent) -> EngagementResult {
 //        TODO: popupManager?.closeInlinePopup()
         
         switch state {
@@ -138,15 +146,18 @@ class SelectionTool: CanvasTool {
             dragHandle(handleID, screenDelta: event.delta)
             state = .handleMove(handleID)
         }
+
+        return .engaged
     }
-    func dragEnd(_ event: ToolEvent) {
+
+    func dragEnd(_ event: ToolEvent) -> EngagementResult {
         defer {
             state = .idle
         }
         // TODO: Mouse cursors
         guard let canvas,
               let session
-        else { return }
+        else { return .pass }
 
 //        Input.setDefaultCursorShape(.arrow)
         let screenDelta = event.screenPos - self.dragStartScreenPos
@@ -164,7 +175,7 @@ class SelectionTool: CanvasTool {
 
         case .idle, .objectHit, .objectSelect, .handleEngaged: break
 
-        case .objectPartHit(_, _):
+        case .objectPartHit:
             break
 //            guard let hitTarget,
 //                  let block = hitTarget.object as? DiagramCanvasBlock,
@@ -189,10 +200,11 @@ class SelectionTool: CanvasTool {
 //            case .handle: break
 //            }
         }
-
+        return .consumed
     }
-    func dragCancel(_ event: ToolEvent) {
+    func dragCancel(_ event: ToolEvent) -> EngagementResult {
         cleanUp()
+        return .consumed
     }
     
     // MARK: - Object Move

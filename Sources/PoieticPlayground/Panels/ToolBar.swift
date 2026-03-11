@@ -7,9 +7,6 @@
 
 import CIimgui
 
-// TODO: Use CanvasTool.Type or enum
-let ApplicationTools = ["selection", "placement", "connect", "pan"]
-
 @MainActor
 class ToolBar: @MainActor Panel {
     var isVisible: Bool = true
@@ -17,6 +14,11 @@ class ToolBar: @MainActor Panel {
     internal weak var app: Application? = nil
     var previousTool: CanvasTool? = nil
     var currentTool: CanvasTool? = nil
+    /// Tool that is currently engaged, for example in a dragging operation.
+    /// If set, then events go to the engaged tool, instead of being chained.
+    ///
+    var engagedTool: CanvasTool? = nil
+    var secondaryTool: CanvasTool? = nil
     var tools: [CanvasTool] { app?.canvasTools ?? [] }
     
     init() {
@@ -24,12 +26,17 @@ class ToolBar: @MainActor Panel {
     }
     func bind(_ application: Application) {
         self.app = application
+        // TODO: Makeshift tool chaining. Use current/engaged
+        self.secondaryTool = application.canvasTools.first { $0.name == "pan" }
+    }
+    
+    func tool(name: String) -> CanvasTool? {
+        tools.first { $0.name == name }
     }
     
     @discardableResult
     func setTool(_ name: String) -> Bool {
-        let tool = tools.first { $0.name == name }
-        guard let tool else { return false }
+        guard let tool = self.tool(name: name) else { return false }
         self.setTool(tool)
         return true
     }
@@ -41,7 +48,13 @@ class ToolBar: @MainActor Panel {
         
         previousTool = currentTool
         currentTool = tool
+        engagedTool = nil
                 
+        switch tool {
+        case is PanTool: secondaryTool = nil
+        default: secondaryTool = self.tool(name: "pan")
+        }
+        
         tool.activate()
 
         print("Tool: \(tool.name)")

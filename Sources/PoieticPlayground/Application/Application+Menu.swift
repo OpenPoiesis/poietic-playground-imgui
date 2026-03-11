@@ -48,6 +48,7 @@ extension Application {
             // File menu
             if ImGui.BeginMenu("Design") {
                 if ImGui.MenuItem("New", "Cmd+N") {
+                    handleAction("new")
                 }
                 if ImGui.MenuItem("Open", "Cmd+O") {
                     self.alert(title: "Info", message: "Not yet")

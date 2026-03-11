@@ -1,8 +1,8 @@
 //
-//  App+World.swift
+//  App+resources.swift
 //  PoieticPlayground
 //
-//  Created by Stefan Urbanek on 05/02/2026.
+//  Created by Stefan Urbanek on 01/02/2026.
 //
 
 import PoieticCore
@@ -11,6 +11,13 @@ import Diagramming
 import Foundation
 
 extension Application {
+    func loadResources() {
+        let manager = ResourceManager.shared
+        
+        let notationURL = manager.resourceURL(Self.DefaultStockFlowPictogramsPath)
+        self.loadNotation(url: notationURL)
+    }
+
     func loadNotation(url: URL) {
         let data: Data
         do {
