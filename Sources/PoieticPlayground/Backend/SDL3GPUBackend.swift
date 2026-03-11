@@ -136,7 +136,23 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         SDL_SubmitGPUCommandBuffer(commandBuffer)
 
     }
-    
+
+    func withBlendMode<T>(_ mode: TextureBlendMode,
+                         drawList: UnsafeMutablePointer<ImDrawList>,
+                          _ block: () -> T) -> T
+    {
+        let result: T
+        switch mode {
+        case .premultiplied:
+            drawList.pointee.AddCallback(switchToPremultipliedBlendCallback, nil)
+            result = block()
+            drawList.pointee.AddCallback(ImGui.ImDrawCallback_ResetRenderState_D, nil)
+        case .straight:
+            result = block()
+        }
+        return result
+    }
+
     // MARK: - Startup/Shutdown
     
     func waitIdle() {
@@ -204,7 +220,7 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     }
 
     // MARK: - Texture
-    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32, format: TexturePixelFormat)
+    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32)
     throws (GraphicsBackendError) -> TextureHandle
     {
         let texture = try allocateGPUTexture(width: width, height: height)
@@ -213,13 +229,13 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
             if !success { SDL_ReleaseGPUTexture(device, texture) }
         }
 
-        try uploadPixels(pixels, width: width, height: height, to: texture, format: format)
+        try uploadPixels(pixels, width: width, height: height, to: texture)
         assert(MemoryLayout<ImTextureID>.size == MemoryLayout<OpaquePointer>.size)
 
         let textureID = unsafeBitCast(texture, to: ImTextureID.self)
 
         success = true
-        return TextureHandle(width: width, height: height, textureID: textureID, format: format)
+        return TextureHandle(width: width, height: height, textureID: textureID)
     }
 
     func destroyTexture(_ handle: TextureHandle) {
@@ -250,12 +266,11 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
     private func uploadPixels(_ pixels: UnsafeRawPointer,
                               width: UInt32,
                               height: UInt32,
-                              to texture: OpaquePointer,
-                              format: TexturePixelFormat)
+                              to texture: OpaquePointer)
     throws (GraphicsBackendError)
     {
         let pixelCount = width * height
-        let byteCount = pixelCount * UInt32(format.size)
+        let byteCount = pixelCount * 4
 
         var transferInfo = SDL_GPUTransferBufferCreateInfo()
         transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD

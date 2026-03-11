@@ -226,25 +226,21 @@ class DiagramCanvas: View {
 
     private func drawOverlayTextures() {
         guard let drawList = ImGui.GetWindowDrawList() else { return }
-        // Fallback if no textures
         guard !overlays.textures().isEmpty else {
             drawTextureError()
             return
         }
-        
-        // TODO: Rethink. This is a quick hack just to make it work, it bypasses the GraphicsBackend and uses directly SDL3
-        // Reason: Our overlays are in pre-multiplied alpha
-        for texture in overlays.textures() {
-            if texture.format == .RGBAPreMultiplied {
-                drawList.pointee.AddCallback(switchToPremultipliedBlendCallback, nil)
+        let backend = GraphicsBackend.shared
+
+        backend.withBlendMode(.premultiplied, drawList: drawList) {
+            for texture in overlays.textures() {
+                drawList.pointee.AddImage(
+                    texture.imTextureRef,
+                    canvasPos, canvasPos + canvasSize,
+                    ImVec2(0, 0), ImVec2(1, 1), 0xFFFFFFFF
+                )
             }
-            drawList.pointee.AddImage(
-                texture.imTextureRef,
-                canvasPos, canvasPos + canvasSize,
-                ImVec2(0, 0), ImVec2(1, 1), 0xFFFFFFFF
-            )
         }
-        drawList.pointee.AddCallback(ImGui.ImDrawCallback_ResetRenderState_D, nil)
     }
     
     private func drawTextureError() {

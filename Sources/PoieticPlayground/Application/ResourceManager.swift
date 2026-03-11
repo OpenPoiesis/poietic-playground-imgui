@@ -100,8 +100,7 @@ class ResourceManager {
         let texture = try backend.createTexture(
             pixels: pixels.pointer,
             width:  pixels.width,
-            height: pixels.height,
-            format: .RGBA
+            height: pixels.height
         )
         return texture
     }

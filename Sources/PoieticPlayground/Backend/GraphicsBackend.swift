@@ -5,6 +5,8 @@
 //  Created by Stefan Urbanek on 17/02/2026.
 //
 
+import CIimgui
+
 struct GraphicsBackendError: Error, CustomStringConvertible {
     let message: String
     let backendError: String?
@@ -31,10 +33,23 @@ protocol GraphicsBackendProtocol: AnyObject {
     func shutdown()
     
     func render()
-    
+    func withBlendMode<T>(_ mode: TextureBlendMode,
+                          drawList: UnsafeMutablePointer<ImDrawList>,
+                          _ block: () -> T) -> T
+
     // Textures
-    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32, format: TexturePixelFormat) throws (GraphicsBackendError)-> TextureHandle
+    func createTexture(pixels: UnsafeRawPointer, width: UInt32, height: UInt32) throws (GraphicsBackendError)-> TextureHandle
     func destroyTexture(_ handle: TextureHandle)
+}
+
+extension GraphicsBackendProtocol {
+    func withBlendMode<T>(_ mode: TextureBlendMode,
+                         drawList: UnsafeMutablePointer<ImDrawList>,
+                          _ block: () -> T) -> T
+    {
+        return block()
+    }
+
 }
 
 enum BackendEvent {
@@ -45,6 +60,12 @@ enum BackendEvent {
     /// Skip this frame
     case skip
 }
+
+enum TextureBlendMode {
+    case premultiplied
+    case straight
+}
+
 
 @MainActor
 enum GraphicsBackend {

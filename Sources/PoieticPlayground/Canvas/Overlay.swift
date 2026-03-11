@@ -154,7 +154,7 @@ class Overlay {
         }
         
         do {
-            texture = try backend.createTexture(pixels: data, width: w, height: h, format: .RGBAPreMultiplied)
+            texture = try backend.createTexture(pixels: data, width: w, height: h)
             self.state = .clean
         }
         catch {
