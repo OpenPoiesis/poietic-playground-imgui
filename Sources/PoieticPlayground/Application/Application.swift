@@ -48,7 +48,8 @@ class Application {
 
     // -- Views and Controller-likes --
     let inspector: InspectorPanel
-    var alertPanel = AlertPanel()
+    var alertPanel: AlertPanel
+    let aboutPanel: AboutPanel
     let settingsPanel: SettingsPanel
     
     let issuesPanel: IssuesPanel
@@ -78,6 +79,8 @@ class Application {
         self.canvas = DiagramCanvas()
         self.settingsPanel = SettingsPanel()
         self.issuesPanel = IssuesPanel()
+        self.alertPanel = AlertPanel()
+        self.aboutPanel = AboutPanel()
         
         self.canvasTools = [
             SelectionTool(),

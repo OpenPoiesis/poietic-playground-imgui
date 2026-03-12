@@ -115,6 +115,7 @@ extension Application {
         alertPanel.draw()
         issuesPanel.draw()
         controlBar.draw()
+        aboutPanel.draw()
     }
     
     func processUnhandledInput() {

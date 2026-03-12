@@ -36,6 +36,9 @@ extension Application {
         if ImGui.BeginMainMenuBar() {
             
             if ImGui.BeginMenu("Playground") {
+                if ImGui.MenuItem("About", nil) {
+                    aboutPanel.isVisible = true
+                }
                 if ImGui.MenuItem("Settings", "Cmd+,", &settingsPanel.isVisible) {
                     // Nothing
                 }
