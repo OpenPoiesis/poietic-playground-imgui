@@ -11,6 +11,12 @@ let PlaygroundProjectHomeURL = "https://github.com/OpenPoiesis/poietic-playgroun
 let PlaygroundProjectIssuesURL = "https://github.com/OpenPoiesis/poietic-playground-imgui/issues"
 let ContactEmailURL = "mailto:stefan.urbanek@gmail.com"
 
+let AcknowledgementList: [(String, String, String)] = [
+    ("ImGUI", "https://github.com/ocornut/imgui", "Graphical user interface library"),
+    ("SDL", "https://libsdl.org", "Simple DirectMedia Layer, a cross-platform development library"),
+    ("Cairo", "https://cairographics.org", "2D graphics library"),
+]
+
 class AboutPanel: Panel {
     var isVisible: Bool = false
     func draw() {
@@ -20,7 +26,8 @@ class AboutPanel: Panel {
         let titleFontSize = style.FontSizeBase * 1.5
         
         // TODO: Use OpenPopup?
-        ImGui.Begin("About", &isVisible)
+        ImGui.Begin("About", &isVisible, ImGuiWindowFlags_None
+                    | ImGuiWindowFlags_AlwaysAutoResize)
 
         ImGui.PushFont(nil, titleFontSize)
         ImGui.TextUnformatted("Poietic Playground")
@@ -28,22 +35,54 @@ class AboutPanel: Panel {
         ImGui.TextWrappedUnformatted("Prototype of a virtual laboratory for modelling and simulation.")
         ImGui.Spacing()
         ImGui.Separator()
+
+        ImGui.TextUnformatted("Links:")
+        ImGui.Indent()
+        ImGui.Bullet()
+        ImGui.TextLinkOpenURL("Project Home", PlaygroundProjectHomeURL)
+        ImGui.Bullet()
+        ImGui.TextLinkOpenURL("Report Issue", PlaygroundProjectIssuesURL)
+        ImGui.Unindent()
+
         ImGui.TextUnformatted("Author:")
         ImGui.SameLine()
         ImGui.TextLinkOpenURL("Stefan Urbanek", ContactEmailURL)
         ImGui.Spacing()
         
-        ImGui.TextUnformatted("Links:")
-        ImGui.Bullet()
-        ImGui.TextLinkOpenURL("Project Home", PlaygroundProjectHomeURL)
-        ImGui.Bullet()
-        ImGui.TextLinkOpenURL("Report Issue", PlaygroundProjectIssuesURL)
         ImGui.Separator()
+        drawAcknowledgements()
 
         if (ImGui.Button("Dismiss", ImVec2(0, 0))) {
             self.isVisible = false
         }
         ImGui.End()
+    }
+    
+    func drawAcknowledgements() {
+        if ImGui.CollapsingHeader("Acknowledgements", ImGuiTreeNodeFlags(ImGuiTreeNodeFlags_None.rawValue)) {
+            ImGui.TextWrappedUnformatted("The application depends on the following software")
+
+
+            let tableFlags = ImGuiTableFlags_None
+                                | ImGuiTableFlags_NoBordersInBody
+            
+            
+            if ImGui.BeginTable("acknowledgements", 2, tableFlags, ImVec2()) {
+                ImGui.TableSetupColumn("Dependency", 0)
+                ImGui.TableSetupColumn("Description", 0)
+
+                for (name, link, desc) in AcknowledgementList {
+                    ImGui.TableNextRow()
+                    ImGui.TableNextColumn()
+                    ImGui.TextLinkOpenURL(name, link)
+                    ImGui.TableNextColumn()
+                    ImGui.TextUnformatted(desc)
+                }
+
+                ImGui.EndTable()
+            }
+        }
+
     }
     
     func update(_ timeDelta: Double) {
