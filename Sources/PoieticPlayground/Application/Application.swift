@@ -58,6 +58,7 @@ class Application {
     var currentTool: CanvasTool? { toolBar.currentTool }
     let toolBar: ToolBar
     let controlBar: ControlBar
+    let dashboard: Dashboard
     
     // ## GUI
     //
@@ -81,6 +82,7 @@ class Application {
         self.issuesPanel = IssuesPanel()
         self.alertPanel = AlertPanel()
         self.aboutPanel = AboutPanel()
+        self.dashboard = Dashboard()
         
         self.canvasTools = [
             SelectionTool(),

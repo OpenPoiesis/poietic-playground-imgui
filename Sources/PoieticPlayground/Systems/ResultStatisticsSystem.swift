@@ -30,11 +30,11 @@ struct NumericValueStats: Component {
 /// - Ranges of numerical values: min, max
 ///
 /// - **Input:** ``SimulationResult`` singleton – required.
-/// - **Output:** ``NumericValueStats`` for each numeric simulation object.
-/// - **Forgiveness:** No forgiveness.
+/// - **Output:** ``RegularTimeSeries`` and ``NumericValueStats`` for each numeric simulation object.
+/// - **Forgiveness:** Does nothing if there is no simulation plan neither simulation result.
 /// - **Issues:** No issues created.
 ///
-public struct ResultProcessingSystem: System {
+public struct TimeSeriseProcessingSystem: System {
     nonisolated(unsafe) public static let dependencies: [SystemDependency] = [
         .after(StockFlowSimulationSystem.self),
     ]
