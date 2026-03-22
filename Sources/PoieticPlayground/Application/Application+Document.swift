@@ -26,8 +26,10 @@ extension Application {
     }
     
     func connectObservers(_ session: Session) {
-        session.addObserver(inspector.selectionChanged, on: .designFrameChanged)
-        session.addObserver(inspector.selectionChanged, on: .selectionChanged)
+        session.removeAllObservers()
+        session.addObserver(inspector.onSelectionChanged, on: .designFrameChanged)
+        session.addObserver(inspector.onSelectionChanged, on: .selectionChanged)
+        session.addObserver(inspector.onSimulationFinished, on: .simulationFinished)
         session.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
         session.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         session.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)

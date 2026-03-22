@@ -27,7 +27,8 @@ class FormulaInspectorSection: InspectorSection {
         formulaBuffer = "0"
     }
 
-    func selectionChanged(selection: Selection, overview: SelectionOverview) {
+    func onSelectionChanged(_ session: Session) {
+        let overview = session.selectionOverview
         let distinctValues = overview.distinctValues["formula", default: []]
         
         if distinctValues.count == 0 {

@@ -49,7 +49,6 @@ class SelectionOverview {
     }
 }
 
-
 protocol InspectorSection: ApplicationObject {
     var trait: Trait { get }
     var category: InspectorPanel.Category { get }
@@ -58,15 +57,17 @@ protocol InspectorSection: ApplicationObject {
     /// selection overview can be computed.
     var inspectedAttributes: [String] { get }
 
-    func selectionChanged(selection: Selection, overview: SelectionOverview)
+    func onSelectionChanged(_ session: Session)
+    func onSimulationFinished(_ session: Session)
+    
     func update(_ session: Session)
     func draw(_ session: Session)
-    
 }
 
 extension InspectorSection {
     func shouldDisplay(overview: SelectionOverview) -> Bool { true }
     func update(_ timeDelta: Double) { /* Do nothing */ }
+    func onSimulationFinished(_ session: Session) { /* Do nothing */ }
 }
 
 class InspectorPanel: Panel {
@@ -105,6 +106,7 @@ class InspectorPanel: Panel {
         allSections.append(NameInspectorSection())
         allSections.append(FormulaInspectorSection())
         allSections.append(ColorInspectorSection())
+        allSections.append(ChartInspectorSection())
 
         designSections.append(DesignInfoInspectorSection())
         designSections.append(SimulationInspectorSection())
@@ -114,7 +116,7 @@ class InspectorPanel: Panel {
         self.session = session
     }
     
-    func selectionChanged(_ session: Session) {
+    func onSelectionChanged(_ session: Session) {
         guard session.selectionOverview.containedCount > 0 else {
             inspectDesign(session)
             return
@@ -139,7 +141,13 @@ class InspectorPanel: Panel {
         }
         
         for section in activeSections {
-            section.selectionChanged(selection: session.selection, overview: overview)
+            section.onSelectionChanged(session)
+        }
+    }
+    
+    func onSimulationFinished(_ session: Session) {
+        for section in activeSections {
+            section.onSimulationFinished(session)
         }
     }
     

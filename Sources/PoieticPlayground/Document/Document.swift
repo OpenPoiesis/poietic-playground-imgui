@@ -75,6 +75,9 @@ class Session {
         setupWorld(notation: notation)
     }
    
+    func removeAllObservers() {
+        observers.removeAll()
+    }
     func addObserver(_ observer: @escaping EventObserver, on event: Event) {
         observers[event, default: []].append(observer)
     }

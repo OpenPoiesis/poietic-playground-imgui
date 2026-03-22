@@ -24,7 +24,9 @@ class ColorInspectorSection: InspectorSection {
 
     var selectedColorKey: AdaptableColorKey? = nil
     
-    func selectionChanged(selection: Selection, overview: SelectionOverview) {
+    func onSelectionChanged(_ session: Session) {
+        let overview = session.selectionOverview
+
         let values = overview.distinctValues["color"] ?? []
         
         if values.count == 0 {

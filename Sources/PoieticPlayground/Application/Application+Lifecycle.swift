@@ -116,7 +116,7 @@ extension Application {
         issuesPanel.draw()
         controlBar.draw()
         aboutPanel.draw()
-        dashboard.draw()
+        dashboard.draw(session: session)
     }
     
     func processUnhandledInput() {
