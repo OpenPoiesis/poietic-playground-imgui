@@ -5,9 +5,10 @@
 //  Created by Stefan Urbanek on 04/02/2026.
 //
 
+import Foundation
 import PoieticCore
 import PoieticFlows
-import Foundation
+import Diagramming
 
 let DefaultDesignPath = "Unnamed.poietic"
 
@@ -58,6 +59,32 @@ class SaveDesignCommand: Command {
         
         do {
             try context.app.saveDesign(url: targetURL!)
+        }
+        catch {
+            throw CommandError(String(describing: error), underlyingError: error)
+        }
+    }
+}
+
+class ExportSVGCommand: Command {
+    static let FileExtension = "svg"
+    var name: String { "export-svg" }
+    let url: URL
+    init(url: URL, appendExtensionIfNeeded: Bool = false) {
+        if appendExtensionIfNeeded,
+           url.pathExtension.isEmpty || url.pathExtension != Self.FileExtension
+        {
+            self.url = url.appendingPathExtension(Self.FileExtension)
+        }
+        else {
+            self.url = url
+        }
+    }
+    func run(_ context: CommandContext) throws (CommandError) {
+        let exporter = SVGDiagramExporter()
+
+        do {
+            try exporter.export(world: context.world, to: url.path())
         }
         catch {
             throw CommandError(String(describing: error), underlyingError: error)

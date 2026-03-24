@@ -23,7 +23,7 @@ class Document {
     static let FileExtension = "poietic"
     
     enum Event {
-        /// Triggered on each ``Session/changeSelection(_:)``.
+        /// Triggered on each ``Document/changeSelection(_:)``.
         case selectionChanged
         /// Triggered when world frame has been changed.
         ///

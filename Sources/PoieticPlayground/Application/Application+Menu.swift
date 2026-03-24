@@ -90,6 +90,11 @@ extension Application {
                 ImGui.Separator()
 
                 if ImGui.MenuItem("Export SVG...", "Cmd+Shift+S") {
+                    filePicker.open(mode: .save, filter: "*.svg") { path in
+                        let url = URL(fileURLWithPath: path)
+                        let command = ExportSVGCommand(url: url, appendExtensionIfNeeded: true)
+                        self.document?.queueCommand(command)
+                    }
                 }
 
                 
