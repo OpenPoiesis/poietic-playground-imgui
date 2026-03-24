@@ -29,11 +29,11 @@ class ConnectTool: CanvasTool {
     var palette: ObjectPalette? = nil
 
     override func activate() {
-        guard let session,
-              let notation: Notation = session.world.singleton()
+        guard let document,
+              let notation: Notation = document.world.singleton()
         else { return }
 
-        self.checker = ConstraintChecker(session.design.metamodel)
+        self.checker = ConstraintChecker(document.design.metamodel)
         
         var items: [PaletteItem] = []
         
@@ -83,12 +83,12 @@ class ConnectTool: CanvasTool {
     func dragStart(_ event: ToolEvent) -> EngagementResult{
         guard event.triggerButton == .left else { return .pass }
         guard let canvas,
-              let session,
+              let document,
               let target = canvas.hitTarget(screenPosition: event.screenPos),
               case .object(let runtimeID, _) = target,
               let objectID = world.entityToObject(runtimeID),
               let typeName = palette?.selectedIdentifier,
-              let type = session.design.metamodel.objectType(name: typeName),
+              let type = document.design.metamodel.objectType(name: typeName),
               let object = world.frame?[objectID]
         else {
             state = .idle
@@ -162,21 +162,21 @@ class ConnectTool: CanvasTool {
     }
 
     func canConnect(type: ObjectType, from originID: RuntimeID, to targetID: RuntimeID) -> Bool {
-        guard let session,
+        guard let document,
               let checker,
-              let frame = session.world.frame,
-              let originObjectID = session.world.entityToObject(originID),
-              let targetObjectID = session.world.entityToObject(targetID)
+              let frame = document.world.frame,
+              let originObjectID = document.world.entityToObject(originID),
+              let targetObjectID = document.world.entityToObject(targetID)
         else { return false }
         
         return checker.canConnect(type: type, from: originObjectID, to: targetObjectID, in: frame)
     }
     func createConnection(type: ObjectType, from originRuntimeID: RuntimeID, to targetRuntimeID: RuntimeID) {
-        guard let session,
-              let originObjectID = session.world.entityToObject(originRuntimeID),
-              let targetObjectID = session.world.entityToObject(targetRuntimeID)
+        guard let document,
+              let originObjectID = document.world.entityToObject(originRuntimeID),
+              let targetObjectID = document.world.entityToObject(targetRuntimeID)
         else { return }
-        let trans = session.createOrReuseTransaction()
+        let trans = document.createOrReuseTransaction()
         trans.createEdge(type, origin: originObjectID, target: targetObjectID)
     }
 
@@ -186,7 +186,7 @@ class ConnectTool: CanvasTool {
                                     targetID: RuntimeID?,
                                     targetAllowed: Bool)
     {
-        guard let world = session?.world,
+        guard let world = document?.world,
               let originEntity = world.entity(originID),
               let block: DiagramBlock = originEntity.component()
         else { return }
@@ -221,7 +221,7 @@ class ConnectTool: CanvasTool {
         // TODO: Change color based on rules (we don't have way for coloring intents yet)
         // TODO: Snap to target block
         print("Update drag connector...")
-        guard let world = session?.world,
+        guard let world = document?.world,
               let intendedConnector,
               let intent: ConnectorIntent = intendedConnector.component(),
               let originEntity = world.entity(intent.originID),
@@ -262,7 +262,7 @@ class ConnectTool: CanvasTool {
     }
     
     func removeDragConnector() {
-        guard let world = session?.world,
+        guard let world = document?.world,
               let intendedConnector
         else { return }
         world.despawn(intendedConnector.runtimeID)

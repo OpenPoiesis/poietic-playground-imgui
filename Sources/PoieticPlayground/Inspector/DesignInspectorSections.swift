@@ -11,7 +11,7 @@ import PoieticFlows
 import CIimgui
 
 protocol DesignInspectorSection: InspectorSection {
-    func inspectDesign(_ session: Session)
+    func inspectDesign(_ document: Document)
 }
 
 class DesignInfoInspectorSection: DesignInspectorSection {
@@ -39,12 +39,12 @@ class DesignInfoInspectorSection: DesignInspectorSection {
         self.documentationBuffer = ""
     }
 
-    func onSelectionChanged(_ session: Session) {
+    func onSelectionChanged(_ document: Document) {
         // We ignore the selection and the overview here, we just get the design object singleton.
     }
     
-    func inspectDesign(_ session: Session) {
-        guard let frame = session.world.frame
+    func inspectDesign(_ document: Document) {
+        guard let frame = document.world.frame
         else { return }
         
         if let infoObject = frame.first(type: .DesignInfo) {
@@ -64,26 +64,26 @@ class DesignInfoInspectorSection: DesignInspectorSection {
         }
     }
     
-    func update(_ session: Session) { /* Nothing for now */ }
+    func update(_ document: Document) { /* Nothing for now */ }
 
-    func draw(_ session: Session) {
+    func draw(_ document: Document) {
         ImGui.InputText("Title", buffer: titleBuffer)
         if ImGui.IsItemDeactivatedAfterEdit() {
-            textAttributeChanged(session, attribute: "title", value: titleBuffer.string)
+            textAttributeChanged(document, attribute: "title", value: titleBuffer.string)
         }
         ImGui.InputTextMultiline("Abstract", buffer: abstractBuffer)
         if ImGui.IsItemDeactivatedAfterEdit() {
-            textAttributeChanged(session, attribute: "abstract", value: abstractBuffer.string)
+            textAttributeChanged(document, attribute: "abstract", value: abstractBuffer.string)
         }
 //        ImGui.InputText("Author", buffer: authorBuffer)
 //        if ImGui.IsItemDeactivatedAfterEdit() {
-//            textAttributeChanged(session, attribute: "author", value: authorBuffer.string)
+//            textAttributeChanged(document, attribute: "author", value: authorBuffer.string)
 //        }
     }
     
-    func textAttributeChanged(_ session: Session, attribute: String, value: String) {
+    func textAttributeChanged(_ document: Document, attribute: String, value: String) {
         print("Design attribute changed: \(attribute) = '\(value)'")
-        let trans = session.createOrReuseTransaction()
+        let trans = document.createOrReuseTransaction()
         let mutable: TransientObject
         
         if let infoObjectID, let object = trans[infoObjectID] {
@@ -126,12 +126,12 @@ class SimulationInspectorSection: DesignInspectorSection {
     }
 
     
-    func onSelectionChanged(_ session: Session) {
+    func onSelectionChanged(_ document: Document) {
         // We ignore the selection and the overview here, we just get the design object singleton.
     }
     
-    func inspectDesign(_ session: Session) {
-        guard let frame = session.world.frame
+    func inspectDesign(_ document: Document) {
+        guard let frame = document.world.frame
         else { return }
         
         if let infoObject = frame.first(type: .Simulation) {
@@ -150,22 +150,22 @@ class SimulationInspectorSection: DesignInspectorSection {
         }
     }
     
-    func update(_ session: Session) { /* Nothing for now */ }
+    func update(_ document: Document) { /* Nothing for now */ }
 
-    func draw(_ session: Session) {
+    func draw(_ document: Document) {
 
         ImGui.InputDouble("Time Delta", &timeDelta, 0.1, 10.0, "%.3f")
         if ImGui.IsItemDeactivatedAfterEdit() {
-            changeAttribute(session, attribute: "time_delta", value: timeDelta)
+            changeAttribute(document, attribute: "time_delta", value: timeDelta)
         }
         ImGui.InputInt("Steps", &steps, 1, 100)
         if ImGui.IsItemDeactivatedAfterEdit() {
             self.endTime = initialTime + Double(steps) * timeDelta
-            changeAttribute(session, attribute: "steps", value: Int(steps))
+            changeAttribute(document, attribute: "steps", value: Int(steps))
         }
         ImGui.InputDouble("Initial Time", &initialTime, 1.0, 100.0, "%.3f")
         if ImGui.IsItemDeactivatedAfterEdit() {
-            changeAttribute(session, attribute: "initial_time", value: initialTime)
+            changeAttribute(document, attribute: "initial_time", value: initialTime)
         }
         ImGui.InputDouble("End Time", &endTime, 1.0, 100.0, "%.3f")
         if ImGui.IsItemDeactivatedAfterEdit() {
@@ -176,15 +176,15 @@ class SimulationInspectorSection: DesignInspectorSection {
             else {
                 steps = Int32(((endTime - initialTime) / timeDelta).rounded(.down))
             }
-            changeAttribute(session, attribute: "steps", value: Int(steps))
+            changeAttribute(document, attribute: "steps", value: Int(steps))
         }
         
         self.endTime = initialTime + Double(steps) * timeDelta
 
     }
     
-    func changeAttribute(_ session: Session, attribute: String, value: Double) {
-        let trans = session.createOrReuseTransaction()
+    func changeAttribute(_ document: Document, attribute: String, value: Double) {
+        let trans = document.createOrReuseTransaction()
         let mutable: TransientObject
         
         if let infoObjectID, let object = trans[infoObjectID] {
@@ -202,8 +202,8 @@ class SimulationInspectorSection: DesignInspectorSection {
         mutable.setAttribute(value: Variant(value), forKey: attribute)
     }
     
-    func changeAttribute(_ session: Session, attribute: String, value: Int) {
-        let trans = session.createOrReuseTransaction()
+    func changeAttribute(_ document: Document, attribute: String, value: Int) {
+        let trans = document.createOrReuseTransaction()
         let mutable: TransientObject
         
         if let infoObjectID, let object = trans[infoObjectID] {

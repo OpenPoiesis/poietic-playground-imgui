@@ -11,8 +11,8 @@ import PoieticFlows
 import CIimgui
 
 extension Application {
-    func runCommand(_ command: any Command, session: Session) {
-        let context = CommandContext(app: self, session: session)
+    func runCommand(_ command: any Command, document: Document) {
+        let context = CommandContext(app: self, document: document)
         do {
             self.log("Running command '\(command.name)'")
             try command.run(context)
@@ -52,29 +52,32 @@ extension Application {
         // Create a new frame, so we can undo first action (can't undo to no-frame)
         let frame = design.createFrame()
         try! design.accept(frame) // We can force, because empty frame must be always valid.
-        self.newSession(design)
+        self.newDocument(design)
     }
+    // TODO: Move to Session (document)
     func openDesign(url: URL) throws (DesignStoreError) {
         let store = DesignStore(url: url)
         let design = try store.load(metamodel: StockFlowMetamodel)
-        self.newSession(design, designURL: url)
+        self.newDocument(design, designURL: url)
     }
     
+    // TODO: Move to Session (document)
     func saveDesign(url: URL) throws (DesignStoreError) {
-        guard let session else { return }
+        guard let document else { return }
         self.log("Saving design to: \(url.standardizedFileURL)")
         let store = DesignStore(url: url)
-        try store.save(design: session.design)
+        try store.save(design: document.design)
+        document.designURL = url
     }
 
     func selectAll() {
-        guard let session,
-              let frame = session.world.frame
+        guard let document,
+              let frame = document.world.frame
         else { return }
 
         let allIDs: [ObjectID] =
                 frame.filter(trait: .DiagramBlock).map {$0.objectID}
                 + frame.filter(trait: .DiagramConnector).map {$0.objectID}
-        session.changeSelection(.replaceAll(allIDs))
+        document.changeSelection(.replaceAll(allIDs))
     }
 }

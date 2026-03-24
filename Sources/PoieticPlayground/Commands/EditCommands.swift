@@ -66,7 +66,7 @@ struct DeleteObjectsCommand: Command {
     }
     
     func run(_ context: CommandContext) throws (CommandError) {
-        let trans = context.session.createOrReuseTransaction()
+        let trans = context.document.createOrReuseTransaction()
         for objectID in ids {
             guard trans.contains(objectID) else { continue }
             trans.removeCascading(objectID)
@@ -100,7 +100,7 @@ struct CutToPasteboardCommand: Command {
         let text = try copySelectionAsText(ids: ids, frame: frame)
         try setPasteboardText(text)
 
-        let trans = context.session.createOrReuseTransaction()
+        let trans = context.document.createOrReuseTransaction()
         for objectID in ids {
             guard trans.contains(objectID) else { continue }
             trans.removeCascading(objectID)
@@ -118,7 +118,7 @@ struct PasteFromPasteboardCommand: Command {
             return
         }
 
-        let trans = context.session.createOrReuseTransaction()
+        let trans = context.document.createOrReuseTransaction()
 
         guard let data = text.data(using: .utf8) else {
             throw CommandError("Can not get data from text")
@@ -143,11 +143,11 @@ struct PasteFromPasteboardCommand: Command {
                                   identityStrategy: .preserveOrCreate)
         }
         catch {
-            context.session.discardTransaction()
+            context.document.discardTransaction()
             throw CommandError("Failed to paste content", underlyingError: error)
         }
 
-        context.session.changeSelection(.replaceAll(ids))
+        context.document.changeSelection(.replaceAll(ids))
     }
 
 }

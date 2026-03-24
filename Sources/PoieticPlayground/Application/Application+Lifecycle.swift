@@ -71,8 +71,8 @@ extension Application {
     }
     
     func update(_ timeDelta: Double) {
-        guard let session else {
-            logError("No session!")
+        guard let document else {
+            logError("No document!")
             return
         }
         
@@ -88,13 +88,13 @@ extension Application {
         }
         
         // Run the Command Queue
-        while !session.commandQueue.isEmpty {
-            let command = session.commandQueue.removeFirst()
-            self.runCommand(command, session: session)
+        while !document.commandQueue.isEmpty {
+            let command = document.commandQueue.removeFirst()
+            self.runCommand(command, document: document)
         }
         
         do {
-            try session.consumeAndAcceptTransaction()
+            try document.consumeAndAcceptTransaction()
         }
         catch {
             // This is not user's fault and never should be.
@@ -103,20 +103,23 @@ extension Application {
             return
         }
         
-        session.update(timeDelta)
+        document.update(timeDelta)
     }
     
     func draw() {
         mainMenu()
-        settingsPanel.draw()
-        inspector.draw()
-        toolBar.draw()
         canvas.draw()
-        alertPanel.draw()
+        inspector.draw()
+
+        settingsPanel.draw()
+        toolBar.draw()
+        aboutPanel.draw()
         issuesPanel.draw()
         controlBar.draw()
-        aboutPanel.draw()
-        dashboard.draw(session: session)
+        dashboard.draw(document: document)
+
+        filePicker.draw()
+        alertPanel.draw()
     }
     
     func processUnhandledInput() {

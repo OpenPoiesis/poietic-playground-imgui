@@ -7,7 +7,7 @@
 
 import PoieticCore
 
-extension Session {
+extension Document {
     /// Creates a new transaction or reuses the existing one.
     ///
     /// The transaction is automatically accepted at the end of the update cycle.

@@ -9,15 +9,16 @@ import CIimgui
 import PoieticCore
 import PoieticFlows
 
+/// Makeshift dashboard.
 @MainActor
 class Dashboard {
     static let ChartSize = ImVec2(100, 80)
     var isVisible: Bool = true
     var chartViews: [ChartView] = []
     
-    func onDesignFrameChanged(_ session: Session) {
+    func onDesignFrameChanged(_ document: Document) {
         // TODO: Reload all charts
-        let world = session.world
+        let world = document.world
         print("Dashboard here")
         
         chartViews.removeAll()
@@ -27,13 +28,17 @@ class Dashboard {
         }
     }
     
-    func draw(session: Session?) {
+    func draw(document: Document?) {
         guard isVisible else { return }
         
         ImGui.Begin("Dashboard", &isVisible,
                                         ImGuiWindowFlags_NoResize
                                         | ImGuiWindowFlags_AlwaysAutoResize)
 
+        if chartViews.isEmpty {
+            // TODO: Have a nicer indicator/default size
+            ImGui.TextUnformatted("(empty)")
+        }
         for (index, view) in chartViews.enumerated() {
             ImGui.PushID(Int32(index))
             ImGui.BeginGroup()
@@ -46,20 +51,22 @@ class Dashboard {
         }
         // TODO: Context menu: delete, select targets, inspect
         
-        ImGui.BeginGroup()
-        let canCreate = !(session?.selection.isEmpty ?? true)
-        if canCreate && ImGui.Button("Add", ImVec2()),
-           let session
-        {
-            // TODO: Add chart
-            print("ADD CHART")
-            let command = CreateChartCommand(
-                name: nil,
-                series: Array(session.selection.ids)
-            )
-            session.queueCommand(command)
+        let canCreate = !(document?.selection.isEmpty ?? true)
+        if canCreate {
+            ImGui.BeginGroup()
+            if ImGui.Button("Add", ImVec2()),
+               let document
+            {
+                // TODO: Add chart
+                print("ADD CHART")
+                let command = CreateChartCommand(
+                    name: nil,
+                    series: Array(document.selection.ids)
+                )
+                document.queueCommand(command)
+            }
+            ImGui.EndGroup()
         }
-        ImGui.EndGroup()
         
         ImGui.End()
 

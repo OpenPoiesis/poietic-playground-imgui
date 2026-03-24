@@ -27,6 +27,7 @@ let package = Package(
                 .product(name: "Diagramming", package: "poietic-diagram"),
                 "Csdl3",
                 "CIimgui",
+                "Cimguifd",
                 "Cstb",
                 "Ccairo",
             ],
@@ -57,7 +58,7 @@ let package = Package(
             ]
         ),
 
-            .target(
+        .target(
             name: "CIimgui",
             dependencies: [
                 "Csdl3"
@@ -66,8 +67,19 @@ let package = Package(
             linkerSettings: [ ]
         ),
         .target(
+            name: "Cimguifd",
+            dependencies: [
+                "CIimgui"
+            ],
+            cxxSettings: [
+                .define("IMGUIFD_ENABLE_STL=1"),
+                .define("IMGUI_DEFINE_MATH_OPERATORS=1"),
+            ],
+            linkerSettings: [ ]
+        ),
+        .target(
             name: "Cstb",
             cxxSettings: [ ],
-        )
+        ),
     ]
 )

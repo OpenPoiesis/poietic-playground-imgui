@@ -25,8 +25,8 @@ class NameInspectorSection: InspectorSection {
         nameBuffer = "unnamed"
     }
 
-    func onSelectionChanged(_ session: Session) {
-        let overview = session.selectionOverview
+    func onSelectionChanged(_ document: Document) {
+        let overview = document.selectionOverview
 
         if overview.distinctNames.count == 0 {
             nameBuffer.string = ""
@@ -38,27 +38,27 @@ class NameInspectorSection: InspectorSection {
             nameBuffer.string = "(multiple)"
         }
     }
-    func onSimulationFinished(_ session: Session) {
-        for objectID in session.selection {
-            guard let entity = session.world.entity(objectID) else { continue }
+    func onSimulationFinished(_ document: Document) {
+        for objectID in document.selection {
+            guard let entity = document.world.entity(objectID) else { continue }
         }
     }
 
-    func update(_ session: Session) { /* Nothing for now */ }
+    func update(_ document: Document) { /* Nothing for now */ }
 
-    func draw(_ session: Session) {
+    func draw(_ document: Document) {
 //        ImGui.SeparatorText("Name")
 
         ImGui.InputText("Name", buffer: nameBuffer)
         if ImGui.IsItemDeactivatedAfterEdit() {
-            acceptChange(session)
+            acceptChange(document)
             print("Entered: string: '\(nameBuffer.string)' buffer: \(nameBuffer.bufferPointer)")
         }
     }
     
-    func acceptChange(_ session: Session) {
-        let trans = session.createOrReuseTransaction()
-        for id in session.selection {
+    func acceptChange(_ document: Document) {
+        let trans = document.createOrReuseTransaction()
+        for id in document.selection {
             guard trans.contains(id) else { continue }
             let mutable = trans.mutate(id)
             mutable.setAttribute(value: Variant(nameBuffer.string), forKey: "name")

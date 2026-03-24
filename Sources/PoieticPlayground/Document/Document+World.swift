@@ -8,7 +8,7 @@
 import PoieticCore
 import Diagramming
 
-extension Session {
+extension Document {
     func update(_ timeDelta: Double) {
         self.updateWorld()
     }

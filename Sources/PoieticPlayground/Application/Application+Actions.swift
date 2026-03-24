@@ -5,6 +5,7 @@
 //  Created by Stefan Urbanek on 28/01/2026.
 //
 import CIimgui
+import Foundation
 import PoieticCore
 
 struct ShortcutAction {
@@ -93,15 +94,39 @@ extension Application {
         case "settings": self.openSettings()
         case "quit": self.quitRequested = true
         // -- File --
-        case "new": session?.queueCommand(NewDesignCommand())
-        case "save": session?.queueCommand(SaveDesignCommand())
+        case "new": document?.queueCommand(NewDesignCommand())
+        case "open":
+            filePicker.open(mode: .open, filter: "*." + Document.FileExtension) { path in
+                let url = URL(fileURLWithPath: path)
+                let command = OpenDesignCommand(url: url)
+                self.document?.queueCommand(command)
+            }
+
+        case "save":
+            if let url = document?.designURL {
+                let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
+                self.document?.queueCommand(command)
+            }
+            else {
+                filePicker.open(mode: .save, filter: "*." + Document.FileExtension) { path in
+                    let url = URL(fileURLWithPath: path)
+                    let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
+                    self.document?.queueCommand(command)
+                }
+            }
+        case "save_as":
+            filePicker.open(mode: .save, filter: "*." + Document.FileExtension) { path in
+                let url = URL(fileURLWithPath: path)
+                let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
+                self.document?.queueCommand(command)
+            }
 
         // -- Edit --
-        case "undo": session?.queueCommand(UndoCommand())
-        case "redo": session?.queueCommand(RedoCommand())
+        case "undo": document?.queueCommand(UndoCommand())
+        case "redo": document?.queueCommand(RedoCommand())
 //        case "select_all": ???
         case "paste":
-            session?.queueCommand(PasteFromPasteboardCommand())
+            document?.queueCommand(PasteFromPasteboardCommand())
         case "select_all":
             self.selectAll()
 
@@ -111,7 +136,7 @@ extension Application {
         case "toggle_issues_panel":
             self.issuesPanel.isVisible = !self.issuesPanel.isVisible
         case "reset_zoom":
-            session?.queueCommand(ResetZoomCommand())
+            document?.queueCommand(ResetZoomCommand())
 
         // -- Inspector --
         case "overview_inspector":
@@ -127,22 +152,22 @@ extension Application {
             self.canvas.openSecondaryInlineEditorForSelection()
 
         default:
-            guard let session else { return }
-            if !handleSelectionAction(actionName, session: session) {
+            guard let document else { return }
+            if !handleSelectionAction(actionName, document: document) {
                 self.logError("Unhandled application action: " + actionName)
             }
         }
     }
     
-    func handleSelectionAction(_ actionName: String, session: Session) -> Bool {
-        let ids: [ObjectID] = Array(session.selection.ids)
+    func handleSelectionAction(_ actionName: String, document: Document) -> Bool {
+        let ids: [ObjectID] = Array(document.selection.ids)
         switch actionName {
         case "cut":
-            session.queueCommand(CutToPasteboardCommand(ids))
+            document.queueCommand(CutToPasteboardCommand(ids))
         case "copy":
-            session.queueCommand(CopyToPasteboardCommand(ids))
+            document.queueCommand(CopyToPasteboardCommand(ids))
         case "delete":
-            session.queueCommand(DeleteObjectsCommand(ids))
+            document.queueCommand(DeleteObjectsCommand(ids))
 
         default:
             return false

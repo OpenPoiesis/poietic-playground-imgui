@@ -47,6 +47,7 @@ class Application {
     var player: ResultPlayer
 
     // -- Views and Controller-likes --
+    let filePicker: FilePickerPanel
     let inspector: InspectorPanel
     var alertPanel: AlertPanel
     let aboutPanel: AboutPanel
@@ -63,14 +64,14 @@ class Application {
     // ## GUI
     //
     // ## The Document – Design and World
-    var session: Session?
+    var document: Document?
     var notation: Notation
     
     init() {
         self.notation = Notation.DefaultNotation
         
         // Document
-        self.session = nil
+        self.document = nil
         self.player = ResultPlayer()
         
         // User Interface
@@ -83,6 +84,7 @@ class Application {
         self.alertPanel = AlertPanel()
         self.aboutPanel = AboutPanel()
         self.dashboard = Dashboard()
+        self.filePicker = FilePickerPanel()
         
         self.canvasTools = [
             SelectionTool(),
@@ -96,15 +98,15 @@ class Application {
     func applicationSessionDebugWindow() {
         ImGui.Begin("Application Session")
         ImGui.TextUnformatted("Current tool: \(toolBar.currentTool?.name, default: "no tool")")
-        if let session {
-            let frame = session.world.frame
+        if let document {
+            let frame = document.world.frame
             let wFrameLabel: String = frame.map { String(describing: $0.id) } ?? "(no frame)"
-            let cFrameLabel: String = session.design.currentFrame.map { String(describing: $0.id) } ?? "(no frame)"
+            let cFrameLabel: String = document.design.currentFrame.map { String(describing: $0.id) } ?? "(no frame)"
             ImGui.TextUnformatted("Design frame: \(cFrameLabel)")
             ImGui.TextUnformatted("World frame: \(wFrameLabel)")
-            ImGui.TextUnformatted("Has Transaction: \(session.hasTransaction)")
-            ImGui.TextUnformatted("Selection count: \(session.selection.count)")
-            ImGui.TextUnformatted("Interactive preview update: \(session.requiresInteractivePreviewUpdate)")
+            ImGui.TextUnformatted("Has Transaction: \(document.hasTransaction)")
+            ImGui.TextUnformatted("Selection count: \(document.selection.count)")
+            ImGui.TextUnformatted("Interactive preview update: \(document.requiresInteractivePreviewUpdate)")
         }
         ImGui.End()
     }

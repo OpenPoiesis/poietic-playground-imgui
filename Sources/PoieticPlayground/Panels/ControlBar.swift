@@ -33,8 +33,8 @@ class ControlBar: @MainActor Panel {
         self.app = application
     }
    
-    func onDesignFrameChanged(_ session: Session) {
-        guard let frame = session.world.frame
+    func onDesignFrameChanged(_ document: Document) {
+        guard let frame = document.world.frame
         else { return }
         
         if let infoObject = frame.first(type: .Simulation) {
@@ -55,7 +55,7 @@ class ControlBar: @MainActor Panel {
         }
     }
 
-    func onSimulationPlayerStep(_ session: Session) {
+    func onSimulationPlayerStep(_ document: Document) {
         guard let player = self.app?.player else { return }
         self.currentStep = Int32(player.currentStep)
         self.currentTime = player.currentTime

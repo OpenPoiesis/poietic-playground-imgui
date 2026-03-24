@@ -4,6 +4,7 @@
 //
 //  Created by Stefan Urbanek on 28/01/2026.
 //
+import Foundation
 import CIimgui
 
 struct KeyModifier: OptionSet {
@@ -54,19 +55,46 @@ extension Application {
                     handleAction("new")
                 }
                 if ImGui.MenuItem("Open", "Cmd+O") {
-                    self.alert(title: "Info", message: "Not yet")
+                    filePicker.open(mode: .open, filter: "*." + Document.FileExtension) { path in
+                        let url = URL(fileURLWithPath: path)
+                        let command = OpenDesignCommand(url: url)
+                        self.document?.queueCommand(command)
+                    }
                 }
                 
                 ImGui.Separator()
                 
                 if ImGui.MenuItem("Save", "Cmd+S") {
+                    // TODO: Move to Application.save(...)
+                    if let url = document?.designURL {
+                        let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
+                        self.document?.queueCommand(command)
+                    }
+                    else {
+                        filePicker.open(mode: .save, filter: "*." + Document.FileExtension) { path in
+                            let url = URL(fileURLWithPath: path)
+                            let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
+                            self.document?.queueCommand(command)
+                        }
+                    }
                 }
+                
                 if ImGui.MenuItem("Save As...", "Cmd+Shift+S") {
+                    filePicker.open(mode: .save, filter: "*." + Document.FileExtension) { path in
+                        let url = URL(fileURLWithPath: path)
+                        let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
+                        self.document?.queueCommand(command)
+                    }
                 }
                 
                 ImGui.Separator()
 
                 if ImGui.MenuItem("Export SVG...", "Cmd+Shift+S") {
+                    filePicker.open(mode: .save, filter: "*.svg") { path in
+                        let url = URL(fileURLWithPath: path)
+                        let command = ExportSVGCommand(url: url, appendExtensionIfNeeded: true)
+                        self.document?.queueCommand(command)
+                    }
                 }
 
                 
@@ -144,8 +172,8 @@ extension Application {
         }
     }
     
-    func canUndo() -> Bool { session?.design.canUndo ?? false }
-    func canRedo() -> Bool { session?.design.canRedo ?? false }
-    func hasSelection() -> Bool { (session?.selection).map { !$0.isEmpty } ?? false }
+    func canUndo() -> Bool { document?.design.canUndo ?? false }
+    func canRedo() -> Bool { document?.design.canRedo ?? false }
+    func hasSelection() -> Bool { (document?.selection).map { !$0.isEmpty } ?? false }
 
 }

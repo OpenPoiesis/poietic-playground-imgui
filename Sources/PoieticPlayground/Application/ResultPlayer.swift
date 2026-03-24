@@ -36,10 +36,10 @@ class ResultPlayer {
         initialTime + Double(currentStep) * timeDelta
     }
 
-    var session: Session? = nil
+    var document: Document? = nil
 
-    func bind(_ session: Session) {
-        self.session = session
+    func bind(_ document: Document) {
+        self.document = document
     }
     
     func update(_ delta: Double) {
@@ -54,8 +54,8 @@ class ResultPlayer {
         }
     }
    
-    func onDesignFrameChanged(_ session: Session) {
-        guard let plan: SimulationPlan = session.world.singleton() else {
+    func onDesignFrameChanged(_ document: Document) {
+        guard let plan: SimulationPlan = document.world.singleton() else {
             self.isRunning = false
             return
             // TODO: Reset variables
@@ -71,20 +71,20 @@ class ResultPlayer {
         self.currentStep = max(0, min(self.currentStep, Int(settings.steps) - 1))
         stateChanged()
     }
-    func onSimulationFailed(_ session: Session) {
+    func onSimulationFailed(_ document: Document) {
         self.isRunning = false
     }
-    func onSimulationFinished(_ session: Session) {
+    func onSimulationFinished(_ document: Document) {
         // Nothing
     }
     /// Run the systems for player step and then notify Godot through a signal.
     ///
     func stateChanged() {
-        guard let session else { return }
+        guard let document else { return }
 
         let component = SimulationReplayTime(step: currentStep, time: currentTime)
-        session.world.setSingleton(component)
-        session.trigger(.simulationPlayerStep)
+        document.world.setSingleton(component)
+        document.trigger(.simulationPlayerStep)
         //        world.run(schedule: ReplayStepSchedule.self) else { return }
 //        simulationPlayerStep.emit()
     }

@@ -23,7 +23,7 @@ enum InteractivePreviewSchedule: ScheduleLabel { }
 // Action-specific schedules
 enum ParameterResolutionSchedule: ScheduleLabel { }
 
-extension Session {
+extension Document {
     static func setupSchedules(_ world: World) {
         world.addSchedule(Schedule(
             label: FrameChangeSchedule.self,
