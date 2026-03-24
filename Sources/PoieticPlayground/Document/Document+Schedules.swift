@@ -31,6 +31,7 @@ extension Session {
                 PoieticFlows.SimulationPlanningSystems
                 + PoieticFlows.SimulationPresentationSystems
                 + [
+                    NewChartResolutionSystem.self,
                     // From Diagramming
                     ErrorIndicatorSystem.self,
                     BlockCreationSystem.self,
@@ -53,7 +54,7 @@ extension Session {
             label: SimulationSchedule.self,
             systems: [
                 StockFlowSimulationSystem.self,
-                ResultProcessingSystem.self,
+                TimeSeriseProcessingSystem.self,
             ]
         ))
 

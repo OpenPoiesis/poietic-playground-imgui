@@ -26,21 +26,19 @@ extension Application {
     }
     
     func connectObservers(_ session: Session) {
-        session.addObserver(inspector.selectionChanged, on: .designFrameChanged)
-        session.addObserver(inspector.selectionChanged, on: .selectionChanged)
-        
+        session.removeAllObservers()
+        session.addObserver(inspector.onSelectionChanged, on: .designFrameChanged)
+        session.addObserver(inspector.onSelectionChanged, on: .selectionChanged)
+        session.addObserver(inspector.onSimulationFinished, on: .simulationFinished)
         session.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
         session.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
         session.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
         session.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
-
         session.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
         session.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
-
         session.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)
         session.addObserver(player.onSimulationFailed, on: .simulationFailed)
-//        self.session?.addObserver(player.onSimulationFinished, on: .simulationFinished)
-//        self.session?.addObserver(dashboard.selectionChanged, on: .selectionChanged)
+        session.addObserver(dashboard.onDesignFrameChanged, on: .designFrameChanged)
     }
     
     func bindToSession(_ session: Session) {

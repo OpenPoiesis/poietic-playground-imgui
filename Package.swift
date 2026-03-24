@@ -32,6 +32,9 @@ let package = Package(
             ],
             resources: [
               .copy("Resources/icons/"),
+              .copy("Resources/designs/"),
+              .copy("Resources/stock_flow_pictograms.json"),
+              .copy("Resources/stock_flow_pictograms-jolly.json"),
             ],
             swiftSettings: [.unsafeFlags([
                 "-cxx-interoperability-mode=default",

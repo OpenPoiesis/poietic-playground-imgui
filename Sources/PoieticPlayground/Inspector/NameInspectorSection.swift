@@ -25,7 +25,9 @@ class NameInspectorSection: InspectorSection {
         nameBuffer = "unnamed"
     }
 
-    func selectionChanged(selection: Selection, overview: SelectionOverview) {
+    func onSelectionChanged(_ session: Session) {
+        let overview = session.selectionOverview
+
         if overview.distinctNames.count == 0 {
             nameBuffer.string = ""
         }
@@ -34,6 +36,11 @@ class NameInspectorSection: InspectorSection {
         }
         else {
             nameBuffer.string = "(multiple)"
+        }
+    }
+    func onSimulationFinished(_ session: Session) {
+        for objectID in session.selection {
+            guard let entity = session.world.entity(objectID) else { continue }
         }
     }
 

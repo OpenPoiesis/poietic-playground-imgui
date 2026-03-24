@@ -39,7 +39,7 @@ class DesignInfoInspectorSection: DesignInspectorSection {
         self.documentationBuffer = ""
     }
 
-    func selectionChanged(selection: Selection, overview: SelectionOverview) {
+    func onSelectionChanged(_ session: Session) {
         // We ignore the selection and the overview here, we just get the design object singleton.
     }
     
@@ -125,7 +125,8 @@ class SimulationInspectorSection: DesignInspectorSection {
     init() {
     }
 
-    func selectionChanged(selection: Selection, overview: SelectionOverview) {
+    
+    func onSelectionChanged(_ session: Session) {
         // We ignore the selection and the overview here, we just get the design object singleton.
     }
     
