@@ -9,12 +9,14 @@ import CIimgui
 
 let PlaygroundProjectHomeURL = "https://github.com/OpenPoiesis/poietic-playground-imgui"
 let PlaygroundProjectIssuesURL = "https://github.com/OpenPoiesis/poietic-playground-imgui/issues"
-let ContactEmailURL = "mailto:stefan.urbanek@gmail.com"
+let ContactEmailURL = "mailto:stefan@agentfarms.net"
 
 let AcknowledgementList: [(String, String, String)] = [
     ("ImGUI", "https://github.com/ocornut/imgui", "Graphical user interface library"),
     ("SDL", "https://libsdl.org", "Simple DirectMedia Layer, a cross-platform development library"),
     ("Cairo", "https://cairographics.org", "2D graphics library"),
+    ("ImGuiFD", "https://github.com/Julianiolo/ImGuiFD", "Dear ImGui based File Dialog"),
+    ("stb_image", "https://github.com/Angluca/stb", "Image loading from single-file public domain (or MIT licensed) libraries for C/C++"),
 ]
 
 class AboutPanel: Panel {
