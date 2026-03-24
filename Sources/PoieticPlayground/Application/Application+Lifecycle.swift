@@ -108,15 +108,18 @@ extension Application {
     
     func draw() {
         mainMenu()
-        settingsPanel.draw()
-        inspector.draw()
-        toolBar.draw()
         canvas.draw()
-        alertPanel.draw()
+        inspector.draw()
+
+        settingsPanel.draw()
+        toolBar.draw()
+        aboutPanel.draw()
         issuesPanel.draw()
         controlBar.draw()
-        aboutPanel.draw()
         dashboard.draw(session: session)
+
+        filePicker.draw()
+        alertPanel.draw()
     }
     
     func processUnhandledInput() {

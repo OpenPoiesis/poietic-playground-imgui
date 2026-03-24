@@ -4,6 +4,7 @@
 //
 //  Created by Stefan Urbanek on 28/01/2026.
 //
+import Foundation
 import CIimgui
 
 struct KeyModifier: OptionSet {
@@ -54,14 +55,36 @@ extension Application {
                     handleAction("new")
                 }
                 if ImGui.MenuItem("Open", "Cmd+O") {
-                    self.alert(title: "Info", message: "Not yet")
+                    filePicker.open(mode: .open, filter: "*." + Application.DocumentFileExtension) { path in
+                        let url = URL(fileURLWithPath: path)
+                        let command = OpenDesignCommand(url: url)
+                        self.session?.queueCommand(command)
+                    }
                 }
                 
                 ImGui.Separator()
                 
                 if ImGui.MenuItem("Save", "Cmd+S") {
+                    // TODO: Move to Application.save(...)
+                    if let url = session?.designURL {
+                        let command = SaveDesignCommand(url: url)
+                        self.session?.queueCommand(command)
+                    }
+                    else {
+                        filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
+                            let url = URL(fileURLWithPath: path)
+                            let command = SaveDesignCommand(url: url)
+                            self.session?.queueCommand(command)
+                        }
+                    }
                 }
+                
                 if ImGui.MenuItem("Save As...", "Cmd+Shift+S") {
+                    filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
+                        let url = URL(fileURLWithPath: path)
+                        let command = SaveDesignCommand(url: url)
+                        self.session?.queueCommand(command)
+                    }
                 }
                 
                 ImGui.Separator()

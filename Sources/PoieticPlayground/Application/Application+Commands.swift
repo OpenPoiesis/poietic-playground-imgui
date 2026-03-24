@@ -54,17 +54,20 @@ extension Application {
         try! design.accept(frame) // We can force, because empty frame must be always valid.
         self.newSession(design)
     }
+    // TODO: Move to Session (document)
     func openDesign(url: URL) throws (DesignStoreError) {
         let store = DesignStore(url: url)
         let design = try store.load(metamodel: StockFlowMetamodel)
         self.newSession(design, designURL: url)
     }
     
+    // TODO: Move to Session (document)
     func saveDesign(url: URL) throws (DesignStoreError) {
         guard let session else { return }
         self.log("Saving design to: \(url.standardizedFileURL)")
         let store = DesignStore(url: url)
         try store.save(design: session.design)
+        session.designURL = url
     }
 
     func selectAll() {

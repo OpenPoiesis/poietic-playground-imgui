@@ -5,6 +5,7 @@
 //  Created by Stefan Urbanek on 28/01/2026.
 //
 import CIimgui
+import Foundation
 import PoieticCore
 
 struct ShortcutAction {
@@ -94,7 +95,31 @@ extension Application {
         case "quit": self.quitRequested = true
         // -- File --
         case "new": session?.queueCommand(NewDesignCommand())
-        case "save": session?.queueCommand(SaveDesignCommand())
+        case "open":
+            filePicker.open(mode: .open, filter: "*." + Application.DocumentFileExtension) { path in
+                let url = URL(fileURLWithPath: path)
+                let command = OpenDesignCommand(url: url)
+                self.session?.queueCommand(command)
+            }
+
+        case "save":
+            if let url = session?.designURL {
+                let command = SaveDesignCommand(url: url)
+                self.session?.queueCommand(command)
+            }
+            else {
+                filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
+                    let url = URL(fileURLWithPath: path)
+                    let command = SaveDesignCommand(url: url)
+                    self.session?.queueCommand(command)
+                }
+            }
+        case "save_as":
+            filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
+                let url = URL(fileURLWithPath: path)
+                let command = SaveDesignCommand(url: url)
+                self.session?.queueCommand(command)
+            }
 
         // -- Edit --
         case "undo": session?.queueCommand(UndoCommand())

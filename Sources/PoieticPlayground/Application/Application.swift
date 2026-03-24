@@ -32,6 +32,7 @@ class Application {
     
     // Dumping ground of globals (for now)
     //    static let NewDesignTemplatePath = "designs/new_canvas.json"
+    static let DocumentFileExtension = "poietic"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
     static let DefaultStockFlowPictogramsPath = "stock_flow_pictograms.json"
     static let MainWindowName = "Poietic Playground"
@@ -47,6 +48,7 @@ class Application {
     var player: ResultPlayer
 
     // -- Views and Controller-likes --
+    let filePicker: FilePickerPanel
     let inspector: InspectorPanel
     var alertPanel: AlertPanel
     let aboutPanel: AboutPanel
@@ -83,6 +85,7 @@ class Application {
         self.alertPanel = AlertPanel()
         self.aboutPanel = AboutPanel()
         self.dashboard = Dashboard()
+        self.filePicker = FilePickerPanel()
         
         self.canvasTools = [
             SelectionTool(),
