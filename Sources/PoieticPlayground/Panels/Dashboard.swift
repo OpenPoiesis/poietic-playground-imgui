@@ -9,6 +9,7 @@ import CIimgui
 import PoieticCore
 import PoieticFlows
 
+/// Makeshift dashboard.
 @MainActor
 class Dashboard {
     static let ChartSize = ImVec2(100, 80)
@@ -34,6 +35,10 @@ class Dashboard {
                                         ImGuiWindowFlags_NoResize
                                         | ImGuiWindowFlags_AlwaysAutoResize)
 
+        if chartViews.isEmpty {
+            // TODO: Have a nicer indicator/default size
+            ImGui.TextUnformatted("(empty)")
+        }
         for (index, view) in chartViews.enumerated() {
             ImGui.PushID(Int32(index))
             ImGui.BeginGroup()
@@ -46,20 +51,22 @@ class Dashboard {
         }
         // TODO: Context menu: delete, select targets, inspect
         
-        ImGui.BeginGroup()
         let canCreate = !(session?.selection.isEmpty ?? true)
-        if canCreate && ImGui.Button("Add", ImVec2()),
-           let session
-        {
-            // TODO: Add chart
-            print("ADD CHART")
-            let command = CreateChartCommand(
-                name: nil,
-                series: Array(session.selection.ids)
-            )
-            session.queueCommand(command)
+        if canCreate {
+            ImGui.BeginGroup()
+            if ImGui.Button("Add", ImVec2()),
+               let session
+            {
+                // TODO: Add chart
+                print("ADD CHART")
+                let command = CreateChartCommand(
+                    name: nil,
+                    series: Array(session.selection.ids)
+                )
+                session.queueCommand(command)
+            }
+            ImGui.EndGroup()
         }
-        ImGui.EndGroup()
         
         ImGui.End()
 
