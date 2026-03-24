@@ -38,8 +38,16 @@ class OpenDesignCommand: Command {
 class SaveDesignCommand: Command {
     var name: String { "save-design" }
     let url: URL?
-    init(url: URL? = nil) {
-        self.url = url
+    init(url: URL? = nil, appendExtensionIfNeeded: Bool = false) {
+        if appendExtensionIfNeeded,
+           let url,
+           url.pathExtension.isEmpty || url.pathExtension != Application.DocumentFileExtension
+        {
+            self.url = url.appendingPathExtension(Application.DocumentFileExtension)
+        }
+        else {
+            self.url = url
+        }
     }
     func run(_ context: CommandContext) throws (CommandError) {
         var targetURL = url ?? context.document.designURL

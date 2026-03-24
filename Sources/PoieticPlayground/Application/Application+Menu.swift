@@ -67,13 +67,13 @@ extension Application {
                 if ImGui.MenuItem("Save", "Cmd+S") {
                     // TODO: Move to Application.save(...)
                     if let url = document?.designURL {
-                        let command = SaveDesignCommand(url: url)
+                        let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                         self.document?.queueCommand(command)
                     }
                     else {
                         filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
                             let url = URL(fileURLWithPath: path)
-                            let command = SaveDesignCommand(url: url)
+                            let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                             self.document?.queueCommand(command)
                         }
                     }
@@ -82,7 +82,7 @@ extension Application {
                 if ImGui.MenuItem("Save As...", "Cmd+Shift+S") {
                     filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
                         let url = URL(fileURLWithPath: path)
-                        let command = SaveDesignCommand(url: url)
+                        let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                         self.document?.queueCommand(command)
                     }
                 }

@@ -104,20 +104,20 @@ extension Application {
 
         case "save":
             if let url = document?.designURL {
-                let command = SaveDesignCommand(url: url)
+                let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                 self.document?.queueCommand(command)
             }
             else {
                 filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
                     let url = URL(fileURLWithPath: path)
-                    let command = SaveDesignCommand(url: url)
+                    let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                     self.document?.queueCommand(command)
                 }
             }
         case "save_as":
             filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
                 let url = URL(fileURLWithPath: path)
-                let command = SaveDesignCommand(url: url)
+                let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                 self.document?.queueCommand(command)
             }
 
