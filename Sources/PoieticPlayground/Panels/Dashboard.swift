@@ -16,9 +16,9 @@ class Dashboard {
     var isVisible: Bool = true
     var chartViews: [ChartView] = []
     
-    func onDesignFrameChanged(_ session: Session) {
+    func onDesignFrameChanged(_ document: Document) {
         // TODO: Reload all charts
-        let world = session.world
+        let world = document.world
         print("Dashboard here")
         
         chartViews.removeAll()
@@ -28,7 +28,7 @@ class Dashboard {
         }
     }
     
-    func draw(session: Session?) {
+    func draw(document: Document?) {
         guard isVisible else { return }
         
         ImGui.Begin("Dashboard", &isVisible,
@@ -51,19 +51,19 @@ class Dashboard {
         }
         // TODO: Context menu: delete, select targets, inspect
         
-        let canCreate = !(session?.selection.isEmpty ?? true)
+        let canCreate = !(document?.selection.isEmpty ?? true)
         if canCreate {
             ImGui.BeginGroup()
             if ImGui.Button("Add", ImVec2()),
-               let session
+               let document
             {
                 // TODO: Add chart
                 print("ADD CHART")
                 let command = CreateChartCommand(
                     name: nil,
-                    series: Array(session.selection.ids)
+                    series: Array(document.selection.ids)
                 )
-                session.queueCommand(command)
+                document.queueCommand(command)
             }
             ImGui.EndGroup()
         }

@@ -12,7 +12,7 @@ import Diagramming
 @MainActor
 class InlineEditorManager {
     weak var canvas: DiagramCanvas?
-    weak var session: Session?
+    weak var document: Document?
     
     private var editors: [String:InlineEditor] = [:]
     private(set) var currentEditor: (InlineEditor)? = nil
@@ -22,8 +22,8 @@ class InlineEditorManager {
         self.editors[name] = editor
     }
     
-    func bind(session: Session, canvas: DiagramCanvas) {
-        self.session = session
+    func bind(document: Document, canvas: DiagramCanvas) {
+        self.document = document
         self.canvas = canvas
     }
     
@@ -33,12 +33,12 @@ class InlineEditorManager {
         close()
         
         guard let editor = editors[editorName],
-              let session = session,
-              let canvas = canvas
+              let document,
+              let canvas
         else { return }
         
         let rect = editor.preferredBox(for: entity)
-        editor.bind(canvas: canvas, session: session)
+        editor.bind(canvas: canvas, document: document)
         
         if editor.open(for: entity) {
             currentEditor = editor
@@ -65,10 +65,10 @@ class InlineEditorManager {
 @MainActor
 class InlineEditor {
     weak var canvas: DiagramCanvas?
-    weak var session: Session?
+    weak var document: Document?
 
-    final func bind(canvas: DiagramCanvas, session: Session) {
-        self.session = session
+    final func bind(canvas: DiagramCanvas, document: Document) {
+        self.document = document
         self.canvas = canvas
     }
 
@@ -92,7 +92,7 @@ extension InlineEditor {
 }
 
 //class FormulaInlineEditor: InlineEditor {
-//    func bind(_ session: Session) {}
+//    func bind(_ document: Session) {}
 //    func open(for objectID: ObjectID) -> Bool { false }
 //    func close() {}
 //    func draw() -> Bool { false }

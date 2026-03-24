@@ -43,9 +43,9 @@ class ChartInspectorSection: InspectorSection {
         self.chartView = FixedChartView()
     }
  
-    func onSelectionChanged(_ session: Session) {
-        let selection = session.selection
-        let world = session.world
+    func onSelectionChanged(_ document: Document) {
+        let selection = document.selection
+        let world = document.world
         let chart = Chart() // TODO: Use some default axis setup
         var series: [ChartSeries] =  []
         for objectID in selection {
@@ -63,9 +63,9 @@ class ChartInspectorSection: InspectorSection {
         // we need world and frame here
     }
 
-    func update(_ session: Session) { /* Nothing for now */ }
+    func update(_ document: Document) { /* Nothing for now */ }
 
-    func draw(_ session: Session) {
+    func draw(_ document: Document) {
         chartView.draw()
     }
 }

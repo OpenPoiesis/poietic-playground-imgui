@@ -41,7 +41,7 @@ class CanvasTool {
     
     /// Canvas the tool is bound to.
     ///
-    /// Tool is bound to a canvas together with a session using ``bind(canvas:session:)``.
+    /// Tool is bound to a canvas together with a document using ``bind(canvas:document:)``.
     ///
     /// Functions typically used:
     ///
@@ -53,7 +53,7 @@ class CanvasTool {
 
     /// Session the tool is bound to.
     ///
-    /// Tool is bound to a session together with a canvas using ``bind(canvas:session:)``.
+    /// Tool is bound to a document together with a canvas using ``bind(canvas:document:)``.
     ///
     /// Session properties and functions typically used by a tool:
     ///
@@ -61,11 +61,11 @@ class CanvasTool {
     /// - ``Session/createOrReuseTransaction()``
     /// - ``Session/requiresInteractivePreviewUpdate``
     ///
-    weak var session: Session?
+    weak var document: Document?
 
     internal var world: World {
-        guard let session else { fatalError("CanvasTool used before binding")}
-        return session.world
+        guard let document else { fatalError("CanvasTool used before binding")}
+        return document.world
     }
     
     var hasObjectPalette: Bool { false }
@@ -73,8 +73,8 @@ class CanvasTool {
     var iconKey: IconKey { .empty }
     
     /// Called before tool activation.
-    final func bind(canvas: DiagramCanvas, session: Session) {
-        self.session = session
+    final func bind(canvas: DiagramCanvas, document: Document) {
+        self.document = document
         self.canvas = canvas
     }
 

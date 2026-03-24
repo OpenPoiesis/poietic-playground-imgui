@@ -19,7 +19,7 @@ import Diagramming
 /// - Selection state
 /// - Observer/event system
 ///
-class Session {
+class Document {
     enum Event {
         /// Triggered on each ``Session/changeSelection(_:)``.
         case selectionChanged
@@ -38,7 +38,7 @@ class Session {
 //        case simulationPlayerStopped
     }
 
-    typealias EventObserver = ((Session) -> Void)
+    typealias EventObserver = ((Document) -> Void)
 
     var observers: [Event:[EventObserver]]
     
@@ -121,7 +121,7 @@ class Session {
 
 
 // TODO: Use shared application logger
-extension Session {
+extension Document {
     func log(_ message: String) {
         print("INFO: ", message)
     }
@@ -131,7 +131,7 @@ extension Session {
 }
 
 // FIXME: Make a proper alert mechanism. This is a quick hack to silence the compiler after refactoring.
-extension Session {
+extension Document {
     func queueAlert(title: String, message: String) {
         Task { @MainActor in
             await Application.shared.queueAlert(title: title, message: message)

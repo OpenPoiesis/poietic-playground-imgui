@@ -42,7 +42,7 @@ class SaveDesignCommand: Command {
         self.url = url
     }
     func run(_ context: CommandContext) throws (CommandError) {
-        var targetURL = url ?? context.session.designURL
+        var targetURL = url ?? context.document.designURL
         if targetURL == nil {
             // TODO: Open save panel
                         targetURL = URL(fileURLWithPath: DefaultDesignPath)

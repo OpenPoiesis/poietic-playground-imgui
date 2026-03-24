@@ -27,8 +27,8 @@ class FormulaInspectorSection: InspectorSection {
         formulaBuffer = "0"
     }
 
-    func onSelectionChanged(_ session: Session) {
-        let overview = session.selectionOverview
+    func onSelectionChanged(_ document: Document) {
+        let overview = document.selectionOverview
         let distinctValues = overview.distinctValues["formula", default: []]
         
         if distinctValues.count == 0 {
@@ -43,20 +43,20 @@ class FormulaInspectorSection: InspectorSection {
         }
     }
 
-    func update(_ session: Session) { /* Nothing for now */ }
+    func update(_ document: Document) { /* Nothing for now */ }
 
-    func draw(_ session: Session) {
+    func draw(_ document: Document) {
 //        ImGui.SeparatorText("Formula")
 
         ImGui.InputText("Formula", buffer: formulaBuffer)
         if ImGui.IsItemDeactivatedAfterEdit() {
-            acceptChange(session)
+            acceptChange(document)
         }
     }
     
-    func acceptChange(_ session: Session) {
-        let trans = session.createOrReuseTransaction()
-        for id in session.selection {
+    func acceptChange(_ document: Document) {
+        let trans = document.createOrReuseTransaction()
+        for id in document.selection {
             guard trans.contains(id) else { continue }
             let mutable = trans.mutate(id)
             mutable.setAttribute(value: Variant(formulaBuffer.string), forKey: "formula")

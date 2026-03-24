@@ -42,7 +42,7 @@ class NumericValueInlineEditor: InlineEditor {
         self.currentEntity = entity
         self.currentObjectID = object.objectID
         self.grabFocus = true
-        self.session = session
+        self.document = document
         
         self.worldPosition = block.labelAnchorPosition
         
@@ -130,11 +130,11 @@ class NumericValueInlineEditor: InlineEditor {
 
     func accept() {
         guard value != initialValue,
-              let session,
+              let document,
               let currentObjectID
         else { return }
         
-        let trans = session.createOrReuseTransaction()
+        let trans = document.createOrReuseTransaction()
         guard trans.contains(currentObjectID) else { return }
         
         let object = trans.mutate(currentObjectID)

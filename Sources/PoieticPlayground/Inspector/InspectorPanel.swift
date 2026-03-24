@@ -57,17 +57,17 @@ protocol InspectorSection: ApplicationObject {
     /// selection overview can be computed.
     var inspectedAttributes: [String] { get }
 
-    func onSelectionChanged(_ session: Session)
-    func onSimulationFinished(_ session: Session)
+    func onSelectionChanged(_ document: Document)
+    func onSimulationFinished(_ document: Document)
     
-    func update(_ session: Session)
-    func draw(_ session: Session)
+    func update(_ document: Document)
+    func draw(_ document: Document)
 }
 
 extension InspectorSection {
     func shouldDisplay(overview: SelectionOverview) -> Bool { true }
     func update(_ timeDelta: Double) { /* Do nothing */ }
-    func onSimulationFinished(_ session: Session) { /* Do nothing */ }
+    func onSimulationFinished(_ document: Document) { /* Do nothing */ }
 }
 
 class InspectorPanel: Panel {
@@ -76,18 +76,18 @@ class InspectorPanel: Panel {
         case properties
     }
     
-    weak var session: Session?
+    weak var document: Document?
     internal var world: World {
-        guard let session else { fatalError("InspectorPanel used before binding")}
-        return session.world
+        guard let document else { fatalError("InspectorPanel used before binding")}
+        return document.world
     }
     var selection: Selection {
-        guard let session else { fatalError("InspectorPanel used before binding")}
-        return session.selection
+        guard let document else { fatalError("InspectorPanel used before binding")}
+        return document.selection
     }
     var overview: SelectionOverview {
-        guard let session else { fatalError("InspectorPanel used before binding")}
-        return session.selectionOverview
+        guard let document else { fatalError("InspectorPanel used before binding")}
+        return document.selectionOverview
     }
 
     var isVisible: Bool = true
@@ -112,17 +112,17 @@ class InspectorPanel: Panel {
         designSections.append(SimulationInspectorSection())
     }
     
-    func bind(_ session: Session) {
-        self.session = session
+    func bind(_ document: Document) {
+        self.document = document
     }
     
-    func onSelectionChanged(_ session: Session) {
-        guard session.selectionOverview.containedCount > 0 else {
-            inspectDesign(session)
+    func onSelectionChanged(_ document: Document) {
+        guard document.selectionOverview.containedCount > 0 else {
+            inspectDesign(document)
             return
         }
         print("Inspector: Selection changed")
-        let overview = session.selectionOverview
+        let overview = document.selectionOverview
         var attributes: Set<String> = []
         
         activeSections.removeAll()
@@ -134,45 +134,45 @@ class InspectorPanel: Panel {
             activeSections.append(section)
         }
 
-        if let frame = session.world.frame {
+        if let frame = document.world.frame {
             for attribute in attributes {
                 overview.updateAttribute(attribute, selection: selection, frame: frame)
             }
         }
         
         for section in activeSections {
-            section.onSelectionChanged(session)
+            section.onSelectionChanged(document)
         }
     }
     
-    func onSimulationFinished(_ session: Session) {
+    func onSimulationFinished(_ document: Document) {
         for section in activeSections {
-            section.onSimulationFinished(session)
+            section.onSimulationFinished(document)
         }
     }
     
-    func inspectDesign(_ session: Session) {
+    func inspectDesign(_ document: Document) {
         activeSections.removeAll()
         activeSections += self.designSections
         
         for section in activeSections {
             guard let section = section as? DesignInspectorSection else { continue }
-            section.inspectDesign(session)
+            section.inspectDesign(document)
         }
     }
 
     func update(_ timeDelta: Double) {
-        guard let session else { return }
+        guard let document else { return }
         for section in activeSections {
-            section.update(session)
+            section.update(document)
         }
     }
     
     func draw() {
-        guard isVisible, let session else { return }
+        guard isVisible, let document else { return }
         ImGui.Begin("Inspector")
         
-        drawTitle(session)
+        drawTitle(document)
 
         let tabBarFlags = ImGuiTabBarFlags_None
 
@@ -188,7 +188,7 @@ class InspectorPanel: Panel {
 //            let overviewFlags = self.currentCategory == .overview ? selectedFlags : emptyFlags
             if ImGui.BeginTabItem("Overview", nil, overviewFlags) {
                 self.currentTab = .overview
-                drawOverviewTab(session)
+                drawOverviewTab(document)
                 ImGui.EndTabItem()
             }
 
@@ -200,7 +200,7 @@ class InspectorPanel: Panel {
             }
             if ImGui.BeginTabItem("Properties", nil, propertiesFlags) {
                 self.currentTab = .properties
-                drawPropertiesTab(session)
+                drawPropertiesTab(document)
                 ImGui.EndTabItem()
             }
             ImGui.EndTabBar()
@@ -211,14 +211,14 @@ class InspectorPanel: Panel {
         ImGui.End()
     }
     
-    func drawTitle(_ session: Session) {
-        let overview = session.selectionOverview
+    func drawTitle(_ document: Document) {
+        let overview = document.selectionOverview
         let style = ImGui.GetStyle().pointee
         let titleFontSize = style.FontSizeBase * 1.5
         let title: String
         let typeName: String
         
-        if session.selectionOverview.containedCount > 0 {
+        if document.selectionOverview.containedCount > 0 {
             if overview.distinctTypes.count == 0 {
                 typeName = "–"
             }
@@ -246,7 +246,7 @@ class InspectorPanel: Panel {
         }
         else {
             title = "Design"
-            typeName = session.design.metamodel.name ?? ""
+            typeName = document.design.metamodel.name ?? ""
         }
         
         
@@ -258,14 +258,14 @@ class InspectorPanel: Panel {
         ImGui.TextUnformatted(typeName)
     }
     
-    func drawOverviewTab(_ session: Session) {
+    func drawOverviewTab(_ document: Document) {
         for section in activeSections where section.category == .overview {
-            section.draw(session)
+            section.draw(document)
         }
     }
-    func drawPropertiesTab(_ session: Session) {
+    func drawPropertiesTab(_ document: Document) {
         for section in activeSections where section.category == .properties {
-            section.draw(session)
+            section.draw(document)
         }
     }
 }

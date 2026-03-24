@@ -22,8 +22,8 @@ class PlacementTool: CanvasTool {
     var intentShadow: RuntimeEntity? = nil
     
     override func activate() {
-        guard let session,
-              let notation: Notation = session.world.singleton()
+        guard let document,
+              let notation: Notation = document.world.singleton()
         else { return }
         
         var items: [PaletteItem] = []
@@ -47,22 +47,22 @@ class PlacementTool: CanvasTool {
     }
     
     func placeableBlockTypes() -> [ObjectType] {
-        guard let session
+        guard let document
         else {
             return []
         }
-        let types = session.design.metamodel.types.filter {
+        let types = document.design.metamodel.types.filter {
             $0.hasTrait(.DiagramBlock)
         }
         return types
     }
     
     func createIntentShadow(position: Vector2D, typeName: String) {
-        guard let session,
+        guard let document,
               let notation: Notation = world.singleton(),
-              let type = session.design.metamodel.objectType(name: typeName)
+              let type = document.design.metamodel.objectType(name: typeName)
         else { return }
-        let world = session.world
+        let world = document.world
         let pictogram = notation.pictogram(type.name)
 
         if intentShadow != nil {
@@ -74,7 +74,7 @@ class PlacementTool: CanvasTool {
     
     func removeIntentShadow() {
         guard let intentShadow else { return }
-        session?.world.despawn(intentShadow)
+        document?.world.despawn(intentShadow)
         self.intentShadow = nil
     }
     
@@ -117,7 +117,7 @@ class PlacementTool: CanvasTool {
         return .pass
     }
     func pointerUp(_ event: ToolEvent)  -> EngagementResult {
-        guard let session,
+        guard let document,
               let canvas,
               let intentShadow,
               let shadow: BlockIntent = intentShadow.component()
@@ -126,16 +126,16 @@ class PlacementTool: CanvasTool {
 
         print("Placing \(shadow.type.name) at \(worldPos)")
         if let objectID = placeObject(type: shadow.type, at: worldPos) {
-            session.queueCommand(SwitchToolCommand("selection"))
-            session.changeSelection(.replaceAllWithOne(objectID))
+            document.queueCommand(SwitchToolCommand("selection"))
+            document.changeSelection(.replaceAllWithOne(objectID))
         }
         return .consumed
     }
     
     func placeObject(type: ObjectType, at position: Vector2D) -> ObjectID? {
-        guard let session else { return nil }
+        guard let document else { return nil }
         
-        let trans = session.createOrReuseTransaction()
+        let trans = document.createOrReuseTransaction()
         
         let count = trans.filter(type: type).count
         let name = type.name.toSnakeCase() + String(count)

@@ -43,10 +43,10 @@ class DiagramCanvas: View {
     var mainOverlay: Overlay
     var indicatorOverlay: Overlay
 
-    weak var session: Session?
+    weak var document: Document?
     internal var world: World {
-        guard let session else { fatalError("DiagramCanvas used before binding")}
-        return session.world
+        guard let document else { fatalError("DiagramCanvas used before binding")}
+        return document.world
     }
     var style: CanvasStyle
     
@@ -80,8 +80,8 @@ class DiagramCanvas: View {
     var gridSize: Double = 50.0
     var showGrid = true
 
-    init(session: Session? = nil) {
-        self.session = session
+    init(document: Document? = nil) {
+        self.document = document
         self.style = CanvasStyle()
 
         self.overlays = OverlayStack()
@@ -102,27 +102,27 @@ class DiagramCanvas: View {
                                     editor: NumericValueInlineEditor(attribute: "window_time", iconKey: .timeWindow))
     }
     
-    func onSelectionChanged(_ session: Session) {
+    func onSelectionChanged(_ document: Document) {
         // TODO: Make only selection overlay dirty (once we have selection overlays)
         overlays.setAllNeedsRender()
     }
 
-    func onDesignFrameChanged(_ session: Session) {
+    func onDesignFrameChanged(_ document: Document) {
         overlays.setAllNeedsRender()
     }
 
-    func onInteractivePreviewChanged(_ session: Session) {
+    func onInteractivePreviewChanged(_ document: Document) {
         // TODO: Make only preview overlay dirty (once we have selection overlays)
         overlays.setAllNeedsRender()
     }
     
-    func onSimulationPlayerStep(_ session: Session) {
+    func onSimulationPlayerStep(_ document: Document) {
         indicatorOverlay.setNeedsRender()
     }
 
-    func bind(_ session: Session) {
-        self.session = session
-        self.editorManager.bind(session: session, canvas: self)
+    func bind(_ document: Document) {
+        self.document = document
+        self.editorManager.bind(document: document, canvas: self)
     }
     
     /// Convert screen coordinates to world coordinates
@@ -340,18 +340,18 @@ class DiagramCanvas: View {
     
     // MARK: - Inline Editors
     func openInlineEditorForSelection(_ editorName: String) {
-        guard let session,
-              let objectID = session.selection.selectionOfOne(),
-              let entity = session.world.entity(objectID)
+        guard let document,
+              let objectID = document.selection.selectionOfOne(),
+              let entity = document.world.entity(objectID)
         else { return }
         
         self.editorManager.openEditor(editorName, for: entity)
     }
 
     func openSecondaryInlineEditorForSelection() {
-        guard let session,
-              let objectID = session.selection.selectionOfOne(),
-              let entity = session.world.entity(objectID),
+        guard let document,
+              let objectID = document.selection.selectionOfOne(),
+              let entity = document.world.entity(objectID),
               let object = entity.designObject
         else { return }
        

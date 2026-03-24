@@ -50,7 +50,7 @@ class SelectionTool: CanvasTool {
     
     func pointerDown(_ event: ToolEvent) -> EngagementResult {
         guard let canvas,
-              let session,
+              let document,
               event.triggerButton == .left
         else { return .pass }
         dragStartScreenPos = event.screenPos
@@ -58,11 +58,11 @@ class SelectionTool: CanvasTool {
         // TODO: Close inline popup
         
         let target = canvas.hitTarget(screenPosition: event.screenPos)
-        let selection = session.selection
+        let selection = document.selection
 
         switch target {
         case .none:
-            session.changeSelection(.removeAll)
+            document.changeSelection(.removeAll)
             state = .objectSelect
             self.removeHandles()
             return .consumed
@@ -72,7 +72,7 @@ class SelectionTool: CanvasTool {
             else { return .consumed } // Not a design object
             
             if event.modifiers.contains(.shift) {
-                session.changeSelection(.toggle(objectID))
+                document.changeSelection(.toggle(objectID))
             }
             else {
                 if selection.contains(objectID) {
@@ -80,7 +80,7 @@ class SelectionTool: CanvasTool {
                     print("TODO: open popup for \(selection.ids) not implemented")
                 }
                 else {
-                    session.changeSelection(.replaceAllWithOne(objectID))
+                    document.changeSelection(.replaceAllWithOne(objectID))
                 }
             }
             self.removeHandles()
@@ -94,7 +94,7 @@ class SelectionTool: CanvasTool {
             self.removeHandles()
             state = .idle
             guard let objectID = world.entityToObject(runtimeID) else { break }
-            self.session?.queueCommand(OpenIssuesCommand(objectID))
+            self.document?.queueCommand(OpenIssuesCommand(objectID))
         case .object(let runtimeID, let part):
             self.removeHandles()
             state = .objectPartHit(runtimeID, part)
@@ -156,7 +156,7 @@ class SelectionTool: CanvasTool {
         }
         // TODO: Mouse cursors
         guard let canvas,
-              let session
+              let document
         else { return .pass }
 
 //        Input.setDefaultCursorShape(.arrow)
@@ -165,10 +165,10 @@ class SelectionTool: CanvasTool {
 
         switch state {
         case .objectMove:
-            finalizeSelectionMove(session.selection, by: worldDelta)
+            finalizeSelectionMove(document.selection, by: worldDelta)
 
         case .handleMove(let handleID):
-            guard let handle = session.world.entity(handleID) else { break }
+            guard let handle = document.world.entity(handleID) else { break }
             let worldPosition: Vector2D = canvas.screenToWorld(event.screenPos)
             finalizeHandleMove(handle, finalPosition: worldPosition, totalDelta: worldDelta)
             state = .handleMove(handleID)
@@ -211,10 +211,10 @@ class SelectionTool: CanvasTool {
     
     func previewSelectionMove(screenDelta: ImVec2) {
         guard let canvas,
-              let session,
-              let frame = session.world.frame
+              let document,
+              let frame = document.world.frame
         else { return }
-        let selection = session.selection
+        let selection = document.selection
 
         var dependentEdges: Set<PoieticCore.ObjectID> = Set()
         let worldDelta = Vector2D(screenDelta) / canvas.zoomLevel
@@ -247,14 +247,14 @@ class SelectionTool: CanvasTool {
         for id in dependentEdges {
             // FIXME: Implement this
         }
-        session.requiresInteractivePreviewUpdate = true
+        document.requiresInteractivePreviewUpdate = true
     }
     
     func finalizeSelectionMove(_ selection: Selection, by designDelta: Vector2D) {
-        guard let session
+        guard let document
         else { return }
 
-        let trans = session.createOrReuseTransaction()
+        let trans = document.createOrReuseTransaction()
 
         for id in selection {
             guard trans.contains(id) else { continue }
@@ -262,7 +262,7 @@ class SelectionTool: CanvasTool {
             moveObject(object, by: designDelta)
         }
         cleanUp()
-        session.requiresInteractivePreviewUpdate = false
+        document.requiresInteractivePreviewUpdate = false
     }
 
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {
@@ -282,7 +282,7 @@ class SelectionTool: CanvasTool {
 
     // MARK: - Handle Drag
     func createHandles(for runtimeID: RuntimeID) {
-        guard let world = session?.world,
+        guard let world = document?.world,
               let entity = world.entity(runtimeID)
         else { return }
         
@@ -326,9 +326,9 @@ class SelectionTool: CanvasTool {
     }
     
     func dragHandle(_ handleRuntimeID: RuntimeID, screenDelta: ImVec2) {
-        guard let session,
+        guard let document,
               let canvas,
-              let handle = session.world.entity(handleRuntimeID),
+              let handle = document.world.entity(handleRuntimeID),
               var component: CanvasHandle = handle.component()
         else { return }
         let worldDelta = Vector2D(screenDelta) / canvas.zoomLevel
@@ -337,11 +337,11 @@ class SelectionTool: CanvasTool {
         
         switch component.kind {
         case .midpoint(let index):
-            guard let owner = session.world.entity(component.owner) else { break }
+            guard let owner = document.world.entity(component.owner) else { break }
             dragMidpointHandle(owner, index: index, currentPosition: component.position, currentDelta: worldDelta)
         }
         
-        session.requiresInteractivePreviewUpdate = true
+        document.requiresInteractivePreviewUpdate = true
     }
     
     /// Reflect handle position to connector preview.
@@ -373,24 +373,24 @@ class SelectionTool: CanvasTool {
     ///     - handleRuntimeID:
     
     func finalizeHandleMove(_ handle: RuntimeEntity, finalPosition: Vector2D, totalDelta: Vector2D) {
-        guard let session,
+        guard let document,
               let component: CanvasHandle = handle.component()
         else { return }
 
         switch component.kind {
         case .midpoint(let index):
-            guard let owner = session.world.entity(component.owner) else { break }
+            guard let owner = document.world.entity(component.owner) else { break }
             finalizeMidpointMove(owner: owner, index: index, finalPosition: finalPosition)
         }
-        session.requiresInteractivePreviewUpdate = true
+        document.requiresInteractivePreviewUpdate = true
     }
 
     func finalizeMidpointMove(owner: RuntimeEntity, index: Int, finalPosition: Vector2D) {
-        guard let session,
+        guard let document,
               let objectID = owner.objectID
         else { return }
         
-        let trans = session.createOrReuseTransaction()
+        let trans = document.createOrReuseTransaction()
         guard trans.contains(objectID) else { return }
         
         let object = trans.mutate(objectID)

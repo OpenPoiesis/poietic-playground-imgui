@@ -10,14 +10,14 @@ import PoieticCore
 
 class IssuesPanel: Panel {
     var isVisible: Bool = true
-    var session: Session?
+    var document: Document?
 //    var expandedObjects: Set<ObjectID> = []
 
     var selectedObject: ObjectSnapshot? = nil
     var selectedIssueIndex: Int? = nil
 
-    func bind(_ session: Session) {
-        self.session = session
+    func bind(_ document: Document) {
+        self.document = document
     }
 
     func update(_ timeDelta: Double) {
@@ -43,7 +43,7 @@ class IssuesPanel: Panel {
 //            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags_None | ImGuiTableColumnFlags_WidthFixed)
 //            ImGui.TableHeadersRow()
 
-            if let issues = session?.world.issues {
+            if let issues = document?.world.issues {
                 drawIssues(issues)
             }
             else {
@@ -56,7 +56,7 @@ class IssuesPanel: Panel {
         }
         
         // Hints for selected issue (if any)
-        if let issues = session?.world.issues,
+        if let issues = document?.world.issues,
            let selectedObject,
            let selectedIssueIndex,
            let objectIssues = issues[selectedObject.objectID],
@@ -69,7 +69,7 @@ class IssuesPanel: Panel {
         ImGui.End()
     }
     func drawIssues(_ issues: [ObjectID: [Issue]]) {
-        guard let frame = session?.world.frame else { return }
+        guard let frame = document?.world.frame else { return }
         for (objectID, objectIssues) in issues {
             guard let object = frame[objectID] else { continue }
             drawObjectNode(object, issues: objectIssues)
@@ -103,9 +103,9 @@ class IssuesPanel: Panel {
                     // Update selection
                     selectedObject = object
                     selectedIssueIndex = i
-                    if let session {
-                        session.changeSelection(.replaceAllWithOne(object.objectID))
-                        session.queueCommand(CenterCanvasOnObjectCommand(object.objectID))
+                    if let document {
+                        document.changeSelection(.replaceAllWithOne(object.objectID))
+                        document.queueCommand(CenterCanvasOnObjectCommand(object.objectID))
                     }
                 }
 //                ImGui.TableNextColumn()

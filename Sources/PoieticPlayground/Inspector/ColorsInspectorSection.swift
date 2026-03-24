@@ -24,8 +24,8 @@ class ColorInspectorSection: InspectorSection {
 
     var selectedColorKey: AdaptableColorKey? = nil
     
-    func onSelectionChanged(_ session: Session) {
-        let overview = session.selectionOverview
+    func onSelectionChanged(_ document: Document) {
+        let overview = document.selectionOverview
 
         let values = overview.distinctValues["color"] ?? []
         
@@ -45,9 +45,9 @@ class ColorInspectorSection: InspectorSection {
         }
     }
 
-    func update(_ session: Session) { /* Nothing for now */ }
+    func update(_ document: Document) { /* Nothing for now */ }
 
-    func draw(_ session: Session) {
+    func draw(_ document: Document) {
         let tableFlags = ImGuiTableFlags_SizingFixedFit |
         ImGuiTableFlags_NoPadInnerX |
         ImGuiTableFlags_NoPadOuterX
@@ -90,14 +90,14 @@ class ColorInspectorSection: InspectorSection {
         
         if newColorKey != selectedColorKey {
             selectedColorKey = newColorKey
-            acceptChange(session)
+            acceptChange(document)
         }
 
     }
     
-    func acceptChange(_ session: Session) {
-        let trans = session.createOrReuseTransaction()
-        for id in session.selection {
+    func acceptChange(_ document: Document) {
+        let trans = document.createOrReuseTransaction()
+        for id in document.selection {
             guard trans.contains(id) else { continue }
             let mutable = trans.mutate(id)
             if let colorName = selectedColorKey?.rawValue {

@@ -58,7 +58,7 @@ extension Application {
                     filePicker.open(mode: .open, filter: "*." + Application.DocumentFileExtension) { path in
                         let url = URL(fileURLWithPath: path)
                         let command = OpenDesignCommand(url: url)
-                        self.session?.queueCommand(command)
+                        self.document?.queueCommand(command)
                     }
                 }
                 
@@ -66,15 +66,15 @@ extension Application {
                 
                 if ImGui.MenuItem("Save", "Cmd+S") {
                     // TODO: Move to Application.save(...)
-                    if let url = session?.designURL {
+                    if let url = document?.designURL {
                         let command = SaveDesignCommand(url: url)
-                        self.session?.queueCommand(command)
+                        self.document?.queueCommand(command)
                     }
                     else {
                         filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
                             let url = URL(fileURLWithPath: path)
                             let command = SaveDesignCommand(url: url)
-                            self.session?.queueCommand(command)
+                            self.document?.queueCommand(command)
                         }
                     }
                 }
@@ -83,7 +83,7 @@ extension Application {
                     filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
                         let url = URL(fileURLWithPath: path)
                         let command = SaveDesignCommand(url: url)
-                        self.session?.queueCommand(command)
+                        self.document?.queueCommand(command)
                     }
                 }
                 
@@ -167,8 +167,8 @@ extension Application {
         }
     }
     
-    func canUndo() -> Bool { session?.design.canUndo ?? false }
-    func canRedo() -> Bool { session?.design.canRedo ?? false }
-    func hasSelection() -> Bool { (session?.selection).map { !$0.isEmpty } ?? false }
+    func canUndo() -> Bool { document?.design.canUndo ?? false }
+    func canRedo() -> Bool { document?.design.canRedo ?? false }
+    func hasSelection() -> Bool { (document?.selection).map { !$0.isEmpty } ?? false }
 
 }

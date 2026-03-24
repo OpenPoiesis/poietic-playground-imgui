@@ -26,10 +26,10 @@ struct CommandError: Error {
 
 struct CommandContext {
     let app: Application
-    let session: Session
+    let document: Document
     
-    var design: Design { session.design }
-    var world: World { session.world }
+    var design: Design { document.design }
+    var world: World { document.world }
 }
 
 /// Protocol for application commands.
@@ -37,7 +37,7 @@ struct CommandContext {
 /// Commands are representations of user actions.
 ///
 /// For typical command execution the commands queued in the application
-/// session ``Application/session`` through ``Session/queueCommand(_:)``.  They are run
+/// document ``Application/document`` through ``Session/queueCommand(_:)``.  They are run
 /// at the end of the application main loop after all updates using the ``Application/runCommand(_:)`.
 ///
 /// Commands can use and append a transaction ``Session/transaction``. The transaction,
