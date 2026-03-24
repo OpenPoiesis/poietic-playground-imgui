@@ -32,7 +32,6 @@ class Application {
     
     // Dumping ground of globals (for now)
     //    static let NewDesignTemplatePath = "designs/new_canvas.json"
-    static let DocumentFileExtension = "poietic"
     static let NewDesignTemplatePath = "designs/design-capital.poietic"
     static let DefaultStockFlowPictogramsPath = "stock_flow_pictograms.json"
     static let MainWindowName = "Poietic Playground"

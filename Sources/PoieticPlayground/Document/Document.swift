@@ -20,6 +20,8 @@ import Diagramming
 /// - Observer/event system
 ///
 class Document {
+    static let FileExtension = "poietic"
+    
     enum Event {
         /// Triggered on each ``Session/changeSelection(_:)``.
         case selectionChanged

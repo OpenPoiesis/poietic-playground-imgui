@@ -55,7 +55,7 @@ extension Application {
                     handleAction("new")
                 }
                 if ImGui.MenuItem("Open", "Cmd+O") {
-                    filePicker.open(mode: .open, filter: "*." + Application.DocumentFileExtension) { path in
+                    filePicker.open(mode: .open, filter: "*." + Document.FileExtension) { path in
                         let url = URL(fileURLWithPath: path)
                         let command = OpenDesignCommand(url: url)
                         self.document?.queueCommand(command)
@@ -71,7 +71,7 @@ extension Application {
                         self.document?.queueCommand(command)
                     }
                     else {
-                        filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
+                        filePicker.open(mode: .save, filter: "*." + Document.FileExtension) { path in
                             let url = URL(fileURLWithPath: path)
                             let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                             self.document?.queueCommand(command)
@@ -80,7 +80,7 @@ extension Application {
                 }
                 
                 if ImGui.MenuItem("Save As...", "Cmd+Shift+S") {
-                    filePicker.open(mode: .save, filter: "*." + Application.DocumentFileExtension) { path in
+                    filePicker.open(mode: .save, filter: "*." + Document.FileExtension) { path in
                         let url = URL(fileURLWithPath: path)
                         let command = SaveDesignCommand(url: url, appendExtensionIfNeeded: true)
                         self.document?.queueCommand(command)

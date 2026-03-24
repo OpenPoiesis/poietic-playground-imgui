@@ -41,9 +41,9 @@ class SaveDesignCommand: Command {
     init(url: URL? = nil, appendExtensionIfNeeded: Bool = false) {
         if appendExtensionIfNeeded,
            let url,
-           url.pathExtension.isEmpty || url.pathExtension != Application.DocumentFileExtension
+           url.pathExtension.isEmpty || url.pathExtension != Document.FileExtension
         {
-            self.url = url.appendingPathExtension(Application.DocumentFileExtension)
+            self.url = url.appendingPathExtension(Document.FileExtension)
         }
         else {
             self.url = url
