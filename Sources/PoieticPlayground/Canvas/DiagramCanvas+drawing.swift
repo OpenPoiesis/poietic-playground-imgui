@@ -63,7 +63,6 @@ extension DiagramCanvas {
         drawGrid(context)
         drawBlocks(context)
         drawConnectors(context)
-        drawIntents(context)
         drawHandles(context)
     }
     func drawIndicatorOverlay(_ context: DrawingContext) {
@@ -75,6 +74,10 @@ extension DiagramCanvas {
         }
     }
     
+    func drawPreviewOverlay(_ context: DrawingContext) {
+        drawIntents(context)
+    }
+
     func drawHandles(_ context: DrawingContext) {
         context.save()
         let radius = Self.HandleSize / 2

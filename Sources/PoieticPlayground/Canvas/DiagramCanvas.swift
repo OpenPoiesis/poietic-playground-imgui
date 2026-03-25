@@ -41,6 +41,7 @@ class DiagramCanvas: View {
     // TODO: Not fully implemented, only one overlay at the moment
     var overlays: OverlayStack
     var mainOverlay: Overlay
+    var previewOverlay: Overlay
     var indicatorOverlay: Overlay
 
     weak var document: Document?
@@ -88,7 +89,8 @@ class DiagramCanvas: View {
         
         self.mainOverlay = Overlay(name: "main")
         self.overlays.add(self.mainOverlay)
-
+        self.previewOverlay = Overlay(name: "preview")
+        self.overlays.add(self.previewOverlay)
         self.indicatorOverlay = Overlay(name: "indicator")
         self.overlays.add(self.indicatorOverlay)
         
@@ -112,8 +114,7 @@ class DiagramCanvas: View {
     }
 
     func onInteractivePreviewChanged(_ document: Document) {
-        // TODO: Make only preview overlay dirty (once we have selection overlays)
-        overlays.setAllNeedsRender()
+        previewOverlay.setNeedsRender()
     }
     
     func onSimulationPlayerStep(_ document: Document) {
@@ -208,14 +209,18 @@ class DiagramCanvas: View {
     }
     
     func drawOverlays() {
+        // TODO: Handle exceptions
         if mainOverlay.needsRender {
-            // TODO: Handle exception
             try! mainOverlay.render { context in
                 drawMainOverlay(context)
             }
         }
+        if previewOverlay.needsRender {
+            try! previewOverlay.render { context in
+                drawPreviewOverlay(context)
+            }
+        }
         if indicatorOverlay.needsRender {
-            // TODO: Handle exception
             try! indicatorOverlay.render { context in
                 drawIndicatorOverlay(context)
             }
