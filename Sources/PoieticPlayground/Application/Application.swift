@@ -52,7 +52,7 @@ class Application {
     var alertPanel: AlertPanel
     let aboutPanel: AboutPanel
     let settingsPanel: SettingsPanel
-    
+    let keyboardShortcutsPanel: KeyboardShortcutsPanel
     let issuesPanel: IssuesPanel
     
     var canvasTools: [CanvasTool]
@@ -85,6 +85,7 @@ class Application {
         self.aboutPanel = AboutPanel()
         self.dashboard = Dashboard()
         self.filePicker = FilePickerPanel()
+        self.keyboardShortcutsPanel = KeyboardShortcutsPanel()
         
         self.canvasTools = [
             SelectionTool(),

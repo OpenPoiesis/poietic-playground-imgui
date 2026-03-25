@@ -16,7 +16,7 @@ let AcknowledgementList: [(String, String, String)] = [
     ("SDL", "https://libsdl.org", "Simple DirectMedia Layer, a cross-platform development library"),
     ("Cairo", "https://cairographics.org", "2D graphics library"),
     ("ImGuiFD", "https://github.com/Julianiolo/ImGuiFD", "Dear ImGui based File Dialog"),
-    ("stb_image", "https://github.com/Angluca/stb", "Image loading from single-file public domain (or MIT licensed) libraries for C/C++"),
+    ("stb_image", "https://github.com/Angluca/stb", "Image loading – from single-file public domain (or MIT licensed) libraries for C/C++"),
 ]
 
 class AboutPanel: Panel {
@@ -54,6 +54,7 @@ class AboutPanel: Panel {
         ImGui.Separator()
         drawAcknowledgements()
 
+        ImGui.Separator()
         if (ImGui.Button("Dismiss", ImVec2(0, 0))) {
             self.isVisible = false
         }
@@ -62,7 +63,7 @@ class AboutPanel: Panel {
     
     func drawAcknowledgements() {
         if ImGui.CollapsingHeader("Acknowledgements", ImGuiTreeNodeFlags(ImGuiTreeNodeFlags_None.rawValue)) {
-            ImGui.TextWrappedUnformatted("The application depends on the following software")
+            ImGui.TextWrappedUnformatted("The application depends on the following libraries")
 
 
             let tableFlags = ImGuiTableFlags_None

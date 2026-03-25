@@ -120,6 +120,9 @@ extension Application {
 
         filePicker.draw()
         alertPanel.draw()
+        
+        // Help
+        keyboardShortcutsPanel.draw()
     }
     
     func processUnhandledInput() {

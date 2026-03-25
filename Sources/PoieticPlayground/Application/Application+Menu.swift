@@ -177,7 +177,8 @@ extension Application {
             
             // Help menu
             if ImGui.BeginMenu("Help") {
-                if ImGui.MenuItem("Documentation") {
+                if ImGui.MenuItem("Keyboard Shortcuts") {
+                    self.keyboardShortcutsPanel.isVisible = true
                 }
                 ImGui.EndMenu()
             }

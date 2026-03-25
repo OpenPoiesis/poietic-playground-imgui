@@ -20,6 +20,34 @@ struct ShortcutAction {
         self.key = key
         self.flags = ImGuiInputFlags(flags | Int32(ImGuiInputFlags_RouteGlobal.rawValue))
     }
+    
+    var keyLabel: String {
+        let io = ImGui.GetIO().pointee
+        
+        let justKey = key & ~ImGuiMod_Mask_.rawValue
+        let name: String
+        if let ptr = ImGui.GetKeyName(ImGuiKey(rawValue: justKey)) {
+            name = String(cString: ptr)
+        }
+        else {
+            name = ""
+        }
+        var modName: String = ""
+        if key & ImGuiMod_Ctrl.rawValue != 0 {
+            modName += io.ConfigMacOSXBehaviors ? "Cmd+" : "Ctrl+"
+        }
+        if key & ImGuiMod_Shift.rawValue != 0 {
+            modName += "Shift+"
+        }
+        if key & ImGuiMod_Alt.rawValue != 0 {
+            modName += "Alt+"
+        }
+        if key & ImGuiMod_Super.rawValue != 0 {
+            modName += io.ConfigMacOSXBehaviors ? "Ctrl+" : "Super+"
+        }
+        
+        return modName + name
+    }
 }
 
 let GlobalShortcuts: [ShortcutAction] = [
