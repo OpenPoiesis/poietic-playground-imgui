@@ -99,6 +99,10 @@ final class SDL3GPUBackend: GraphicsBackendProtocol {
         }
         return .none
     }
+    func newFrame() {
+        ImGui_ImplSDLGPU3_NewFrame()
+        ImGui_ImplSDL3_NewFrame()
+    }
 
     func render() {
         let drawData = ImGui.GetDrawData()

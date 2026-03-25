@@ -32,7 +32,9 @@ protocol GraphicsBackendProtocol: AnyObject {
     func waitIdle()
     func shutdown()
     
+    func newFrame()
     func render()
+    
     func withBlendMode<T>(_ mode: TextureBlendMode,
                           drawList: UnsafeMutablePointer<ImDrawList>,
                           _ block: () -> T) -> T
