@@ -153,7 +153,13 @@ extension Application {
                 
                 ImGui.EndMenu()
             }
-            
+            // Model menu
+            if ImGui.BeginMenu("Model") {
+                if ImGui.MenuItem("Auto-connect Parameters", nil) {
+                    self.document?.autoConnectParameters()
+                }
+                ImGui.EndMenu()
+            }
             // Window menu (for window management)
             if ImGui.BeginMenu("Simulation") {
                 let runLabel: String = self.player.isRunning ? "Stop" : "Play"
