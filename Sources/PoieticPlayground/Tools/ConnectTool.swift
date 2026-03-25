@@ -100,12 +100,15 @@ class ConnectTool: CanvasTool {
                             targetPoint: worldPosition,
                             targetID: nil,
                             targetAllowed: true)
+        document.beginInteractivePreview()
+
         self.state = .connecting
         return .engaged
     }
     
     func dragMove(_ event: ToolEvent) -> EngagementResult {
         guard let canvas,
+              let document,
               state == .connecting,
               let intendedConnector,
               let intent: ConnectorIntent = intendedConnector.component()
@@ -130,6 +133,7 @@ class ConnectTool: CanvasTool {
         updateDragConnector(targetPoint: worldPosition,
                             targetID: targetID,
                             targetAllowed: targetAllowed)
+        document.queueInteractivePreviewUpdate()
         return .engaged
     }
 
@@ -141,6 +145,7 @@ class ConnectTool: CanvasTool {
 
         guard let intendedConnector,
               let canvas,
+              let document,
               let intent: ConnectorIntent = intendedConnector.component(),
               let target = canvas.hitTarget(screenPosition: event.screenPos),
               case .object(let runtimeID, _) = target,
@@ -150,7 +155,8 @@ class ConnectTool: CanvasTool {
         if canConnect(type: intent.type, from: intent.originID, to: runtimeID) {
             createConnection(type: intent.type, from: intent.originID, to: runtimeID)
         }
-        
+
+        document.endInteractivePreview()
         print("Drag concluded with: \(target)")
         return .consumed
     }
@@ -158,6 +164,7 @@ class ConnectTool: CanvasTool {
     func dragCancel(_ event: ToolEvent) -> EngagementResult {
         self.state = .idle
         removeDragConnector()
+        document?.endInteractivePreview()
         return .consumed
     }
 
@@ -200,7 +207,7 @@ class ConnectTool: CanvasTool {
                                               position: block.position + block.collisionShape.position,
                                               from: targetPoint,
                                               towards: block.position)
-        // FIXME: [IMPORTANT] Use NotationRules
+        // TODO: [IMPORTANT] Use NotationRules
         let glyph = notation.connectorGlyph(type.name)
 
         let geometry = DiagramConnectorGeometry(originTouch: originTouch,

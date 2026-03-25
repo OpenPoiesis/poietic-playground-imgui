@@ -30,8 +30,11 @@ class Document {
         /// For example: on a transaction or undo/redo action.
         ///
         case designFrameChanged
+
+        case previewStarted
         case previewChanged
-        
+        case previewEnded
+
         case simulationFinished
         case simulationFailed
 
@@ -58,7 +61,9 @@ class Document {
     /// Flag whether ``InteractivePreviewSchedule`` is run at the end of the update.
     /// The flag is reset each application frame.
     var requiresInteractivePreviewUpdate: Bool
-
+    /// Interactive preview in progress.
+    var isPreviewing: Bool
+    
     init(design: Design, url: URL? = nil, notation: Notation? = nil) {
         self.observers = [:]
         
@@ -73,6 +78,7 @@ class Document {
 
         // Flags
         self.requiresInteractivePreviewUpdate = false
+        self.isPreviewing = false
         
         setupWorld(notation: notation)
     }
@@ -90,10 +96,10 @@ class Document {
             receiver(self)
         }
     }
+    
     func queueCommand(_ command: any Command) {
         self.commandQueue.append(command)
     }
-    
     
     func changeSelection(_ change: SelectionChange) {
         self.selection.apply(change)
@@ -118,6 +124,30 @@ class Document {
         // Pass the selection through the world to the systems for rendering and other processing
         // (see DiagramCanvas drawing methods, for example)
         self.world.setSingleton(selection)
+    }
+    
+    func beginInteractivePreview() {
+        self.isPreviewing = true
+        self.trigger(.previewStarted)
+        self.requiresInteractivePreviewUpdate = true
+    }
+    
+    func queueInteractivePreviewUpdate() {
+        self.requiresInteractivePreviewUpdate = true
+    }
+    
+    func endInteractivePreview() {
+        self.isPreviewing = false
+        
+        world.removeComponentForAll(BlockPreview.self)
+        world.removeComponentForAll(ConnectorPreview.self)
+        for entity: RuntimeEntity in world.query(BlockIntent.self) {
+            world.despawn(entity)
+        }
+        for entity: RuntimeEntity in world.query(ConnectorIntent.self) {
+            world.despawn(entity)
+        }
+        self.trigger(.previewEnded)
     }
 }
 

@@ -115,6 +115,7 @@ class SelectionTool: CanvasTool {
             return .pass
         case .objectHit, .objectMove, .objectPartHit:
 //            Input.setDefaultCursorShape(.drag)
+            document?.beginInteractivePreview()
             previewSelectionMove(screenDelta: event.delta)
             state = .objectMove
             
@@ -247,7 +248,7 @@ class SelectionTool: CanvasTool {
         for id in dependentEdges {
             // FIXME: Implement this
         }
-        document.requiresInteractivePreviewUpdate = true
+        document.queueInteractivePreviewUpdate()
     }
     
     func finalizeSelectionMove(_ selection: Selection, by designDelta: Vector2D) {
@@ -262,7 +263,7 @@ class SelectionTool: CanvasTool {
             moveObject(object, by: designDelta)
         }
         cleanUp()
-        document.requiresInteractivePreviewUpdate = false
+        document.endInteractivePreview()
     }
 
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {

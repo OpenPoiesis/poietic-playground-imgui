@@ -32,8 +32,12 @@ extension Application {
         document.addObserver(inspector.onSimulationFinished, on: .simulationFinished)
         document.addObserver(canvas.onDesignFrameChanged, on: .designFrameChanged)
         document.addObserver(canvas.onSelectionChanged, on: .selectionChanged)
-        document.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
         document.addObserver(canvas.onSimulationPlayerStep, on: .simulationPlayerStep)
+        
+        document.addObserver(canvas.onInteractivePreviewChanged, on: .previewChanged)
+        document.addObserver(canvas.onPreviewStarted, on: .previewStarted)
+        document.addObserver(canvas.onPreviewEnded, on: .previewEnded)
+
         document.addObserver(controlBar.onDesignFrameChanged, on: .designFrameChanged)
         document.addObserver(controlBar.onSimulationPlayerStep, on: .simulationPlayerStep)
         document.addObserver(player.onDesignFrameChanged, on: .designFrameChanged)

@@ -74,10 +74,6 @@ extension DiagramCanvas {
         }
     }
     
-    func drawPreviewOverlay(_ context: DrawingContext) {
-        drawIntents(context)
-    }
-
     func drawHandles(_ context: DrawingContext) {
         context.save()
         let radius = Self.HandleSize / 2
@@ -91,31 +87,21 @@ extension DiagramCanvas {
         context.restore()
     }
     
-    func drawIntents(_ context: DrawingContext) {
-        for component: BlockIntent in world.query(BlockIntent.self) {
-            drawBlockIntent(context, block: component)
-        }
-    }
-    
     func drawBlocks(_ context: DrawingContext) {
         context.save()
         let selection: Selection? = world.singleton()
         
-        for (entity, component) in world.query(DiagramBlock.self) {
+        for (entity, block) in world.query(DiagramBlock.self) {
             guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
 
             let isSelected = selection?.contains(objectID) ?? false
-            drawBlock(context, entity: entity, isSelected: isSelected, block: component)
+            guard !entity.contains(BlockPreview.self) else { continue }
+            drawBlock(context,
+                      entity: entity,
+                      block: block,
+                      preview: nil,
+                      isSelected: isSelected)
         }
-        context.restore()
-    }
-
-    func drawBlockIntent(_ context: DrawingContext, block: BlockIntent) {
-        let transform = AffineTransform(translation: toOverlayTransform.apply(to: block.position))
-        context.save()
-        context.setColor(style.intentShadowColor)
-        context.addPath(block.pictogram.path, transform: transform)
-        context.stroke()
         context.restore()
     }
 
@@ -143,10 +129,15 @@ extension DiagramCanvas {
 //        context.stroke()
     }
 
-    func drawBlock(_ context: DrawingContext, entity: RuntimeEntity, isSelected: Bool, block: DiagramBlock) {
+    func drawBlock(_ context: DrawingContext,
+                   entity: RuntimeEntity,
+                   block: DiagramBlock,
+                   preview: BlockPreview? = nil,
+                   isSelected: Bool)
+    {
         let blockPosition: Vector2D
         
-        if let preview: BlockPreview = entity.component() {
+        if let preview {
             blockPosition = preview.position
         }
         else {
@@ -229,19 +220,17 @@ extension DiagramCanvas {
     func drawConnectors(_ context: DrawingContext) {
         context.save()
         let selection: Selection? = world.singleton()
-        for (entity, component) in world.query(DiagramConnectorGeometry.self) {
-            if let objectID = entity.objectID {
-                let isSelected = selection?.contains(objectID) ?? false
-                drawConnector(context, geometry: component, isSelected: isSelected, isIntent: false)
-            }
-            else if entity.contains(ConnectorIntent.self) {
-                drawConnector(context, geometry: component, isSelected: false, isIntent: true)
-            }
+        for (entity, geometry) in world.query(DiagramConnectorGeometry.self) {
+            guard let objectID = entity.objectID else { continue }
+            let isSelected = selection?.contains(objectID) ?? false
+            guard !entity.contains(ConnectorPreview.self) else { continue }
+            
+            drawConnector(context, geometry: geometry, isSelected: isSelected)
         }
         context.restore()
     }
     
-    func drawConnector(_ context: DrawingContext, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool) {
+    func drawConnector(_ context: DrawingContext, geometry: DiagramConnectorGeometry, isSelected: Bool, isIntent: Bool = false) {
         let transform = toOverlayTransform
 
         // Open curves

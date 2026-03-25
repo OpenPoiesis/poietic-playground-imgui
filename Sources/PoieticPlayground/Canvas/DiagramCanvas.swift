@@ -113,10 +113,6 @@ class DiagramCanvas: View {
         overlays.setAllNeedsRender()
     }
 
-    func onInteractivePreviewChanged(_ document: Document) {
-        previewOverlay.setNeedsRender()
-    }
-    
     func onSimulationPlayerStep(_ document: Document) {
         indicatorOverlay.setNeedsRender()
     }
