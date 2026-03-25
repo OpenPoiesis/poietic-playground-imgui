@@ -156,7 +156,15 @@ extension Application {
             
             // Window menu (for window management)
             if ImGui.BeginMenu("Simulation") {
-                if ImGui.MenuItem("Run") {
+                let runLabel: String = self.player.isRunning ? "Stop" : "Play"
+
+                if ImGui.MenuItem(runLabel) {
+                    if self.player.isRunning {
+                        self.player.stop()
+                    }
+                    else {
+                        self.player.run()
+                    }
                 }
                 ImGui.EndMenu()
             }
