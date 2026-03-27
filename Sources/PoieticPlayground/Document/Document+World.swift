@@ -48,7 +48,7 @@ extension Document {
         
         if requiresInteractivePreviewUpdate {
             self.run(schedule: InteractivePreviewSchedule.self)
-            requiresInteractivePreviewUpdate = false
+            resetInteractivePreviewUpdate()
             trigger(.previewChanged)
         }
     }

@@ -28,7 +28,7 @@ func unionBounds(entities: [RuntimeEntity]) -> ValueBounds? {
 }
 
 class ChartInspectorSection: InspectorSection {
-    var trait: Trait { Trait.NumericIndicator }
+    var trait: Trait { Trait.NumericValue }
     var category: InspectorPanel.Category { .overview }
     let title: String = "Chart"
     let inspectedAttributes: [String] = []
@@ -49,9 +49,9 @@ class ChartInspectorSection: InspectorSection {
         let chart = Chart() // TODO: Use some default axis setup
         var series: [ChartSeries] =  []
         for objectID in selection {
-            guard let runtimeID = world.objectToEntity(objectID) else { continue }
+            guard let entity = world.entity(objectID) else { continue }
             let chartSeries = ChartSeries(
-                target: runtimeID,
+                target: entity.runtimeID,
                 colorKey: nil,
                 displayBounds: DisplayValueBounds()
             )

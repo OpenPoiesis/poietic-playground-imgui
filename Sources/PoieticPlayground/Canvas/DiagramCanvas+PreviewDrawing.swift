@@ -20,6 +20,7 @@ extension DiagramCanvas {
 
     func onInteractivePreviewChanged(_ document: Document) {
         previewOverlay.setNeedsRender()
+        indicatorOverlay.setNeedsRender()
     }
     
     func onPreviewEnded(_ document: Document) {
@@ -29,7 +30,7 @@ extension DiagramCanvas {
 
     func drawPreviewOverlay(_ context: DrawingContext) {
         drawBlockIntents(context)
-        drawIntentConnectors(context)
+        drawConnectorIntents(context)
 
         drawPreviewBlocks(context)
         drawPreviewConnectors(context)
@@ -50,7 +51,7 @@ extension DiagramCanvas {
         context.restore()
     }
 
-    func drawIntentConnectors(_ context: DrawingContext) {
+    func drawConnectorIntents(_ context: DrawingContext) {
         context.save()
         for (entity, _) in world.query(ConnectorIntent.self) {
             guard let geometry: DiagramConnectorGeometry = entity.component() else { continue }
@@ -60,12 +61,11 @@ extension DiagramCanvas {
     }
     
     func drawPreviewBlocks(_ context: DrawingContext) {
-        print("DRAW PREVIEW BLOCKS")
         context.save()
         let selection: Selection? = world.singleton()
         
         for (entity, block, preview) in world.query(DiagramBlock.self, BlockPreview.self) {
-            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
+            guard let objectID = entity.objectID else { continue }
 
             let isSelected = selection?.contains(objectID) ?? false
             drawBlock(context, entity: entity, block: block, preview: preview, isSelected: isSelected)
@@ -76,7 +76,7 @@ extension DiagramCanvas {
     func drawPreviewConnectors(_ context: DrawingContext) {
         context.save()
         let selection: Selection? = world.singleton()
-        for (entity, component, _) in world.query(DiagramConnectorGeometry.self, ConnectorPreview.self) {
+        for (entity, component, _) in world.query(DiagramConnectorGeometry.self, InteractivePreview.self) {
             guard let objectID = entity.objectID else { continue }
             let isSelected = selection?.contains(objectID) ?? false
             drawConnector(context, geometry: component, isSelected: isSelected)

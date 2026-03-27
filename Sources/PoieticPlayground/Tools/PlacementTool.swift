@@ -94,7 +94,7 @@ class PlacementTool: CanvasTool {
         removeIntentShadow()
         let worldPos: Vector2D = canvas.screenToWorld(event.screenPos)
         createIntentShadow(position: worldPos, typeName: typeName)
-        document?.requiresInteractivePreviewUpdate = true
+        document?.queueInteractivePreviewUpdate()
         return .pass
     }
     
@@ -110,13 +110,13 @@ class PlacementTool: CanvasTool {
         else if let typeName = palette?.selectedIdentifier {
             createIntentShadow(position: worldPos, typeName: typeName)
         }
-        document?.requiresInteractivePreviewUpdate = true
+        document?.queueInteractivePreviewUpdate()
         return .pass
     }
     
     func hoverEnd(_ event: ToolEvent) -> EngagementResult {
         removeIntentShadow()
-        document?.requiresInteractivePreviewUpdate = true
+        document?.queueInteractivePreviewUpdate()
         return .pass
     }
     func pointerUp(_ event: ToolEvent)  -> EngagementResult {
@@ -132,7 +132,7 @@ class PlacementTool: CanvasTool {
             document.queueCommand(SwitchToolCommand("selection"))
             document.changeSelection(.replaceAllWithOne(objectID))
         }
-        document.requiresInteractivePreviewUpdate = true
+        document.queueInteractivePreviewUpdate()
         return .consumed
     }
     

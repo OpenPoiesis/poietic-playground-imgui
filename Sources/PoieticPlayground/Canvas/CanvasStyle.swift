@@ -98,10 +98,7 @@ class CanvasStyle {
 
     init() { /* Empty init */ }
     
-    func adaptableColor(_ name: String, default defaultColor: Color) -> Color {
-        guard let key = AdaptableColorKey(rawValue: name) else {
-            return defaultColor
-        }
+    func adaptableColor(_ key: AdaptableColorKey, default defaultColor: Color) -> Color {
         return adaptableColors[key, default: defaultColor]
     }
     func lineWidth(_ name: String, defaultWidth: Float = 1.0) -> Float {

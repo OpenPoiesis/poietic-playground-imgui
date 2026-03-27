@@ -60,7 +60,7 @@ class Document {
     
     /// Flag whether ``InteractivePreviewSchedule`` is run at the end of the update.
     /// The flag is reset each application frame.
-    var requiresInteractivePreviewUpdate: Bool
+    internal private(set) var requiresInteractivePreviewUpdate: Bool
     /// Interactive preview in progress.
     var isPreviewing: Bool
     
@@ -135,12 +135,16 @@ class Document {
     func queueInteractivePreviewUpdate() {
         self.requiresInteractivePreviewUpdate = true
     }
+    func resetInteractivePreviewUpdate() {
+        self.requiresInteractivePreviewUpdate = false
+    }
     
     func endInteractivePreview() {
         self.isPreviewing = false
         
         world.removeComponentForAll(BlockPreview.self)
         world.removeComponentForAll(ConnectorPreview.self)
+        world.removeComponentForAll(InteractivePreview.self)
         for entity: RuntimeEntity in world.query(BlockIntent.self) {
             world.despawn(entity)
         }

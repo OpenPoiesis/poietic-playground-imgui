@@ -86,10 +86,8 @@ class ConnectTool: CanvasTool {
               let document,
               let target = canvas.hitTarget(screenPosition: event.screenPos),
               case .object(let runtimeID, _) = target,
-              let objectID = world.entityToObject(runtimeID),
               let typeName = palette?.selectedIdentifier,
-              let type = document.design.metamodel.objectType(name: typeName),
-              let object = world.frame?[objectID]
+              let type = document.design.metamodel.objectType(name: typeName)
         else {
             state = .idle
             return .pass
@@ -119,8 +117,7 @@ class ConnectTool: CanvasTool {
         let targetAllowed: Bool
 
         if let target = canvas.hitTarget(screenPosition: event.screenPos),
-           case .object(let runtimeID, _) = target,
-           let targetObjectID = canvas.world.entityToObject(runtimeID)
+           case .object(let runtimeID, _) = target
         {
             targetID = runtimeID
             targetAllowed = canConnect(type: intent.type, from: intent.originID, to: runtimeID)
@@ -148,8 +145,7 @@ class ConnectTool: CanvasTool {
               let document,
               let intent: ConnectorIntent = intendedConnector.component(),
               let target = canvas.hitTarget(screenPosition: event.screenPos),
-              case .object(let runtimeID, _) = target,
-              let targetObjectID = canvas.world.entityToObject(runtimeID)
+              case .object(let runtimeID, _) = target
         else { return .pass }
         
         if canConnect(type: intent.type, from: intent.originID, to: runtimeID) {
@@ -172,16 +168,16 @@ class ConnectTool: CanvasTool {
         guard let document,
               let checker,
               let frame = document.world.frame,
-              let originObjectID = document.world.entityToObject(originID),
-              let targetObjectID = document.world.entityToObject(targetID)
+              let originObjectID = document.world.entity(originID)?.objectID,
+              let targetObjectID = document.world.entity(targetID)?.objectID
         else { return false }
         
         return checker.canConnect(type: type, from: originObjectID, to: targetObjectID, in: frame)
     }
     func createConnection(type: ObjectType, from originRuntimeID: RuntimeID, to targetRuntimeID: RuntimeID) {
         guard let document,
-              let originObjectID = document.world.entityToObject(originRuntimeID),
-              let targetObjectID = document.world.entityToObject(targetRuntimeID)
+              let originObjectID = document.world.entity(originRuntimeID)?.objectID,
+              let targetObjectID = document.world.entity(targetRuntimeID)?.objectID
         else { return }
         let trans = document.createOrReuseTransaction()
         trans.createEdge(type, origin: originObjectID, target: targetObjectID)

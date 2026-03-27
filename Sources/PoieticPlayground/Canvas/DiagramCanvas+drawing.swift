@@ -92,9 +92,9 @@ extension DiagramCanvas {
         let selection: Selection? = world.singleton()
         
         for (entity, block) in world.query(DiagramBlock.self) {
-            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
-
+            guard let objectID = entity.objectID else { continue }
             let isSelected = selection?.contains(objectID) ?? false
+            
             guard !entity.contains(BlockPreview.self) else { continue }
             drawBlock(context,
                       entity: entity,
@@ -137,12 +137,8 @@ extension DiagramCanvas {
     {
         let blockPosition: Vector2D
         
-        if let preview {
-            blockPosition = preview.position
-        }
-        else {
-            blockPosition = block.position
-        }
+        if let preview { blockPosition = preview.position }
+        else { blockPosition = block.position }
         
         var swatchCenter: Vector2D
         var labelCenter: Vector2D
@@ -209,8 +205,8 @@ extension DiagramCanvas {
             context.showText(label, at: position)
         }
 
-        if let colorName = block.accentColorName {
-            let color = style.adaptableColor(colorName, default: .black)
+        if let colorKey = block.accentColor {
+            let color = style.adaptableColor(colorKey, default: .black)
             let swatchOrigin = swatchCenter - (Self.ColorSwatchSize / 2.0)
             context.setColor(color)
             context.fillRect(origin: swatchOrigin, size: Self.ColorSwatchSize)
@@ -223,7 +219,7 @@ extension DiagramCanvas {
         for (entity, geometry) in world.query(DiagramConnectorGeometry.self) {
             guard let objectID = entity.objectID else { continue }
             let isSelected = selection?.contains(objectID) ?? false
-            guard !entity.contains(ConnectorPreview.self) else { continue }
+            guard !entity.contains(InteractivePreview.self) else { continue }
             
             drawConnector(context, geometry: geometry, isSelected: isSelected)
         }
@@ -312,7 +308,7 @@ extension DiagramCanvas {
         context.save()
         
         for (entity, component) in world.query(DiagramBlock.self) {
-            guard let objectID = world.entityToObject(entity.runtimeID) else { continue }
+            guard let objectID = entity.objectID else { continue }
 
             drawValueIndicator(context, entity: entity, block: component)
         }

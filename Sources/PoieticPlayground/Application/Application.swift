@@ -107,7 +107,6 @@ class Application {
             ImGui.TextUnformatted("World frame: \(wFrameLabel)")
             ImGui.TextUnformatted("Has Transaction: \(document.hasTransaction)")
             ImGui.TextUnformatted("Selection count: \(document.selection.count)")
-            ImGui.TextUnformatted("Interactive preview update: \(document.requiresInteractivePreviewUpdate)")
         }
         ImGui.End()
     }
