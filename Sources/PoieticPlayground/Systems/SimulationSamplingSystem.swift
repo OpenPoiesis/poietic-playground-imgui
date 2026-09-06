@@ -36,12 +36,12 @@ struct SimulationSamplingSystem: System {
         else {
             step = 0
         }
-        guard let state = result[step] else { return }
+        guard let sample = result.sample(at: step) else { return }
         
         for simObject in plan.simulationObjects {
             guard let entity = world.entity(simObject.objectID) else { continue }
-            let value: Variant = state[simObject.variableIndex]
-            if let doubleValue = try? value.doubleValue() {
+
+            if let doubleValue = sample.doubleValue(for: simObject.variableReference) {
                 entity.setComponent(NumericValueSample(value: doubleValue))
             }
             else {

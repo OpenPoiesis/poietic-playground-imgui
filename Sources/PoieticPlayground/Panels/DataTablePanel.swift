@@ -110,7 +110,7 @@ class DataTablePanel: Panel {
         objectNames: [ObjectID: String],
         currentStep: Int
     ) {
-        let stepCount = result.states.count
+        let stepCount = result.sampleCount
         let columnCount = 2 + visibleObjects.count  // Step, Time, + data columns
 
         ImGui.Begin("Data Table", &isVisible)
@@ -161,7 +161,7 @@ class DataTablePanel: Panel {
             let displayEnd = Int(clipper.DisplayEnd)
 
             for step in displayStart..<displayEnd {
-                guard let state = result[step] else { continue }
+                guard let sample = result.sample(at: step) else { continue }
 
                 ImGui.TableNextRow(ImGuiTableRowFlags(ImGuiTableRowFlags_None.rawValue), 0)
 
@@ -178,13 +178,13 @@ class DataTablePanel: Panel {
 
                 // Time
                 ImGui.TableNextColumn()
-                let timeStr = formatTime(state.time)
+                let timeStr = formatTime(sample.time)
                 ImGui.TextUnformatted(timeStr)
 
                 // Data columns
                 for simObj in visibleObjects {
                     ImGui.TableNextColumn()
-                    let value: Variant = state[simObj.variableIndex]
+                    let value: Variant = sample.value(for: simObj.variableReference) ?? Variant("")
                     let text = formatValue(value)
                     ImGui.TextUnformatted(text)
                 }

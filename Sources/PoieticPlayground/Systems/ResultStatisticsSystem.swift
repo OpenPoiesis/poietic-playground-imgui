@@ -16,7 +16,9 @@ import PoieticFlows
 /// - Ranges of numerical values: min, max
 ///
 /// - **Input:** ``SimulationResult`` singleton – required.
-/// - **Output:** ``RegularTimeSeries`` and ``NumericValueStats`` for each numeric simulation object.
+/// - **Output:**
+///     - Add ``RegularTimeSeries`` and ``NumericValueStats`` for each numeric simulation object,
+///       removed of all objects for which there is no numeric series result.
 /// - **Forgiveness:** Does nothing if there is no simulation plan neither simulation result.
 /// - **Issues:** No issues created.
 ///
@@ -32,9 +34,13 @@ public struct TimeSeriesProcessingSystem: System {
         
         for simObject in plan.simulationObjects {
             guard let entity = world.entity(simObject.objectID) else { continue }
-            let series = result.unsafeTimeSeries(at: simObject.variableIndex)
-            let stats = NumericValueStats(min: series.dataMin, max: series.dataMax)
+            guard let series = result.regularTimeSeries(simObject.variableReference) else {
+                entity.removeComponent(RegularTimeSeries.self)
+                entity.removeComponent(NumericValueStats.self)
+                continue
+            }
 
+            let stats = NumericValueStats(min: series.dataMin, max: series.dataMax)
             entity.setComponent(stats)
             entity.setComponent(series)
         }
