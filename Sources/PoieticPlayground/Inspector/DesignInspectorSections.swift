@@ -103,9 +103,9 @@ class DesignInfoInspectorSection: DesignInspectorSection {
 }
 
 class SimulationInspectorSection: DesignInspectorSection {
-    static let DefaultSettings = SimulationSettings()
+    static let DefaultTimeSettings = SimulationTimeSettings()
     
-    var trait: Trait { Trait.DesignInfo }
+    var trait: Trait { Trait.SimulationTime }
     var category: InspectorPanel.Category { .properties }
     let title: String = "Design"
     let inspectedAttributes: [String] =
@@ -115,10 +115,10 @@ class SimulationInspectorSection: DesignInspectorSection {
     static let inspectorCategory: InspectorPanel.Category = .properties
     
     var infoObjectID: ObjectID?
-    var initialTime: Double = DefaultSettings.initialTime
-    var timeDelta: Double = DefaultSettings.timeDelta
-    var steps: Int32 = Int32(DefaultSettings.steps)
-    var endTime: Double = DefaultSettings.endTime
+    var startTime: Double = DefaultTimeSettings.startTime
+    var timeStep: Double = DefaultTimeSettings.timeStep
+    var steps: Int32 = Int32(DefaultTimeSettings.steps)
+    var finalTime: Double = DefaultTimeSettings.finalTime
     
     // TODO: Audience level and keywords
 
@@ -136,17 +136,18 @@ class SimulationInspectorSection: DesignInspectorSection {
         
         if let infoObject = plane.first(type: .Simulation) {
             self.infoObjectID = infoObject.objectID
-            self.initialTime = infoObject["initialTime"] ?? Self.DefaultSettings.initialTime
-            self.timeDelta = infoObject["time_delta"] ?? Self.DefaultSettings.timeDelta
-            self.steps = infoObject["steps"] ?? Int32(Self.DefaultSettings.steps)
-            self.endTime = initialTime + Double(steps) * self.endTime
+            let settings = SimulationTimeSettings(fromObject: infoObject)
+            self.startTime = settings.startTime
+            self.timeStep = settings.timeStep
+            self.steps = Int32(settings.steps)
+            self.finalTime = settings.finalTime
         }
         else {
             self.infoObjectID = nil // We will create a new object
-            self.initialTime = Self.DefaultSettings.initialTime
-            self.timeDelta = Self.DefaultSettings.timeDelta
-            self.steps = Int32(Self.DefaultSettings.steps)
-            self.endTime = initialTime + Double(steps) * timeDelta
+            self.startTime = Self.DefaultTimeSettings.startTime
+            self.timeStep = Self.DefaultTimeSettings.timeStep
+            self.steps = Int32(Self.DefaultTimeSettings.steps)
+            self.finalTime = Self.DefaultTimeSettings.finalTime
         }
     }
     
@@ -154,33 +155,30 @@ class SimulationInspectorSection: DesignInspectorSection {
 
     func draw(_ document: Document) {
 
-        ImGui.InputDouble("Time Delta", &timeDelta, 0.1, 10.0, "%.3f")
+        ImGui.InputDouble("Time Step", &timeStep, 0.1, 10.0, "%.3f")
         if ImGui.IsItemDeactivatedAfterEdit() {
-            changeAttribute(document, attribute: "time_delta", value: timeDelta)
+            changeAttribute(document, attribute: SimulationTimeSettings.TimeStepAttributeName, value: timeStep)
         }
         ImGui.InputInt("Steps", &steps, 1, 100)
         if ImGui.IsItemDeactivatedAfterEdit() {
-            self.endTime = initialTime + Double(steps) * timeDelta
-            changeAttribute(document, attribute: "steps", value: Int(steps))
+            finalTime = startTime + Double(steps) * timeStep
+            changeAttribute(document, attribute: SimulationTimeSettings.FinalTimeAttributeName, value: finalTime)
         }
-        ImGui.InputDouble("Initial Time", &initialTime, 1.0, 100.0, "%.3f")
+        ImGui.InputDouble("Start Time", &startTime, 1.0, 100.0, "%.3f")
         if ImGui.IsItemDeactivatedAfterEdit() {
-            changeAttribute(document, attribute: "initial_time", value: initialTime)
+            changeAttribute(document, attribute: SimulationTimeSettings.StartTimeAttributeName, value: startTime)
         }
-        ImGui.InputDouble("End Time", &endTime, 1.0, 100.0, "%.3f")
+        ImGui.InputDouble("Final Time", &finalTime, 1.0, 100.0, "%.3f")
         if ImGui.IsItemDeactivatedAfterEdit() {
-            if endTime <= initialTime {
-                endTime = initialTime
+            if finalTime <= startTime {
+                finalTime = startTime
                 steps = 0
             }
             else {
-                steps = Int32(((endTime - initialTime) / timeDelta).rounded(.down))
+                steps = Int32(((finalTime - startTime) / timeStep).rounded(.down))
             }
-            changeAttribute(document, attribute: "steps", value: Int(steps))
+            changeAttribute(document, attribute: SimulationTimeSettings.FinalTimeAttributeName, value: finalTime)
         }
-        
-        self.endTime = initialTime + Double(steps) * timeDelta
-
     }
     
     func changeAttribute(_ document: Document, attribute: String, value: Double) {

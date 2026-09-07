@@ -7,6 +7,7 @@
 
 import CIimgui
 import PoieticFlows
+import PoieticCore
 
 @MainActor
 class ControlBar: @MainActor Panel {
@@ -19,7 +20,7 @@ class ControlBar: @MainActor Panel {
     var currentStep: Int32 = 0
     var currentTime: Double = 0.0
     
-    var settings: SimulationSettings = SimulationSettings()
+    var settings: SimulationTimeSettings = SimulationTimeSettings()
 
     var currentStepBuffer: InputTextBuffer
     
@@ -36,7 +37,7 @@ class ControlBar: @MainActor Panel {
     func onDesignPlaneChanged(_ document: Document) {
         // We are assuming that simulation planning schedule was run.
         // Settings are set regardless whether we have a plan or not.
-        self.settings = document.world.singleton() ?? SimulationSettings()
+        self.settings = document.world.singleton() ?? SimulationTimeSettings()
         
         if let player = self.app?.player {
             self.currentStep = Int32(player.currentStep)
@@ -46,7 +47,7 @@ class ControlBar: @MainActor Panel {
             if currentStep >= settings.steps {
                 currentStep = Int32(settings.steps)
             }
-            self.currentTime = Double(currentStep) * settings.timeDelta
+            self.currentTime = Double(currentStep) * settings.timeStep
         }
     }
 

@@ -17,12 +17,10 @@ class ResultPlayer {
     var isRunning: Bool = false
     var isLooping: Bool = true
 
-    /// Initial simulation time.
-    var initialTime: Double = 0.0
-    /// Time delta of simulation time.
-    var timeDelta: Double = 1.0
+    var timeSettings: SimulationTimeSettings = SimulationTimeSettings()
+
     /// Number of steps.
-    var lastStep: Int = 0
+    var lastSampleIndex: Int = 0
     
     /// Remaining real time to next step.
     var timeToStep: Double = 0
@@ -33,7 +31,7 @@ class ResultPlayer {
     var currentStep: Int = 0
     /// Current simulation time.
     var currentTime: Double {
-        initialTime + Double(currentStep) * timeDelta
+        timeSettings.startTime + Double(currentStep) * timeSettings.timeStep
     }
 
     var document: Document? = nil
@@ -56,22 +54,24 @@ class ResultPlayer {
     func onDesignPlaneChanged(_ document: Document) {
         // We are assuming that simulation planning schedule was run.
         // Settings are set regardless whether we have a plan or not.
-        let settings: SimulationSettings = document.world.singleton() ?? SimulationSettings()
+        let settings: SimulationTimeSettings = document.world.singleton() ?? SimulationTimeSettings()
 
         if !document.world.hasSingleton(SimulationPlan.self) {
             self.isRunning = false
         }
 
-        self.initialTime = settings.initialTime
-        self.timeDelta = settings.timeDelta
-        self.lastStep = Int(settings.steps)
-        self.currentStep = max(0, min(self.currentStep, Int(settings.steps) - 1))
+        self.lastSampleIndex = Int(settings.steps)
+        self.currentStep = clampStep(self.currentStep)
     }
 
     func onSimulationFailed(_ document: Document) {
         self.isRunning = false
     }
     func onSimulationFinished(_ document: Document) {
+        if let result: SimulationResult = document.world.singleton() {
+            self.lastSampleIndex = result.sampleCount - 1
+            self.currentStep = clampStep(self.currentStep)
+        }
         stateChanged()
     }
     /// Run ``PlayerStepSchedule`` and then trigger the ``Document/Event/simulationPlayerStep``
@@ -100,7 +100,7 @@ class ResultPlayer {
     
     /// Forward the player to the last simulation step.
     func toLastStep() {
-        currentStep = lastStep
+        currentStep = lastSampleIndex
         stateChanged()
     }
 
@@ -113,25 +113,28 @@ class ResultPlayer {
         guard isRunning else { return }
         self.isRunning = false
     }
-    
+    /// Clamp step to be in range between 0 and ``lastSampleIndex``
+    func clampStep(_ step: Int) -> Int {
+        return max(0, min(step, lastSampleIndex))
+    }
     func setCurrentStep(_ step: Int) {
-        let adjustedStep: Int = max(0, min(step, lastStep - 1))
+        let adjustedStep: Int = clampStep(step)
         guard adjustedStep != currentStep else { return }
         currentStep = adjustedStep
         stateChanged()
     }
 
     func setCurrentTime(_ time: Double) {
-        let distance = time - initialTime
-        let step = Int((distance / timeDelta).rounded())
+        let distance = time - timeSettings.startTime
+        let step = Int((distance / timeSettings.timeStep).rounded())
         setCurrentStep(step)
     }
 
     func nextStep() {
         currentStep += 1
-        if currentStep > lastStep {
+        if currentStep > lastSampleIndex {
             guard isLooping else {
-                currentStep = lastStep
+                currentStep = lastSampleIndex
                 stop()
                 return
             }
@@ -149,7 +152,7 @@ class ResultPlayer {
                 stop()
                 return
             }
-            currentStep = lastStep
+            currentStep = lastSampleIndex
         }
         stateChanged()
     }
