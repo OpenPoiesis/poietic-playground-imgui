@@ -24,7 +24,7 @@ class FormulaInlineEditor: InlineEditor {
     
     override func open(for entity: RuntimeEntity) -> Bool {
         guard let object = entity.designObject,
-              object.type.hasTrait(.Formula),
+              object.type.hasTrait(SimulationDomain.Traits.Formula),
               let block: DiagramBlock = entity.component()
         else { return false }
 

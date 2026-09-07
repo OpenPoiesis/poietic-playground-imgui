@@ -53,7 +53,7 @@ class PlacementTool: CanvasTool {
             return []
         }
         let types = document.design.metamodel.types.filter {
-            $0.hasTrait(.DiagramBlock)
+            $0.hasTrait(DiagramDomain.Traits.DiagramBlock)
         }
         return types
     }

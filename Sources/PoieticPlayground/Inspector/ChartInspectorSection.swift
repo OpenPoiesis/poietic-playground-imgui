@@ -28,7 +28,7 @@ func unionBounds(entities: [RuntimeEntity]) -> ValueBounds? {
 }
 
 class ChartInspectorSection: InspectorSection {
-    var trait: Trait { Trait.NumericValue }
+    var trait: Trait { SimulationDomain.Traits.NumericValue }
     var category: InspectorPanel.Category { .overview }
     let title: String = "Chart"
     let inspectedAttributes: [String] = []

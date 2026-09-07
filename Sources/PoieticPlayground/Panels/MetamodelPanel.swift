@@ -319,7 +319,7 @@ class MetamodelPanel: Panel {
         }
 
         // Object types adopting this trait
-        let adopters = metamodel.types.filter { $0.hasTrait(trait) }
+        let adopters = metamodel.types.filter { $0.hasTrait(trait.name) }
         if !adopters.isEmpty {
             ImGui.Spacing()
             ImGui.TextUnformatted("Adopted by:")

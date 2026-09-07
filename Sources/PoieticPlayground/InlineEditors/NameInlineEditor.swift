@@ -24,7 +24,7 @@ class NameInlineEditor: InlineEditor {
     
     override func open(for entity: RuntimeEntity) -> Bool {
         guard let object = entity.designObject,
-              object.type.hasTrait(.Name),
+              object.type.hasTrait(BasicDomain.Traits.Name),
               let block: DiagramBlock = entity.component()
         else { return false }
 

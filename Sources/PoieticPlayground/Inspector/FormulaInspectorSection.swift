@@ -13,7 +13,7 @@ import CIimgui
 
 class FormulaInspectorSection: InspectorSection {
     
-    var trait: Trait { Trait.Formula }
+    var trait: Trait { SimulationDomain.Traits.Formula }
     var category: InspectorPanel.Category { .properties }
     let title: String = "Formula"
     let inspectedAttributes: [String] = ["formula"]

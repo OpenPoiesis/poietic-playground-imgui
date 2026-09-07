@@ -79,7 +79,7 @@ class GraphicalFunctionPanel: Panel {
               let objectID = selection.ids.first,
               let plane = document.world.plane,
               let object = plane[objectID],
-              object.type.hasTrait(.GraphicalFunction)
+              object.type.hasTrait(StockFlowDomain.Traits.GraphicalFunction)
         else {
             isActive = false
             editingObjectID = nil

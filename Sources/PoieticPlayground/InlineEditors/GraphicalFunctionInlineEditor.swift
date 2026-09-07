@@ -45,7 +45,7 @@ class GraphicalFunctionInlineEditor: InlineEditor {
     
     override func open(for entity: RuntimeEntity) -> Bool {
         guard let object = entity.designObject,
-              object.type.hasTrait(.GraphicalFunction),
+              object.type.hasTrait(StockFlowDomain.Traits.GraphicalFunction),
               let block: DiagramBlock = entity.component()
         else { return false }
 

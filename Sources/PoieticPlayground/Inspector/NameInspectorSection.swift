@@ -12,7 +12,7 @@ import CIimgui
 
 class NameInspectorSection: InspectorSection {
     
-    var trait: Trait { Trait.Name }
+    var trait: Trait { BasicDomain.Traits.Name }
     var category: InspectorPanel.Category { .properties }
     let title: String = "Name"
     let inspectedAttributes: [String] = ["name"]
