@@ -63,10 +63,10 @@ class MetamodelPanel: Panel {
             case (.nodes, .nodes), (.edges, .edges), (.unstructured, .unstructured),
                  (.traits, .traits), (.edgeRules, .edgeRules), (.constraints, .constraints):
                 return true
-            case (.nodeType(let a), .nodeType(let b)):       return a === b
-            case (.edgeType(let a), .edgeType(let b)):       return a === b
-            case (.unstructuredType(let a), .unstructuredType(let b)): return a === b
-            case (.trait(let a), .trait(let b)):             return a === b
+            case (.nodeType(let a), .nodeType(let b)):       return a.matches(b)
+            case (.edgeType(let a), .edgeType(let b)):       return a.matches(b)
+            case (.unstructuredType(let a), .unstructuredType(let b)): return a.matches(b)
+            case (.trait(let a), .trait(let b)):             return a.matches(b)
             default: return false
             }
         }
@@ -284,7 +284,7 @@ class MetamodelPanel: Panel {
                 drawEdgeRulesTable(rules)
             }
         case .edge:
-            let rules = metamodel.edgeRules.filter { $0.type === type }
+            let rules = metamodel.edgeRules.filter { $0.type.matches(type) }
             if !rules.isEmpty {
                 ImGui.TextUnformatted("Edge Rules:")
                 // TODO: Render pictograms for node types appearing in origin/target predicates
@@ -319,7 +319,7 @@ class MetamodelPanel: Panel {
         }
 
         // Object types adopting this trait
-        let adopters = metamodel.types.filter { $0.hasTrait(trait) }
+        let adopters = metamodel.types.filter { $0.hasTrait(trait.name) }
         if !adopters.isEmpty {
             ImGui.Spacing()
             ImGui.TextUnformatted("Adopted by:")
@@ -477,7 +477,7 @@ extension Predicate {
     func refersTo(type other: ObjectType) -> Bool {
         switch self {
         case .isType(let type):
-            if type === other { return true }
+            if type.matches(other) { return true }
         default: break
         }
         

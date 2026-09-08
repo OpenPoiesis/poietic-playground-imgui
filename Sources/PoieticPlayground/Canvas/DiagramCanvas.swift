@@ -8,6 +8,7 @@
 import CIimgui
 import Diagramming
 import PoieticCore
+import PoieticFlows
 
 /// View that draws a diagram and handles events to be dispatched to canvas tools.
 ///
@@ -456,16 +457,16 @@ class DiagramCanvas: View {
               let object = entity.designObject
         else { return }
        
-        if object.type.hasTrait(.Formula) {
+        if object.type.hasTrait(SimulationDomain.Traits.Formula) {
             self.editorManager?.openEditor("formula", for: entity)
         }
-        else if object.type.hasTrait(.Delay) {
+        else if object.type.hasTrait(StockFlowDomain.Traits.Delay) {
             self.editorManager?.openEditor("delay", for: entity)
         }
-        else if object.type.hasTrait(.Smooth) {
+        else if object.type.hasTrait(StockFlowDomain.Traits.Smooth) {
             self.editorManager?.openEditor("smooth", for: entity)
         }
-        else if object.type.hasTrait(.GraphicalFunction) {
+        else if object.type.hasTrait(StockFlowDomain.Traits.GraphicalFunction) {
             self.editorManager?.openEditor("graphical_function", for: entity)
         }
     }

@@ -14,7 +14,7 @@ class ColorInspectorSection: InspectorSection {
     static let CellSize = ImVec2(24, 24)
     static let BorderWidth: Float = 4.0
     
-    var trait: Trait { Trait.Color }
+    var trait: Trait { DiagramDomain.Traits.AccentColor }
     var category: InspectorPanel.Category { .properties }
     let title: String = "Color"
     let inspectedAttributes: [String] = ["color"]

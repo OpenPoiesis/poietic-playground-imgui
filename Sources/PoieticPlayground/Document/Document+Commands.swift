@@ -37,7 +37,7 @@ extension Document {
             trans.removeCascading(id)
         }
         for edgeProposal in proposal.toAdd {
-            trans.createEdge(.Parameter, origin: edgeProposal.origin, target: edgeProposal.target)
+            trans.createEdge(StockFlowDomain.Types.Parameter, origin: edgeProposal.origin, target: edgeProposal.target)
         }
 
         self.queueAlert(title: "Auto-Connect Parameters",

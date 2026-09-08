@@ -299,10 +299,10 @@ class SelectionTool: CanvasTool {
     }
 
     func moveObject(_ object: TransientObject, by designDelta: Vector2D) {
-        if object.type.hasTrait(.DiagramBlock) {
+        if object.type.hasTrait(DiagramDomain.Traits.DiagramBlock) {
             object.position = (object.position ?? .zero) + designDelta
         }
-        else if object.type.hasTrait(.DiagramConnector) {
+        else if object.type.hasTrait(DiagramDomain.Traits.DiagramConnector) {
             guard let midpoints: [Point] = object["midpoints"],
                   !midpoints.isEmpty
             else { return }
@@ -485,7 +485,7 @@ class SelectionTool: CanvasTool {
         guard trans.contains(objectID) else { return }
         
         let object = trans.mutate(objectID)
-        guard object.type.hasTrait(.DiagramConnector) else { return }
+        guard object.type.hasTrait(DiagramDomain.Traits.DiagramConnector) else { return }
         
         if var midpoints: [Point] = object["midpoints"] {
             guard index < midpoints.count else { return }

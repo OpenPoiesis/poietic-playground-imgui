@@ -137,7 +137,7 @@ class InspectorPanel: Panel {
         
         activeSections.removeAll()
         for section in allSections {
-            guard overview.sharedTraits.contains(where: { $0 === section.trait  }) else {
+            guard overview.sharedTraits.contains(where: { $0.matches(section.trait)  }) else {
                 continue
             }
             attributes.formUnion(section.inspectedAttributes)

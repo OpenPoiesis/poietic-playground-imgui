@@ -8,6 +8,7 @@
 import CIimgui
 import Diagramming
 import PoieticCore
+import PoieticFlows
 
 // TODO: This tool is mostly hard-coded to the stock-flow metamodel
 
@@ -77,7 +78,7 @@ class ConnectTool: CanvasTool {
     func connectableTypes() -> [ObjectType] {
         // TODO: Read from metamodel
         // TODO: Use connector glyphs and make the object palette single column and wide
-        return [ObjectType.Parameter, ObjectType.Flow]
+        return [StockFlowDomain.Types.Parameter, StockFlowDomain.Types.Flow]
     }
     
     override func handleEvent(_ event: ToolEvent) -> EngagementResult {

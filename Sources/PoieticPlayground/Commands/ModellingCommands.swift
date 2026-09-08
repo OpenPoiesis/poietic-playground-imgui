@@ -21,13 +21,13 @@ struct CreateChartCommand: Command {
     
     func run(_ context: CommandContext) throws (CommandError) {
         let trans = context.document.createOrReuseTransaction()
-        let chart = trans.createNode(.Chart)
+        let chart = trans.createNode(StockFlowDomain.Types.Chart)
 
         for objectID in ids {
             guard let target = trans[objectID],
-                  target.type.hasTrait(.ComputedValue)
+                  target.type.hasTrait(StockFlowDomain.Traits.ComputedValue)
             else { continue }
-            trans.createEdge(.ChartSeries,
+            trans.createEdge(StockFlowDomain.Types.ChartSeries,
                              origin: chart.objectID,
                              target: objectID)
         }

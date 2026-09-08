@@ -16,7 +16,7 @@ protocol DesignInspectorSection: InspectorSection {
 
 class DesignInfoInspectorSection: DesignInspectorSection {
     
-    var trait: Trait { Trait.DesignInfo }
+    var trait: Trait { BasicDomain.Traits.DesignInfo }
     var category: InspectorPanel.Category { .overview }
     let title: String = "Design"
     let inspectedAttributes: [String] =
@@ -47,7 +47,7 @@ class DesignInfoInspectorSection: DesignInspectorSection {
         guard let plane = document.world.plane
         else { return }
         
-        if let infoObject = plane.first(type: .DesignInfo) {
+        if let infoObject = plane.first(type: BasicDomain.Types.DesignInfo) {
             self.infoObjectID = infoObject.objectID
             self.titleBuffer.string = infoObject["title"] ?? ""
             self.authorBuffer.string = infoObject["author"] ?? ""
@@ -94,7 +94,7 @@ class DesignInfoInspectorSection: DesignInspectorSection {
             mutable = trans.mutate(infoObjectID)
         }
         else {
-            mutable = trans.create(.DesignInfo)
+            mutable = trans.create(BasicDomain.Types.DesignInfo)
             self.infoObjectID = mutable.objectID
             
         }
@@ -105,7 +105,7 @@ class DesignInfoInspectorSection: DesignInspectorSection {
 class SimulationInspectorSection: DesignInspectorSection {
     static let DefaultTimeSettings = SimulationTimeSettings()
     
-    var trait: Trait { Trait.SimulationTime }
+    var trait: Trait { SimulationDomain.Traits.SimulationTime }
     var category: InspectorPanel.Category { .properties }
     let title: String = "Design"
     let inspectedAttributes: [String] =
@@ -134,7 +134,7 @@ class SimulationInspectorSection: DesignInspectorSection {
         guard let plane = document.world.plane
         else { return }
         
-        if let infoObject = plane.first(type: .Simulation) {
+        if let infoObject = plane.first(type: StockFlowDomain.Types.Simulation) {
             self.infoObjectID = infoObject.objectID
             let settings = SimulationTimeSettings(fromObject: infoObject)
             self.startTime = settings.startTime
@@ -193,7 +193,7 @@ class SimulationInspectorSection: DesignInspectorSection {
             mutable = trans.mutate(infoObjectID)
         }
         else {
-            mutable = trans.create(.Simulation)
+            mutable = trans.create(StockFlowDomain.Types.Simulation)
             self.infoObjectID = mutable.objectID
             
         }
@@ -212,7 +212,7 @@ class SimulationInspectorSection: DesignInspectorSection {
             mutable = trans.mutate(infoObjectID)
         }
         else {
-            mutable = trans.create(.Simulation)
+            mutable = trans.create(StockFlowDomain.Types.Simulation)
             self.infoObjectID = mutable.objectID
             
         }
